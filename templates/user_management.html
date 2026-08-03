@@ -1,0 +1,289 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+        <h4 class="mb-0">User Management</h4>
+        <small class="text-muted">
+            {% if current_user.role == 'superadmin' %}
+                <span class="badge bg-danger me-1">Super Admin</span> จัดการ Admin และ User ได้ทั้งหมด
+            {% else %}
+                <span class="badge bg-primary me-1">Admin</span> จัดการ User ใต้สังกัดของคุณ
+            {% endif %}
+        </small>
+    </div>
+    <div class="d-flex gap-2">
+        {% if current_user.role == 'superadmin' %}
+        <button class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#createAdminModal">
+            + เพิ่ม Admin
+        </button>
+        {% endif %}
+        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createUserModal">
+            + เพิ่ม User
+        </button>
+    </div>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
+
+{# ── ADMIN TABLE (superadmin เท่านั้น) ── #}
+{% if current_user.role == 'superadmin' %}
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-danger text-white d-flex align-items-center justify-content-between">
+        <h6 class="mb-0">Admin ในระบบ ({{ admins|length }} คน)</h6>
+        <small class="opacity-75">สร้างโดย Super Admin เท่านั้น</small>
+    </div>
+    <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+            <tr>
+                <th>#</th>
+                <th>Username</th>
+                <th>Role</th>
+                <th>Create at</th>
+                <th>User ใต้สังกัด</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for u in admins %}
+            <tr>
+                <td class="text-muted">{{ u.id }}</td>
+                <td class="fw-bold">{{ u.username }}</td>
+                <td><span class="badge bg-warning text-dark">Admin</span></td>
+                <td class="small text-muted">{{ u.created_at.strftime('%Y-%m-%d') if u.created_at else '—' }}</td>
+                <td class="small text-muted">{{ u.subordinates|length }} คน</td>
+                <td>
+                    <button class="btn btn-sm btn-outline-secondary"
+                            data-bs-toggle="modal"
+                            data-bs-target="#resetPwModal{{ u.id }}">
+                            Reset PW
+                    </button>
+                    <form method="POST" action="/users/{{ u.id }}/delete" class="d-inline"
+                          onsubmit="return confirm('ลบ Admin {{ u.username }} และ User ใต้สังกัดทั้งหมด?')">
+                        <button class="btn btn-sm btn-outline-danger">🗑 ลบ</button>
+                    </form>
+                </td>
+            </tr>
+
+            <!-- Reset Password Modal -->
+            <div class="modal fade" id="resetPwModal{{ u.id }}" tabindex="-1">
+                <div class="modal-dialog modal-sm">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h6 class="modal-title">Reset Password — {{ u.username }}</h6>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <form method="POST" action="/users/{{ u.id }}/reset_password">
+                            <div class="modal-body">
+                                <label class="form-label">Password ใหม่</label>
+                                <input type="password" name="new_password" class="form-control"
+                                       placeholder="กรอก password ใหม่" required>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">ยกเลิก</button>
+                                <button type="submit" class="btn btn-warning btn-sm">บันทึก</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <tr>
+                <td colspan="6" class="text-center text-muted py-3">ยังไม่มี Admin ในระบบ</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+
+{# ── USER TABLE ── #}
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-dark text-white d-flex align-items-center justify-content-between">
+        <h6 class="mb-0">User
+            {% if current_user.role == 'superadmin' %}
+                ทั้งหมด ({{ users|length }} คน)
+            {% else %}
+                ใต้สังกัดของคุณ ({{ users|length }} คน)
+            {% endif %}
+        </h6>
+    </div>
+    <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+            <tr>
+                <th>#</th>
+                <th>Username</th>
+                {% if current_user.role == 'superadmin' %}<th>สังกัด Admin</th>{% endif %}
+                <th>Create at</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for u in users %}
+            <tr>
+                <td class="text-muted">{{ u.id }}</td>
+                <td class="fw-bold">{{ u.username }}</td>
+                {% if current_user.role == 'superadmin' %}
+                <td class="small text-muted">
+                    {% if u.creator %}
+                        <span class="badge bg-warning text-dark">{{ u.creator.username }}</span>
+                    {% else %}
+                        <span class="text-muted">—</span>
+                    {% endif %}
+                </td>
+                {% endif %}
+                <td class="small text-muted">{{ u.created_at.strftime('%Y-%m-%d') if u.created_at else '—' }}</td>
+                <td>
+                    <button class="btn btn-sm btn-outline-secondary"
+                            data-bs-toggle="modal"
+                            data-bs-target="#resetPwModal{{ u.id }}">
+                            Reset PW
+                    </button>
+                    <form method="POST" action="/users/{{ u.id }}/delete" class="d-inline"
+                          onsubmit="return confirm('ลบ user {{ u.username }} ?')">
+                        <button class="btn btn-sm btn-outline-danger">🗑 ลบ</button>
+                    </form>
+                </td>
+            </tr>
+
+            <!-- Reset Password Modal -->
+            <div class="modal fade" id="resetPwModal{{ u.id }}" tabindex="-1">
+                <div class="modal-dialog modal-sm">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h6 class="modal-title">🔑 Reset Password — {{ u.username }}</h6>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <form method="POST" action="/users/{{ u.id }}/reset_password">
+                            <div class="modal-body">
+                                <label class="form-label">Password ใหม่</label>
+                                <input type="password" name="new_password" class="form-control"
+                                       placeholder="กรอก password ใหม่" required>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">ยกเลิก</button>
+                                <button type="submit" class="btn btn-warning btn-sm">บันทึก</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <tr>
+                <td colspan="{{ 5 if current_user.role == 'superadmin' else 4 }}" class="text-center text-muted py-3">
+                    ยังไม่มี User
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+
+{# ── Role Permission Guide ── #}
+<div class="card border-0 shadow-sm mt-2">
+    <div class="card-body">
+        <h6 class="mb-3">สิทธิ์แต่ละ Role</h6>
+        <table class="table table-sm table-bordered mb-0 text-center small">
+            <thead class="table-light">
+                <tr>
+                    <th class="text-start">ฟีเจอร์</th>
+                    <th>Super Admin</th>
+                    <th>Admin</th>
+                    <th>User</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td class="text-start">สแกนเครือข่าย</td><td>✅</td><td>✅</td><td>❌</td></tr>
+                <tr><td class="text-start">สร้าง / จัดการ Schedule</td><td>✅</td><td>✅</td><td>❌</td></tr>
+                <tr><td class="text-start">ดูผลการสแกน</td><td>ของตัวเอง</td><td>ของตัวเอง</td><td>ของ Admin ที่สร้าง</td></tr>
+                <tr><td class="text-start">สร้าง Admin</td><td>✅</td><td>❌</td><td>❌</td></tr>
+                <tr><td class="text-start">สร้าง User</td><td>✅</td><td>✅</td><td>❌</td></tr>
+                <tr><td class="text-start">ลบ / Reset PW</td><td>Admin + User ทุกคน</td><td>User ใต้สังกัด</td><td>❌</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+
+{# ── Create Admin Modal (superadmin only) ── #}
+{% if current_user.role == 'superadmin' %}
+<div class="modal fade" id="createAdminModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header border-danger">
+                <h5 class="modal-title text-danger">เพิ่ม Admin ใหม่</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="/users/create">
+                <input type="hidden" name="role" value="admin">
+                <div class="modal-body">
+                    <div class="alert alert-warning small py-2">
+                        Admin สามารถสแกนได้ สร้าง User ได้ แต่เห็นเฉพาะ Scan ของตัวเอง
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Username</label>
+                        <input type="text" name="username" class="form-control" placeholder="กรอก username" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Password</label>
+                        <input type="password" name="password" class="form-control" placeholder="กรอก password" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+                    <button type="submit" class="btn btn-danger">สร้าง Admin</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+
+{# ── Create User Modal ── #}
+<div class="modal fade" id="createUserModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">เพิ่ม User ใหม่</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="/users/create">
+                <input type="hidden" name="role" value="user">
+                <div class="modal-body">
+                    <div class="alert alert-info small py-2">
+                        User จะเห็นผลการสแกนของ
+                        <strong>{{ current_user.username }}</strong> เท่านั้น
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Username</label>
+                        <input type="text" name="username" class="form-control" placeholder="กรอก username" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Password</label>
+                        <input type="password" name="password" class="form-control" placeholder="กรอก password" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+                    <button type="submit" class="btn btn-primary">สร้าง User</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container d-flex justify-content-center align-items-center"
+     style="min-height: 80vh;">
+
+    <div class="card shadow-lg p-4"
+         style="width: 100%; max-width: 400px; border-radius: 12px;">
+
+        <div class="text-center mb-4">
+            <div style="font-size:1.6rem; font-weight:700; letter-spacing:1px; color:#212529;">CLYLHA</div>
+            <div style="font-size:0.85rem; color:#6c757d; margin-top:2px;">Network Scanner</div>
+        </div>
+
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <div class="alert alert-danger py-2 text-center">
+                    {{ messages[0] }}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <form method="POST">
+
+            <div class="mb-3">
+                <label class="form-label text-muted">Username</label>
+                <input type="text"
+                       name="username"
+                       class="form-control"
+                       required>
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label text-muted">Password</label>
+                <input type="password"
+                       name="password"
+                       class="form-control"
+                       required>
+            </div>
+
+            <button type="submit"
+                    class="btn btn-primary w-100 fw-bold">
+                Login
+            </button>
+
+        </form>
+    </div>
+</div>
+{% endblock %}

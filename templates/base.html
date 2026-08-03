@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CLYLHA Network Scanner</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { background-color: #f4f6f9; }
+
+        /* ===== SIDEBAR REDESIGN ===== */
+        .sidebar {
+            min-height: 100vh;
+            width: 280px;
+            background-color: #0f1117;
+            color: white;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+        }
+        /* Logo area */
+        .sidebar-logo {
+            padding: 22px 20px 18px;
+            border-bottom: 1px solid rgba(255,255,255,0.07);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .sidebar-logo-icon {
+            width: 38px; height: 38px;
+            background: #1d4ed8;
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 20px; color: #fff;
+            flex-shrink: 0;
+        }
+        .sidebar-logo-text { font-size: 18px; font-weight: 700; color: #fff; letter-spacing: 0.4px; }
+        .sidebar-logo-sub { font-size: 12px; color: rgba(255,255,255,0.35); margin-top: 2px; }
+
+        /* Nav */
+        .sidebar-nav { padding: 12px 12px; flex: 1; }
+        .sidebar-section-label {
+            font-size: 11px;
+            color: rgba(255,255,255,0.3);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 10px 12px 5px;
+            display: block;
+        }
+        .sidebar a {
+            color: rgba(255,255,255,0.55);
+            text-decoration: none;
+            padding: 11px 14px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-radius: 8px;
+            margin-bottom: 2px;
+            font-size: 15px;
+            transition: background 0.15s, color 0.15s;
+        }
+        .sidebar a i { font-size: 19px; width: 22px; text-align: center; flex-shrink: 0; }
+        .sidebar a:hover { background-color: rgba(255,255,255,0.07); color: rgba(255,255,255,0.9); }
+        .sidebar .active { background-color: #1d4ed8; color: #fff; }
+        .sidebar .active:hover { background-color: #2563eb; }
+
+        /* Nav badge */
+        .sidebar-badge {
+            margin-left: auto;
+            background: #ef4444;
+            color: #fff;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 2px 7px;
+            border-radius: 20px;
+            line-height: 1.6;
+        }
+
+        /* Footer user row */
+        .sidebar-footer {
+            padding: 12px 12px 16px;
+            border-top: 1px solid rgba(255,255,255,0.07);
+        }
+        .sidebar-user-row {
+            display: flex;
+            align-items: center;
+            gap: 11px;
+            padding: 10px 12px;
+            border-radius: 8px;
+        }
+        .sidebar-user-avatar {
+            width: 36px; height: 36px;
+            border-radius: 50%;
+            background: #1d4ed8;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 13px; font-weight: 600; color: #fff;
+            flex-shrink: 0;
+        }
+        .sidebar-user-name { font-size: 14px; color: rgba(255,255,255,0.8); font-weight: 500; }
+        .sidebar-user-role { font-size: 11.5px; color: rgba(255,255,255,0.35); }
+        /* ===== END SIDEBAR ===== */
+        .main-wrapper { flex-grow: 1; display: flex; flex-direction: column; min-height: 100vh; }
+        .topbar {
+            background-color: #fff;
+            border-bottom: 1px solid #e9ecef;
+            padding: 12px 30px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .topbar-title { font-weight: 600; color: #495057; font-size: 1rem; }
+        .topbar-user { display: flex; align-items: center; gap: 12px; }
+        .topbar-user-info { text-align: right; line-height: 1.2; }
+        .topbar-user-name { font-weight: 600; font-size: 0.9rem; color: #212529; }
+        .topbar-user-role { font-size: 0.75rem; color: #6c757d; }
+        .topbar-avatar {
+            width: 38px; height: 38px;
+            background-color: #6c757d;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-size: 1rem;
+            cursor: pointer;
+            position: relative;
+        }
+        .profile-dropdown {
+            position: absolute;
+            right: 0;
+            top: calc(100% + 10px);
+            background: #fff;
+            border: 1px solid #e9ecef;
+            border-radius: 10px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+            min-width: 180px;
+            z-index: 9999;
+            display: none;
+            overflow: hidden;
+        }
+        .profile-dropdown.show { display: block; }
+        .profile-dropdown a {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 16px;
+            color: #212529;
+            text-decoration: none;
+            font-size: 0.875rem;
+            transition: background 0.15s;
+        }
+        .profile-dropdown a:hover { background-color: #f8f9fa; }
+        .profile-dropdown .dropdown-divider {
+            border-top: 1px solid #e9ecef;
+            margin: 0;
+        }
+        .profile-dropdown a.logout-link { color: #dc3545; }
+        .profile-dropdown a.logout-link:hover { background-color: #fff5f5; }
+        .topbar-user { position: relative; }
+        .main-content { flex-grow: 1; padding: 30px; }
+    </style>
+</head>
+<body>
+<div class="d-flex">
+
+    {% if current_user.is_authenticated %}
+    <nav class="sidebar shadow-lg">
+
+        <!-- Logo -->
+        <div class="sidebar-logo">
+            <div class="sidebar-logo-icon">
+                <i class="ti ti-radar" aria-hidden="true"></i>
+            </div>
+            <div>
+                <div class="sidebar-logo-text">CLYLHA</div>
+                <div class="sidebar-logo-sub">Network Scanner</div>
+            </div>
+        </div>
+
+        <!-- Nav -->
+        <div class="sidebar-nav">
+            <span class="sidebar-section-label">Main</span>
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a href="/" class="nav-link {% if request.path == '/' %}active{% endif %}">
+                        <i class="ti ti-layout-dashboard" aria-hidden="true"></i>
+                        Dashboard
+                    </a>
+                </li>
+                {% if current_user.role in ('admin', 'superadmin') %}
+                <li class="nav-item">
+                    <a href="{{ url_for('tasks_page') }}" class="nav-link {% if request.path.startswith('/tasks') %}active{% endif %}">
+                        <i class="ti ti-list-check" aria-hidden="true"></i>
+                        Tasks
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+
+            <span class="sidebar-section-label">Network</span>
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a href="{{ url_for('topology_page') }}" class="nav-link {% if request.path.startswith('/topology') %}active{% endif %}">
+                        <i class="ti ti-topology-star" aria-hidden="true"></i>
+                        Network Topology
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ url_for('history_page') }}" class="nav-link {% if request.path.startswith('/history') %}active{% endif %}">
+                        <i class="ti ti-history" aria-hidden="true"></i>
+                        Scan History
+                    </a>
+                </li>
+            </ul>
+
+
+        </div>
+
+
+
+    </nav>
+    {% endif %}
+
+    <div class="main-wrapper">
+        {% if current_user.is_authenticated %}
+        <div class="topbar">
+            <span class="topbar-title"></span>
+            <div class="topbar-user">
+                <div class="topbar-user-info">
+                    <div class="topbar-user-name">{{ current_user.username | title }}</div>
+                    <div class="topbar-user-role">{{ current_user.role | title }}</div>
+                </div>
+                <div class="topbar-avatar" id="profileAvatar" onclick="toggleProfileDropdown()">
+                    👤
+                    <div class="profile-dropdown" id="profileDropdown">
+                        {% if current_user.role in ('admin', 'superadmin') %}
+                        <a href="{{ url_for('user_management') }}">
+                            <span></span> User Management
+                        </a>
+                        <div class="dropdown-divider"></div>
+                        {% endif %}
+                        <a href="{{ url_for('logout') }}" class="logout-link">
+                            <span></span> Logout
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        <main class="main-content">
+            {% block content %}
+            {% endblock %}
+        </main>
+    </div>
+
+</div>
+
+<!-- ===== CHATBOT WIDGET ===== -->
+<style>
+  /* --- Floating Button --- */
+  #chatbot-btn {
+    position: fixed;
+    bottom: 28px;
+    right: 28px;
+    width: 58px;
+    height: 58px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+    box-shadow: 0 4px 20px rgba(13,110,253,0.45);
+    border: none;
+    cursor: pointer;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  #chatbot-btn:hover {
+    transform: scale(1.08);
+    box-shadow: 0 6px 28px rgba(13,110,253,0.55);
+  }
+  #chatbot-btn svg { transition: opacity 0.2s, transform 0.2s; }
+  #chatbot-btn.open .icon-chat { opacity: 0; transform: rotate(90deg) scale(0.5); }
+  #chatbot-btn.open .icon-close { opacity: 1; transform: rotate(0deg) scale(1); }
+  #chatbot-btn .icon-close { position: absolute; opacity: 0; transform: rotate(-90deg) scale(0.5); }
+
+  /* Pulse ring */
+  #chatbot-btn::before {
+    content: '';
+    position: absolute;
+    inset: -5px;
+    border-radius: 50%;
+    border: 2px solid rgba(13,110,253,0.4);
+    animation: pulse-ring 2.2s ease-out infinite;
+  }
+  @keyframes pulse-ring {
+    0%   { opacity: 0.8; transform: scale(1); }
+    100% { opacity: 0;   transform: scale(1.5); }
+  }
+
+  /* Unread badge */
+  #chatbot-badge {
+    position: absolute;
+    top: 2px; right: 2px;
+    width: 16px; height: 16px;
+    background: #dc3545;
+    border-radius: 50%;
+    font-size: 10px;
+    font-weight: 700;
+    color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    border: 2px solid #fff;
+  }
+
+  /* --- Popup Window --- */
+  #chatbot-popup {
+    position: fixed;
+    bottom: 100px;
+    right: 28px;
+    width: 360px;
+    height: 500px;
+    background: #fff;
+    border-radius: 18px;
+    box-shadow: 0 12px 48px rgba(0,0,0,0.18);
+    display: flex;
+    flex-direction: column;
+    z-index: 9999;
+    overflow: hidden;
+    transform: scale(0.85) translateY(30px);
+    transform-origin: bottom right;
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 0.28s cubic-bezier(.34,1.56,.64,1), opacity 0.22s ease;
+  }
+  #chatbot-popup.open {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  /* Header */
+  .cb-header {
+    background: linear-gradient(135deg, #212529 0%, #343a40 100%);
+    padding: 16px 18px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+  .cb-avatar {
+    width: 40px; height: 40px;
+    background: linear-gradient(135deg, #0d6efd, #0a58ca);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+    position: relative;
+  }
+  .cb-avatar::after {
+    content: '';
+    position: absolute;
+    bottom: 1px; right: 1px;
+    width: 10px; height: 10px;
+    background: #28a745;
+    border-radius: 50%;
+    border: 2px solid #212529;
+  }
+  .cb-header-info h6 { margin: 0; color: #fff; font-size: 0.9rem; font-weight: 600; }
+  .cb-header-info span { color: #adb5bd; font-size: 0.75rem; }
+  .cb-close {
+    margin-left: auto;
+    background: none; border: none;
+    color: #adb5bd; cursor: pointer; font-size: 20px; line-height: 1;
+    padding: 4px; border-radius: 50%;
+    transition: background 0.15s, color 0.15s;
+  }
+  .cb-close:hover { background: rgba(255,255,255,0.1); color: #fff; }
+
+  /* Messages */
+  .cb-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background: #f8f9fa;
+    scroll-behavior: smooth;
+  }
+  .cb-messages::-webkit-scrollbar { width: 4px; }
+  .cb-messages::-webkit-scrollbar-thumb { background: #dee2e6; border-radius: 4px; }
+
+  /* Message bubbles */
+  .cb-msg {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    animation: msg-in 0.22s ease;
+  }
+  @keyframes msg-in {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .cb-msg.user { flex-direction: row-reverse; }
+  .cb-bubble {
+    max-width: 75%;
+    padding: 10px 14px;
+    border-radius: 16px;
+    font-size: 0.845rem;
+    line-height: 1.45;
+  }
+  .cb-msg.bot .cb-bubble {
+    background: #fff;
+    color: #212529;
+    border-bottom-left-radius: 4px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  }
+  .cb-msg.user .cb-bubble {
+    background: linear-gradient(135deg, #0d6efd, #0a58ca);
+    color: #fff;
+    border-bottom-right-radius: 4px;
+  }
+  .cb-time { font-size: 0.68rem; color: #adb5bd; margin-top: 3px; text-align: center; }
+
+  /* Typing indicator */
+  .cb-typing { display: flex; gap: 4px; padding: 10px 14px; }
+  .cb-typing span {
+    width: 7px; height: 7px;
+    background: #adb5bd;
+    border-radius: 50%;
+    animation: bounce 1s infinite;
+  }
+  .cb-typing span:nth-child(2) { animation-delay: 0.15s; }
+  .cb-typing span:nth-child(3) { animation-delay: 0.3s; }
+  @keyframes bounce {
+    0%, 60%, 100% { transform: translateY(0); }
+    30% { transform: translateY(-6px); }
+  }
+
+  /* Quick replies */
+  .cb-quick-replies {
+    padding: 8px 14px 4px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    background: #f8f9fa;
+  }
+  .cb-qr {
+    padding: 5px 12px;
+    border: 1.5px solid #0d6efd;
+    border-radius: 20px;
+    background: none;
+    color: #0d6efd;
+    font-size: 0.775rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .cb-qr:hover { background: #0d6efd; color: #fff; }
+
+  /* Input bar */
+  .cb-input-bar {
+    padding: 12px 14px;
+    background: #fff;
+    border-top: 1px solid #e9ecef;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-shrink: 0;
+  }
+  .cb-input {
+    flex: 1;
+    border: 1.5px solid #dee2e6;
+    border-radius: 22px;
+    padding: 9px 16px;
+    font-size: 0.85rem;
+    outline: none;
+    transition: border-color 0.2s;
+    background: #f8f9fa;
+    resize: none;
+  }
+  .cb-input:focus { border-color: #0d6efd; background: #fff; }
+  .cb-send {
+    width: 38px; height: 38px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #0d6efd, #0a58ca);
+    border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    transition: transform 0.15s;
+  }
+  .cb-send:hover { transform: scale(1.1); }
+  .cb-send svg { width: 16px; height: 16px; }
+</style>
+
+{% if current_user.is_authenticated %}
+<!-- Floating button -->
+<button id="chatbot-btn" onclick="toggleChat()" title="CLYLHA Chatbot">
+  <span id="chatbot-badge">1</span>
+  <!-- Chat icon -->
+  <svg class="icon-chat" width="26" height="26" viewBox="0 0 24 24" fill="none">
+    <path d="M20 2H4C2.9 2 2 2.9 2 4v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z" fill="white"/>
+  </svg>
+  <!-- Close icon -->
+  <svg class="icon-close" width="22" height="22" viewBox="0 0 24 24" fill="none">
+    <path d="M18 6L6 18M6 6l12 12" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+  </svg>
+</button>
+
+<!-- Chat popup -->
+<div id="chatbot-popup">
+  <!-- Header -->
+  <div class="cb-header">
+    <div class="cb-avatar">🤖</div>
+    <div class="cb-header-info">
+      <h6>CLYLHA Chatbot</h6>
+      <span>🟢 Online — อยู่ระหว่างการพัฒนา</span>
+    </div>
+    <button class="cb-close" onclick="toggleChat()">✕</button>
+  </div>
+
+  <!-- Messages -->
+  <div class="cb-messages" id="cb-messages">
+    <div class="cb-msg bot">
+      <div>
+        <div class="cb-bubble">
+          สวัสดีครับ! ผมคือ CLYLHA Chatbot<br>
+          
+        </div>
+        <div class="cb-time">เพิ่งเมื่อกี้</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick replies -->
+  <div class="cb-quick-replies" id="cb-quick-replies">
+    <button class="cb-qr" onclick="sendQuick('วิธี Scan Network')">วิธี Scan Network</button>
+    <button class="cb-qr" onclick="sendQuick('ดู Scan History')">ดู Scan History</button>
+    <button class="cb-qr" onclick="sendQuick('Network Topology คืออะไร')">Network Topology</button>
+  </div>
+
+  <!-- Input -->
+  <div class="cb-input-bar">
+    <input class="cb-input" id="cb-input" type="text" placeholder="พิมพ์ข้อความ..." onkeydown="if(event.key==='Enter') sendMsg()">
+    <button class="cb-send" onclick="sendMsg()">
+      <svg viewBox="0 0 24 24" fill="none">
+        <path d="M22 2L11 13M22 2L15 22L11 13M22 2L2 9L11 13" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+  </div>
+</div>
+
+<script>
+// === Bot Knowledge ===
+const BOT_KNOWLEDGE = {
+  "scan": "การ Scan Network ทำได้จากหน้า Dashboard ครับ กด 'New Scan' แล้วใส่ IP/range ที่ต้องการ แล้วรอผลได้เลย ",
+  "history": "ดู Scan History ได้ที่เมนู 'Scan History' ด้านซ้ายครับ จะแสดงประวัติการสแกนทั้งหมด พร้อม timestamp และผลลัพธ์",
+  "topology": "Network Topology แสดง Map ของอุปกรณ์ในเครือข่ายครับ เชื่อมโยงกันแบบ Visual ช่วยให้เห็นโครงสร้างเครือข่ายได้ชัดเจน 🗺️",
+  "vuln": "ระบบสามารถตรวจหา Vulnerability ของ Port ต่างๆ ได้ครับ ดูรายละเอียดได้ในหน้า Scan Detail",
+  "port": "Port Search ช่วยค้นหาข้อมูลของ Port number ว่าใช้งาน Service อะไร และมีความเสี่ยงอะไรบ้างครับ",
+  "default": "ขอโทษครับ ยังไม่เข้าใจคำถามนี้ ลองถามเกี่ยวกับ Scan, History, Topology หรือ Vulnerability ดูนะครับ"
+};
+
+function getBotReply(text) {
+  const t = text.toLowerCase();
+  if (t.includes('scan') || t.includes('สแกน')) return BOT_KNOWLEDGE.scan;
+  if (t.includes('history') || t.includes('ประวัติ')) return BOT_KNOWLEDGE.history;
+  if (t.includes('topology') || t.includes('แผนที่')) return BOT_KNOWLEDGE.topology;
+  if (t.includes('vuln') || t.includes('ช่องโหว่')) return BOT_KNOWLEDGE.vuln;
+  if (t.includes('port') || t.includes('พอร์ต')) return BOT_KNOWLEDGE.port;
+  return BOT_KNOWLEDGE.default;
+}
+
+function toggleChat() {
+  const popup = document.getElementById('chatbot-popup');
+  const btn = document.getElementById('chatbot-btn');
+  const badge = document.getElementById('chatbot-badge');
+  popup.classList.toggle('open');
+  btn.classList.toggle('open');
+  badge.style.display = 'none'; // hide badge on open
+  if (popup.classList.contains('open')) {
+    document.getElementById('cb-input').focus();
+  }
+}
+
+function addMsg(text, role) {
+  const wrap = document.getElementById('cb-messages');
+  const div = document.createElement('div');
+  div.className = 'cb-msg ' + role;
+  const now = new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+  div.innerHTML = `<div><div class="cb-bubble">${text}</div><div class="cb-time">${now}</div></div>`;
+  wrap.appendChild(div);
+  wrap.scrollTop = wrap.scrollHeight;
+}
+
+function showTyping() {
+  const wrap = document.getElementById('cb-messages');
+  const div = document.createElement('div');
+  div.className = 'cb-msg bot'; div.id = 'cb-typing-indicator';
+  div.innerHTML = `<div><div class="cb-bubble cb-typing"><span></span><span></span><span></span></div></div>`;
+  wrap.appendChild(div);
+  wrap.scrollTop = wrap.scrollHeight;
+}
+
+function hideTyping() {
+  const el = document.getElementById('cb-typing-indicator');
+  if (el) el.remove();
+}
+
+function sendMsg() {
+  const input = document.getElementById('cb-input');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  addMsg(text, 'user');
+  // Hide quick replies after first user message
+  document.getElementById('cb-quick-replies').style.display = 'none';
+  showTyping();
+  setTimeout(() => {
+    hideTyping();
+    addMsg(getBotReply(text), 'bot');
+  }, 900 + Math.random() * 400);
+}
+
+function sendQuick(text) {
+  document.getElementById('cb-input').value = text;
+  sendMsg();
+}
+</script>
+{% endif %}
+<!-- ===== END CHATBOT ===== -->
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    function toggleProfileDropdown() {
+        const dropdown = document.getElementById('profileDropdown');
+        dropdown.classList.toggle('show');
+    }
+    document.addEventListener('click', function(e) {
+        const avatar = document.getElementById('profileAvatar');
+        const dropdown = document.getElementById('profileDropdown');
+        if (avatar && dropdown && !avatar.contains(e.target)) {
+            dropdown.classList.remove('show');
+        }
+    });
+</script>
+</body>
+</html>

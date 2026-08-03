@@ -1,0 +1,885 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+
+<style>
+/* ─── Page Layout ─── */
+.topology-page {
+    display: flex;
+    gap: 0;
+    height: calc(100vh - 80px);
+    overflow: hidden;
+}
+
+/* ─── Left Panel: Filter ─── */
+.topo-filter-panel {
+    width: 260px;
+    min-width: 220px;
+    background: #fff;
+    border-right: 1px solid #e9ecef;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    flex-shrink: 0;
+}
+.topo-filter-header {
+    padding: 18px 16px 12px;
+    border-bottom: 1px solid #f0f0f0;
+}
+.topo-filter-header h6 {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #6c757d;
+    margin: 0 0 2px 0;
+    font-weight: 700;
+}
+.topo-filter-header p {
+    font-size: 0.72rem;
+    color: #adb5bd;
+    margin: 0;
+}
+.filter-section {
+    padding: 14px 16px;
+    border-bottom: 1px solid #f4f4f4;
+}
+.filter-section-title {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: none;
+    letter-spacing: 0.07em;
+    color: #495057;
+    margin-bottom: 10px;
+}
+.filter-date-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-height: 200px;
+    overflow-y: auto;
+}
+.filter-date-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.15s;
+    font-size: 0.8rem;
+    color: #343a40;
+    user-select: none;
+}
+.filter-date-item:hover { background: #f8f9fa; }
+.filter-date-item input[type=checkbox] { accent-color: #0d6efd; }
+.job-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    max-height: 260px;
+    overflow-y: auto;
+}
+.job-chip {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 6px 8px;
+    border-radius: 7px;
+    cursor: pointer;
+    border: none;
+    transition: background 0.12s;
+    font-size: 0.8rem;
+    background: transparent;
+    user-select: none;
+}
+.job-chip:hover { background: #f1f3f5; }
+.job-chip.selected { background: #eef3ff; }
+.job-chip-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    opacity: 0.85;
+}
+.job-chip:not(.selected) .job-chip-dot { opacity: 0.35; }
+.job-chip-name {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-weight: 500;
+    color: #343a40;
+}
+.job-chip:not(.selected) .job-chip-name { color: #868e96; }
+.job-chip-count {
+    font-size: 0.7rem;
+    background: transparent;
+    border-radius: 20px;
+    padding: 0 4px;
+    color: #adb5bd;
+    font-weight: 600;
+}
+.job-chip.selected .job-chip-count { color: #0d6efd; }
+.quick-filter-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.qf-btn {
+    font-size: 0.72rem;
+    padding: 4px 10px;
+    border-radius: 20px;
+    border: 1.5px solid #dee2e6;
+    background: #fff;
+    color: #495057;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-weight: 500;
+}
+.qf-btn:hover, .qf-btn.active { background: #0d6efd; border-color: #0d6efd; color: #fff; }
+
+/* ─── Right Panel: Canvas ─── */
+.topo-canvas-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: #f4f6f9;
+    overflow: hidden;
+}
+.topo-canvas-header {
+    padding: 14px 20px;
+    background: #1e2a3a;
+    border-bottom: 1px solid #2d3f55;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.topo-canvas-header h5 {
+    font-weight: 700;
+    margin: 0;
+    font-size: 1rem;
+    color: #fff;
+}
+.topo-legend { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 20px;
+    padding: 3px 10px 3px 7px;
+}
+.legend-item span { font-size: .74rem; color: #e2e8f0; font-weight: 500; }
+
+/* Canvas wrapper */
+.topo-canvas-wrapper {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+}
+#topoCanvas {
+    width: 100%;
+    height: 100%;
+    background: #ffffff;
+    cursor: default;
+}
+
+/* Stats bar */
+.topo-stats-bar {
+    position: absolute;
+    bottom: 18px;
+    left: 18px;
+    display: flex;
+    gap: 10px;
+    z-index: 10;
+}
+.stat-pill {
+    background: rgba(255,255,255,0.95);
+    border: 1px solid #e9ecef;
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 0.73rem;
+    color: #495057;
+    font-weight: 600;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+}
+.stat-pill span { color: #0d6efd; }
+
+/* Empty state */
+.topo-empty {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #adb5bd;
+    pointer-events: none;
+}
+.topo-empty .icon { font-size: 3rem; margin-bottom: 10px; }
+.topo-empty p { font-size: 0.9rem; margin: 0; }
+
+/* ─── Node Popup (same style as scan_detail) ─── */
+#node-popup {
+    display: none;
+    position: absolute;
+    z-index: 20;
+    background: #fff;
+    border-radius: 14px;
+    min-width: 300px;
+    max-width: 380px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.22);
+    font-size: .82rem;
+    overflow: hidden;
+}
+#popup-header {
+    background: #1e2a3a;
+    padding: 12px 14px 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-bottom: 1px solid #2d3f55;
+}
+#popup-icon {
+    background: #2d4a6b;
+    border-radius: 8px;
+    padding: 4px 6px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+#popup-ip { font-weight: 700; font-size: .95rem; font-family: monospace; color: #ffffff; }
+#popup-close {
+    margin-left: auto;
+    background: rgba(0,0,0,0.25);
+    border: none;
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    color: #fff;
+    font-size: 1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+}
+.popup-tabs { display: flex; border-bottom: 1px solid #e0e0e0; }
+.popup-tab {
+    flex: 1;
+    padding: 9px 0;
+    border: none;
+    font-weight: 600;
+    font-size: .82rem;
+    cursor: pointer;
+    border-right: 1px solid #e0e0e0;
+}
+.popup-tab:last-child { border-right: none; }
+.popup-tab.active { background: #e8e8e8; }
+.popup-tab:not(.active) { background: #fff; }
+#panel-detail { padding: 14px 16px; }
+#panel-port { display: none; max-height: 260px; overflow-y: auto; }
+#detail-tbody tr td:first-child { color: #6c757d; font-size: .78rem; padding: 4px 8px 4px 0; white-space: nowrap; }
+#detail-tbody tr td:last-child { font-size: .82rem; font-weight: 500; padding: 4px 0; }
+#port-table { width: 100%; border-collapse: collapse; font-size: .78rem; }
+#port-table th { padding: 7px 12px; text-align: left; color: #555; font-weight: 600; border-bottom: 1px solid #e0e0e0; }
+#port-table td { padding: 6px 12px; border-bottom: 1px solid #f4f4f4; }
+
+/* Diagram hint */
+#diagram-hint {
+    position: absolute;
+    bottom: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.55);
+    color: #adb5bd;
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-size: .75rem;
+    pointer-events: none;
+    white-space: nowrap;
+}
+
+/* Scrollbar */
+.filter-date-list::-webkit-scrollbar,
+.job-list::-webkit-scrollbar { width: 4px; }
+.filter-date-list::-webkit-scrollbar-thumb,
+.job-list::-webkit-scrollbar-thumb { background: #dee2e6; border-radius: 4px; }
+</style>
+
+<div class="topology-page">
+
+    <!-- ══════════ LEFT: Filter Panel ══════════ -->
+    <div class="topo-filter-panel">
+        <div class="topo-filter-header">
+            <h6>Network Topology</h6>
+            <p>Filter การแสดงผล Diagram</p>
+        </div>
+
+        <!-- Quick filter -->
+        <div class="filter-section">
+            <div class="filter-section-title">Fast Results</div>
+            <div class="quick-filter-row">
+                <button class="qf-btn active" id="btnAll" onclick="quickFilter('all')">ทั้งหมด</button>
+                <button class="qf-btn" id="btnToday" onclick="quickFilter('today')">วันนี้</button>
+                <button class="qf-btn" id="btnWeek" onclick="quickFilter('week')">7 วัน</button>
+            </div>
+        </div>
+
+        <!-- Filter by date -->
+        <div class="filter-section">
+            <div class="filter-section-title">Filter by Date</div>
+            <div class="filter-date-list" id="dateFilterList"></div>
+        </div>
+
+        <!-- Filter by job -->
+        <div class="filter-section" style="flex:1;">
+            <div class="filter-section-title">Filter by Task</div>
+            <div class="job-list" id="jobFilterList"></div>
+        </div>
+
+        <!-- Reset -->
+        <div style="padding:14px 16px; border-top:1px solid #f0f0f0;">
+            <button class="btn btn-sm btn-outline-secondary w-100" onclick="resetFilters()">
+                ↺ Reset Filter
+            </button>
+        </div>
+    </div>
+
+    <!-- ══════════ RIGHT: Canvas Panel ══════════ -->
+    <div class="topo-canvas-panel">
+        <div class="topo-canvas-header">
+            <h5>Network Diagram</h5>
+            <div class="topo-legend">
+                <div class="legend-item">
+                    <svg width="10" height="10"><circle cx="5" cy="5" r="5" fill="#2ecc71"/></svg>
+                    <span>&lt; 3 Port</span>
+                </div>
+                <div class="legend-item">
+                    <svg width="10" height="10"><circle cx="5" cy="5" r="5" fill="#f1c40f"/></svg>
+                    <span>3–6 Port</span>
+                </div>
+                <div class="legend-item">
+                    <svg width="10" height="10"><circle cx="5" cy="5" r="5" fill="#e74c3c"/></svg>
+                    <span>&gt; 6 Port</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="topo-canvas-wrapper">
+
+            <!-- vis-network canvas -->
+            <div id="topoCanvas" style="width:100%;height:100%;background:#ffffff;cursor:default;"></div>
+
+            <!-- hint overlay -->
+            <div id="diagram-hint">🖱️ คลิกที่ node อุปกรณ์ในกราฟเพื่อดูรายละเอียด</div>
+
+            <!-- floating popup -->
+            <div id="node-popup">
+                <div id="popup-header">
+                    <div id="popup-icon"></div>
+                    <span id="popup-ip"></span>
+                    <button id="popup-close" onclick="closePopup()">✕</button>
+                </div>
+                <div class="popup-tabs">
+                    <button class="popup-tab active" id="tab-detail" onclick="switchTab('detail')">Detail</button>
+                    <button class="popup-tab" id="tab-port" onclick="switchTab('port')">Port</button>
+                </div>
+                <div id="panel-detail">
+                    <table style="width:100%;border-collapse:collapse;">
+                        <tbody id="detail-tbody"></tbody>
+                    </table>
+                </div>
+                <div id="panel-port">
+                    <table id="port-table">
+                        <thead>
+                            <tr>
+                                <th>Port</th>
+                                <th>State</th>
+                                <th>Service</th>
+                                <th>Version</th>
+                            </tr>
+                        </thead>
+                        <tbody id="port-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Stats bar -->
+            <div class="topo-stats-bar">
+                <div class="stat-pill">Hosts: <span id="statHosts">0</span></div>
+                <div class="stat-pill">Jobs: <span id="statJobs">0</span></div>
+                <div class="stat-pill">Open Ports: <span id="statPorts">0</span></div>
+            </div>
+
+            <!-- Empty state -->
+            <div class="topo-empty" id="topoEmpty" style="display:none;">
+                <div class="icon">🔍</div>
+                <p>ไม่มีข้อมูลที่ตรงกับ Filter</p>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+// ─── Raw scan data from Flask ───
+const ALL_SCANS = {{ scans_json | safe }};
+
+// ─── Color palette for jobs ───
+const JOB_COLORS = [
+    '#0d6efd','#198754','#dc3545','#fd7e14','#6f42c1',
+    '#20c997','#e83e8c','#17a2b8','#ffc107','#6c757d'
+];
+
+// ─── State ───
+let selectedDates = new Set();
+let selectedJobs  = new Set();
+let allDates      = [];
+let allJobs       = [];
+let visNetwork    = null;
+let nodesDataArr  = [];
+
+// ─── Device SVG icons (same as scan_detail) ───
+const CISCO_ICONS = {
+  pc: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 70" width="80" height="70">
+    <g fill="none" stroke="#4a9fd4" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="8" y="4" width="48" height="34" rx="3"/>
+      <rect x="13" y="9" width="38" height="24" rx="1.5" fill="#d6ecf8" stroke="#4a9fd4" stroke-width="1.4"/>
+      <circle cx="32" cy="17" r="4.5" fill="#4a9fd4" stroke="none"/>
+      <path d="M22 30 Q32 22 42 30" fill="#4a9fd4" stroke="none"/>
+      <line x1="32" y1="38" x2="32" y2="46"/>
+      <line x1="20" y1="46" x2="44" y2="46"/>
+      <rect x="10" y="50" width="44" height="8" rx="2"/>
+      <line x1="14" y1="53" x2="50" y2="53" stroke-width="1"/>
+      <line x1="14" y1="56" x2="50" y2="56" stroke-width="1"/>
+    </g>
+  </svg>`,
+  windows: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 70" width="80" height="70">
+    <g fill="none" stroke="#4a9fd4" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="8" y="4" width="48" height="34" rx="3"/>
+      <rect x="13" y="9" width="38" height="24" rx="1.5" fill="#d6ecf8" stroke="#4a9fd4" stroke-width="1.4"/>
+      <rect x="20" y="14" width="8" height="8" rx="1" fill="#4a9fd4" stroke="none"/>
+      <rect x="30" y="14" width="8" height="8" rx="1" fill="#4a9fd4" stroke="none"/>
+      <rect x="20" y="24" width="8" height="8" rx="1" fill="#4a9fd4" stroke="none"/>
+      <rect x="30" y="24" width="8" height="8" rx="1" fill="#4a9fd4" stroke="none"/>
+      <line x1="32" y1="38" x2="32" y2="46"/>
+      <line x1="20" y1="46" x2="44" y2="46"/>
+      <rect x="10" y="50" width="44" height="8" rx="2"/>
+    </g>
+  </svg>`,
+  linux: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 70" width="80" height="70">
+    <g transform="translate(40,38) scale(0.72)" fill="none" stroke="#4a9fd4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <ellipse cx="0" cy="18" rx="28" ry="36" fill="#d6ecf8" stroke="#4a9fd4"/>
+      <ellipse cx="0" cy="22" rx="17" ry="26" fill="#ffffff" stroke="#4a9fd4" stroke-width="1.3"/>
+      <ellipse cx="0" cy="-18" rx="22" ry="22" fill="#d6ecf8" stroke="#4a9fd4"/>
+      <ellipse cx="0" cy="-14" rx="13" ry="14" fill="#ffffff" stroke="#4a9fd4" stroke-width="1.3"/>
+      <circle cx="-8" cy="-22" r="3.5" fill="#4a9fd4" stroke="none"/>
+      <circle cx="-9" cy="-23" r="1" fill="#ffffff" stroke="none"/>
+      <circle cx="8" cy="-22" r="3.5" fill="#4a9fd4" stroke="none"/>
+      <circle cx="7" cy="-23" r="1" fill="#ffffff" stroke="none"/>
+      <path d="M-5 -8 Q0 -3 5 -8 Q3 -12 -3 -12 Z" fill="#f0a500" stroke="#c87800" stroke-width="1.2"/>
+      <path d="M-28 -6 Q-42 6 -28 28 Q-18 14 -18 -2 Z" fill="#d6ecf8" stroke="#4a9fd4"/>
+      <path d="M28 -6 Q42 6 28 28 Q18 14 18 -2 Z" fill="#d6ecf8" stroke="#4a9fd4"/>
+      <path d="M-16 52 Q-22 60 -28 57 Q-24 66 -14 64 Q-8 62 -6 54 Z" fill="#f0a500" stroke="#c87800" stroke-width="1.2"/>
+      <path d="M16 52 Q22 60 28 57 Q24 66 14 64 Q8 62 6 54 Z" fill="#f0a500" stroke="#c87800" stroke-width="1.2"/>
+    </g>
+  </svg>`,
+  mac: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 70" width="80" height="70">
+    <g fill="none" stroke="#4a9fd4" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="6" y="4" width="52" height="38" rx="4"/>
+      <rect x="11" y="9" width="42" height="28" rx="2" fill="#d6ecf8" stroke="#4a9fd4" stroke-width="1.4"/>
+      <path d="M32 16 Q32 12 36 12 Q36 16 32 16Z" fill="#4a9fd4" stroke="none"/>
+      <path d="M28 16 Q24 16 24 22 Q24 28 28 28 Q30 26 32 26 Q34 26 36 28 Q40 28 40 22 Q40 16 36 16 Q34 18 32 18 Q30 18 28 16Z" fill="#4a9fd4" stroke="none"/>
+      <path d="M32 42 L32 50 Q28 52 36 52" stroke-width="2"/>
+      <ellipse cx="32" cy="52" rx="12" ry="3"/>
+    </g>
+  </svg>`,
+  router: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 70" width="80" height="70">
+    <g fill="none" stroke="#4a9fd4" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <ellipse cx="32" cy="18" rx="22" ry="7"/>
+      <line x1="10" y1="18" x2="10" y2="36"/>
+      <line x1="54" y1="18" x2="54" y2="36"/>
+      <ellipse cx="32" cy="36" rx="22" ry="7" fill="#d6ecf8" stroke="#4a9fd4" stroke-width="1.4"/>
+      <line x1="20" y1="18" x2="14" y2="4"/>
+      <line x1="44" y1="18" x2="50" y2="4"/>
+      <circle cx="14" cy="4" r="2" fill="#4a9fd4" stroke="none"/>
+      <circle cx="50" cy="4" r="2" fill="#4a9fd4" stroke="none"/>
+      <circle cx="24" cy="36" r="2" fill="#4a9fd4" stroke="none"/>
+      <circle cx="32" cy="36" r="2" fill="#4a9fd4" stroke="none"/>
+      <circle cx="40" cy="36" r="2" fill="#4a9fd4" stroke="none"/>
+    </g>
+  </svg>`,
+  switch: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 70" width="80" height="70">
+    <g fill="none" stroke="#4a9fd4" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="6" y="22" width="52" height="22" rx="3"/>
+      <rect x="12" y="28" width="6" height="10" rx="1" fill="#d6ecf8" stroke="#4a9fd4" stroke-width="1.4"/>
+      <rect x="21" y="28" width="6" height="10" rx="1" fill="#d6ecf8" stroke="#4a9fd4" stroke-width="1.4"/>
+      <rect x="30" y="28" width="6" height="10" rx="1" fill="#d6ecf8" stroke="#4a9fd4" stroke-width="1.4"/>
+      <rect x="39" y="28" width="6" height="10" rx="1" fill="#d6ecf8" stroke="#4a9fd4" stroke-width="1.4"/>
+      <circle cx="50" cy="30" r="1.5" fill="#4a9fd4" stroke="none"/>
+      <circle cx="50" cy="35" r="1.5" fill="#4a9fd4" stroke="none"/>
+      <circle cx="50" cy="40" r="1.5" fill="#4a9fd4" stroke="none"/>
+      <line x1="16" y1="22" x2="10" y2="10"/>
+      <line x1="48" y1="22" x2="54" y2="10"/>
+    </g>
+  </svg>`,
+  mobile: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 70" width="80" height="70">
+    <g fill="none" stroke="#4a9fd4" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="18" y="4" width="28" height="52" rx="5"/>
+      <rect x="22" y="10" width="20" height="34" rx="1.5" fill="#d6ecf8" stroke="#4a9fd4" stroke-width="1.4"/>
+      <circle cx="32" cy="50" r="3"/>
+      <line x1="28" y1="7" x2="36" y2="7"/>
+    </g>
+  </svg>`,
+  printer: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 70" width="80" height="70">
+    <g fill="none" stroke="#4a9fd4" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="8" y="24" width="48" height="26" rx="3"/>
+      <rect x="14" y="10" width="36" height="16" rx="2"/>
+      <rect x="16" y="38" width="32" height="18" rx="1.5" fill="#d6ecf8" stroke="#4a9fd4" stroke-width="1.4"/>
+      <line x1="20" y1="43" x2="44" y2="43" stroke-width="1.2"/>
+      <line x1="20" y1="47" x2="44" y2="47" stroke-width="1.2"/>
+      <circle cx="46" cy="30" r="2" fill="#4a9fd4" stroke="none"/>
+    </g>
+  </svg>`,
+  camera: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 70" width="80" height="70">
+    <g fill="none" stroke="#4a9fd4" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M8 20 L20 14 L20 54 L8 48 Z"/>
+      <rect x="20" y="10" width="40" height="48" rx="4"/>
+      <circle cx="40" cy="34" r="12" fill="#d6ecf8" stroke="#4a9fd4" stroke-width="1.6"/>
+      <circle cx="40" cy="34" r="6" fill="#4a9fd4" stroke="none" opacity="0.35"/>
+      <circle cx="40" cy="34" r="2.5" fill="#4a9fd4" stroke="none"/>
+    </g>
+  </svg>`,
+  unknown: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 70" width="80" height="70">
+    <g fill="none" stroke="#4a9fd4" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="4" y="4" width="52" height="38" rx="4" fill="#d6ecf8" stroke="#4a9fd4"/>
+      <rect x="10" y="10" width="40" height="26" rx="2" fill="#ffffff" stroke="#4a9fd4" stroke-width="1.4"/>
+      <path d="M26 28 Q26 24 30 24 Q34 24 34 20 Q34 14 28 14 Q22 14 22 20" fill="none" stroke="#4a9fd4" stroke-width="2.5"/>
+      <circle cx="28" cy="31" r="1.8" fill="#4a9fd4" stroke="none"/>
+      <line x1="30" y1="42" x2="30" y2="50"/>
+      <line x1="18" y1="50" x2="42" y2="50"/>
+      <rect x="8" y="54" width="44" height="7" rx="2" fill="#d6ecf8" stroke="#4a9fd4"/>
+    </g>
+  </svg>`,
+  gateway: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 70" width="80" height="70">
+    <g fill="none" stroke="#1a6db5" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M14 44 Q10 44 10 38 Q10 30 18 30 Q18 22 26 20 Q34 14 44 20 Q52 18 56 26 Q64 26 64 36 Q64 44 56 44 Z" fill="#d6ecf8" stroke="#1a6db5" stroke-width="2"/>
+      <path d="M28 56 Q32 50 40 50 Q48 50 52 56" stroke-width="2"/>
+      <path d="M32 62 Q36 58 40 58 Q44 58 48 62" stroke-width="2"/>
+    </g>
+  </svg>`
+};
+
+// Convert SVG → base64 data URI
+const ICON_URI = {};
+function svgToDataUri(s) { return 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(s))); }
+for (const [k,v] of Object.entries(CISCO_ICONS)) { ICON_URI[k] = svgToDataUri(v); }
+
+function osIconKey(osStr) {
+    if (!osStr) return 'pc';
+    const s = osStr.toLowerCase();
+    if (s.includes('windows'))  return 'windows';
+    if (s.includes('linux')||s.includes('ubuntu')||s.includes('debian')||s.includes('centos')||s.includes('kali')) return 'linux';
+    if (s.includes('mac')||s.includes('darwin')) return 'mac';
+    if (s.includes('switch'))   return 'switch';
+    if (s.includes('cisco')||s.includes('router')) return 'router';
+    if (s.includes('android')||s.includes('ios')||s.includes('iphone')||s.includes('mobile')) return 'mobile';
+    if (s.includes('printer'))  return 'printer';
+    if (s.includes('camera'))   return 'camera';
+    return 'unknown';
+}
+function osEmoji(osStr) {
+    if (!osStr) return '🖥️';
+    const s = osStr.toLowerCase();
+    if (s.includes('windows')) return '🪟';
+    if (s.includes('linux')||s.includes('ubuntu')||s.includes('debian')) return '🐧';
+    if (s.includes('mac')||s.includes('darwin')) return '🍎';
+    if (s.includes('cisco')||s.includes('router')||s.includes('switch')) return '📡';
+    if (s.includes('android')) return '🤖';
+    if (s.includes('ios')||s.includes('iphone')) return '📱';
+    if (s.includes('printer')) return '🖨️';
+    if (s.includes('camera')) return '📷';
+    return '🖥️';
+}
+function osHeaderColor(osStr) {
+    if (!osStr) return { bg:'#2c3e50', fg:'#ecf0f1' };
+    const s = osStr.toLowerCase();
+    if (s.includes('windows')) return { bg:'#0078d7', fg:'#ffffff' };
+    if (s.includes('linux')||s.includes('ubuntu')) return { bg:'#e67e22', fg:'#ffffff' };
+    if (s.includes('mac')||s.includes('darwin')) return { bg:'#555555', fg:'#ffffff' };
+    if (s.includes('cisco')||s.includes('router')||s.includes('switch')) return { bg:'#007ecc', fg:'#ffffff' };
+    if (s.includes('android')) return { bg:'#3ddc84', fg:'#000000' };
+    return { bg:'#2c3e50', fg:'#ecf0f1' };
+}
+function portDotColor(portCount) {
+    if (portCount <= 2)   return '#2ecc71';
+    if (portCount <= 6)   return '#f1c40f';
+    return '#e74c3c';
+}
+
+// ─── Filter Logic ───
+function init() {
+    const dateSet = new Set();
+    const jobMap  = {};
+    ALL_SCANS.forEach(s => {
+        dateSet.add(s.date);
+        if (!jobMap[s.job_id]) {
+            jobMap[s.job_id] = { id: s.job_id, name: s.job_name || `Job #${s.job_id}`, scan_type: s.scan_type, count: 0 };
+        }
+        jobMap[s.job_id].count += s.hosts ? s.hosts.length : 0;
+    });
+    allDates = [...dateSet].sort().reverse();
+    allJobs  = Object.values(jobMap);
+    allDates.forEach(d => selectedDates.add(d));
+    allJobs.forEach(j => selectedJobs.add(j.id));
+    renderFilterPanels();
+    buildAndDraw();
+}
+
+function renderFilterPanels() {
+    document.getElementById('dateFilterList').innerHTML = allDates.map(d => `
+        <label class="filter-date-item">
+            <input type="checkbox" ${selectedDates.has(d) ? 'checked' : ''}
+                   onchange="toggleDate('${d}', this.checked)">
+            <span>${formatDate(d)}</span>
+        </label>
+    `).join('');
+    document.getElementById('jobFilterList').innerHTML = allJobs.map((j, i) => {
+        const color = JOB_COLORS[i % JOB_COLORS.length];
+        return `<div class="job-chip ${selectedJobs.has(j.id) ? 'selected' : ''}" onclick="toggleJob(${j.id}, this)">
+            <div class="job-chip-name" title="${j.name}">${j.name}</div>
+            <div class="job-chip-count">${j.count}</div>
+        </div>`;
+    }).join('');
+}
+
+function toggleDate(date, checked) {
+    if (checked) selectedDates.add(date); else selectedDates.delete(date);
+    buildAndDraw();
+}
+function toggleJob(id, el) {
+    if (selectedJobs.has(id)) { selectedJobs.delete(id); el.classList.remove('selected'); }
+    else { selectedJobs.add(id); el.classList.add('selected'); }
+    buildAndDraw();
+}
+function quickFilter(mode) {
+    document.querySelectorAll('.qf-btn').forEach(b => b.classList.remove('active'));
+    const today = new Date().toISOString().slice(0,10);
+    const week  = new Date(Date.now() - 7*86400000).toISOString().slice(0,10);
+    if (mode === 'all') {
+        allDates.forEach(d => selectedDates.add(d));
+        document.getElementById('btnAll').classList.add('active');
+    } else if (mode === 'today') {
+        selectedDates = new Set(allDates.filter(d => d === today));
+        document.getElementById('btnToday').classList.add('active');
+    } else if (mode === 'week') {
+        selectedDates = new Set(allDates.filter(d => d >= week));
+        document.getElementById('btnWeek').classList.add('active');
+    }
+    renderFilterPanels();
+    buildAndDraw();
+}
+function resetFilters() {
+    allDates.forEach(d => selectedDates.add(d));
+    allJobs.forEach(j => selectedJobs.add(j.id));
+    renderFilterPanels();
+    quickFilter('all');
+}
+
+// ─── Build vis-network graph ───
+function buildGraphData() {
+    const filtered = ALL_SCANS.filter(s => selectedDates.has(s.date) && selectedJobs.has(s.job_id));
+    const hostMap = {};
+    const jobColorMap = {};
+    allJobs.forEach((j, i) => { jobColorMap[j.id] = JOB_COLORS[i % JOB_COLORS.length]; });
+    filtered.forEach(scan => {
+        (scan.hosts || []).forEach(h => {
+            if (!hostMap[h.ip]) {
+                hostMap[h.ip] = { ip: h.ip, mac: h.mac||'', os: h.os||h.status||'',
+                    hostname: h.hostname||'', ipv6: h.ipv6||'', mac_vendor: h.mac_vendor||'',
+                    ports: [], jobs: new Set() };
+            }
+            hostMap[h.ip].jobs.add(scan.job_id);
+            const existPorts = new Set(hostMap[h.ip].ports.map(p => p.port));
+            (h.ports || []).forEach(p => { if (!existPorts.has(p.port)) hostMap[h.ip].ports.push(p); });
+        });
+    });
+    return { hosts: Object.values(hostMap), filtered };
+}
+
+function buildAndDraw() {
+    closePopup();
+    const { hosts, filtered } = buildGraphData();
+    const totalPorts = hosts.reduce((s, h) => s + h.ports.length, 0);
+    document.getElementById('statHosts').textContent = hosts.length;
+    document.getElementById('statJobs').textContent  = filtered.length;
+    document.getElementById('statPorts').textContent = totalPorts;
+    document.getElementById('topoEmpty').style.display = hosts.length === 0 ? 'flex' : 'none';
+    document.getElementById('diagram-hint').style.display = hosts.length === 0 ? 'none' : 'block';
+
+    const nodesData = [], edgesData = [];
+    nodesDataArr = [];
+
+    // Gateway node
+    nodesData.push({
+        id: 0,
+        label: 'Gateway',
+        image: ICON_URI['gateway'],
+        shape: 'image',
+        size: 38,
+        font: { color:'#1a6db5', size:12, face:'monospace', bold:true, vadjust:6 },
+        title: 'Gateway / Router',
+        shadow: { enabled:true, color:'rgba(31,111,235,0.3)', size:14 },
+        fixed: true, x:0, y:0,
+        _device: null, _portCnt: 0
+    });
+    nodesDataArr.push(null);
+
+    hosts.forEach((device, i) => {
+        const iconKey  = osIconKey(device.os);
+        const portCnt  = device.ports.length;
+        const dotColor = portDotColor(portCnt);
+        const sortedPorts = portCnt > 0 ? [...device.ports].sort((a,b) => a.port - b.port) : [];
+
+        nodesData.push({
+            id: i + 1,
+            label: `<b>●</b> ${device.ip}`,
+            image: ICON_URI[iconKey],
+            shape: 'image',
+            size: 34,
+            font: {
+                color:'#1a3a5c', size:12, face:'monospace', vadjust:6, multi:'html',
+                bold: { color:dotColor, size:13, face:'monospace', mod:'bold' }
+            },
+            title: `คลิกเพื่อดูรายละเอียด: ${device.ip}`,
+            shadow: { enabled:true, color:'#00000018', size:8 },
+            _device: device, _portCnt: portCnt, _sortedPorts: sortedPorts
+        });
+        nodesDataArr.push(device);
+
+        edgesData.push({
+            from: 0, to: i + 1,
+            color: { color:'#90a4ae', highlight:'#607d8b', hover:'#607d8b' },
+            width: 1.6,
+            dashes: portCnt === 0,
+            smooth: false
+        });
+    });
+
+    const container = document.getElementById('topoCanvas');
+    if (visNetwork) { visNetwork.destroy(); visNetwork = null; }
+
+    if (hosts.length === 0) return;
+
+    visNetwork = new vis.Network(
+        container,
+        { nodes: new vis.DataSet(nodesData), edges: new vis.DataSet(edgesData) },
+        {
+            physics: {
+                solver: 'forceAtlas2Based',
+                forceAtlas2Based: { gravitationalConstant:-130, springLength:170, springConstant:0.04, damping:0.5 },
+                stabilization: { iterations:200 }
+            },
+            interaction: { hover:true, zoomView:true, tooltipDelay:300 },
+            layout: { improvedLayout:true }
+        }
+    );
+
+    visNetwork.on('hoverNode', () => { container.style.cursor = 'pointer'; });
+    visNetwork.on('blurNode',  () => { container.style.cursor = 'default'; });
+
+    visNetwork.on('click', function(params) {
+        if (!params.nodes.length || params.nodes[0] === 0) { closePopup(); return; }
+        const nodeId = params.nodes[0];
+        const allNodes = nodesData;
+        const node = allNodes[nodeId];
+        const dev  = node._device;
+        if (!dev) return;
+
+        const osStr = dev.os || '';
+        const hc    = osHeaderColor(osStr);
+        const icon  = osEmoji(osStr);
+
+        // Header
+        const header = document.getElementById('popup-header');
+        header.style.background = hc.bg;
+        document.getElementById('popup-icon').textContent = icon;
+        document.getElementById('popup-icon').style.background = 'rgba(255,255,255,0.18)';
+        const ipEl = document.getElementById('popup-ip');
+        ipEl.textContent  = dev.ip;
+        ipEl.style.color  = hc.fg;
+        const closeBtn = document.getElementById('popup-close');
+        closeBtn.style.background = 'rgba(0,0,0,0.25)';
+        closeBtn.style.color = hc.fg;
+
+        // Detail tab
+        const rows = [
+            ['Name:',   dev.hostname || dev.ip],
+            ['IPv4:',   dev.ip],
+            ['IPv6:',   dev.ipv6 || 'Not Available'],
+            ['MAC:',    (dev.mac && dev.mac !== 'Unknown') ? dev.mac : 'Unknown'],
+            ['Vendor:',  dev.mac_vendor || '–'],
+            ['OS:',     dev.os || '–'],
+            ['Ports:',  dev.ports.length + ' open'],
+        ];
+        document.getElementById('detail-tbody').innerHTML = rows.map(([l, v]) =>
+            `<tr><td style="color:#6c757d;font-size:.78rem;padding:4px 8px 4px 0;white-space:nowrap;">${l}</td><td style="font-size:.82rem;font-weight:500;padding:4px 0;">${v}</td></tr>`
+        ).join('');
+
+        // Port tab
+        const sortedPorts = node._sortedPorts || [];
+        document.getElementById('port-tbody').innerHTML = sortedPorts.length
+            ? sortedPorts.map(p => {
+                const stateColor = p.state === 'open' ? '#198754' : '#6c757d';
+                return `<tr>
+                    <td><span class="badge bg-primary">${p.port}/${(p.protocol||'tcp').toUpperCase()}</span></td>
+                    <td style="color:${stateColor};font-weight:600;">${p.state||'open'}</td>
+                    <td>${p.name||'–'}</td>
+                    <td style="color:#6c757d;font-size:.75rem;">${(p.version_info && p.version_info !== 'Unknown Version') ? p.version_info : '–'}</td>
+                </tr>`;
+              }).join('')
+            : `<tr><td colspan="4" style="text-align:center;color:#adb5bd;padding:20px;">No open ports</td></tr>`;
+
+        switchTab('detail');
+
+        // Position popup
+        const canvasRect = container.getBoundingClientRect();
+        const domPos = params.pointer.DOM;
+        const popup = document.getElementById('node-popup');
+        popup.style.display = 'block';
+        let px = domPos.x + 16;
+        let py = domPos.y - 20;
+        if (px + 390 > canvasRect.width) px = domPos.x - 390;
+        if (py + 420 > canvasRect.height) py = canvasRect.height - 430;
+        if (py < 10) py = 10;
+        popup.style.left = px + 'px';
+        popup.style.top  = py + 'px';
+        document.getElementById('diagram-hint').style.display = 'none';
+    });
+}
+
+function closePopup() {
+    document.getElementById('node-popup').style.display = 'none';
+    if (visNetwork) visNetwork.unselectAll();
+    if (document.getElementById('diagram-hint'))
+        document.getElementById('diagram-hint').style.display = 'block';
+}
+
+function switchTab(tab) {
+    const isDetail = tab === 'detail';
+    document.getElementById('panel-detail').style.display = isDetail ? 'block' : 'none';
+    document.getElementById('panel-port').style.display   = isDetail ? 'none' : 'block';
+    document.getElementById('tab-detail').className = 'popup-tab' + (isDetail ? ' active' : '');
+    document.getElementById('tab-port').className   = 'popup-tab' + (isDetail ? '' : ' active');
+}
+
+function formatDate(d) {
+    const dt = new Date(d + 'T00:00:00');
+    return dt.toLocaleDateString('th-TH', { year:'numeric', month:'short', day:'numeric' });
+}
+
+// ─── Go ───
+init();
+</script>
+
+{% endblock %}

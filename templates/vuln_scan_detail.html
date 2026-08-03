@@ -1,0 +1,1211 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+
+<div class="mb-4 d-flex gap-2 align-items-center flex-wrap">
+    <a href="{{ url_for('dashboard') }}"
+       class="btn btn-outline-secondary btn-sm">
+        &larr; Back to Dashboard
+    </a>
+
+    <!-- Export Dropdown Button -->
+    <div class="ms-auto">
+        <div class="dropdown">
+            <button class="btn btn-sm btn-export-main dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" class="me-1" viewBox="0 0 16 16">
+                    <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5"/>
+                    <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708z"/>
+                </svg>
+                Export
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end export-dropdown shadow-sm border-0 p-2">
+                <li>
+                    <button class="dropdown-item export-option rounded-2 px-3 py-2" onclick="openExportModal('csv')">
+                        <span class="export-icon csv-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" viewBox="0 0 16 16">
+                                <path d="M14 4.5V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.5zm-3 0A1.5 1.5 0 0 1 9.5 3V1L14 5.5zM8.5 8.5a.5.5 0 0 0-.5.5v1.793l-.646-.647a.5.5 0 0 0-.708.708l1.5 1.5a.5.5 0 0 0 .708 0l1.5-1.5a.5.5 0 0 0-.708-.708L9 10.793V9a.5.5 0 0 0-.5-.5"/>
+                            </svg>
+                        </span>
+                        <span class="export-label">
+                            <span class="export-name">Export as CSV</span>
+                            <span class="export-desc">ข้อมูลตาราง เปิดด้วย Excel</span>
+                        </span>
+                    </button>
+                </li>
+                <li><hr class="dropdown-divider my-1"></li>
+                <li>
+                    <button class="dropdown-item export-option rounded-2 px-3 py-2" onclick="openExportModal('pdf')">
+                        <span class="export-icon pdf-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" viewBox="0 0 16 16">
+                                <path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2M9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5z"/>
+                                <path d="M4.603 14.087a.81.81 0 0 1-.438-.42c-.195-.388-.13-.776.08-1.102.198-.307.526-.568.897-.787a7.68 7.68 0 0 1 1.482-.645 19.697 19.697 0 0 0 1.062-2.227 7.269 7.269 0 0 1-.43-1.295c-.086-.4-.119-.796-.046-1.136.075-.354.274-.672.65-.823.192-.077.4-.12.602-.077a.7.7 0 0 1 .477.365c.088.164.12.356.127.538.007.188-.012.396-.047.614-.084.51-.27 1.134-.52 1.794a10.954 10.954 0 0 0 .98 1.686 5.753 5.753 0 0 1 1.334.05c.364.066.734.195.96.465.12.144.193.32.2.518.007.192-.047.382-.138.563a1.04 1.04 0 0 1-.354.416.856.856 0 0 1-.51.138c-.331-.014-.654-.196-.933-.417a5.712 5.712 0 0 1-.911-.95 11.651 11.651 0 0 0-1.997.406 11.307 11.307 0 0 1-1.02 1.51c-.292.35-.609.656-.927.787a.793.793 0 0 1-.58.029zm1.379-1.901c-.166.076-.32.156-.459.238-.328.194-.541.383-.647.547-.094.145-.096.25-.04.361.01.022.02.036.026.044a.266.266 0 0 0 .035-.012c.137-.056.355-.235.635-.572a8.18 8.18 0 0 0 .45-.606zm1.64-1.33a12.71 12.71 0 0 1 1.01-.193 11.744 11.744 0 0 1-.51-.858 20.801 20.801 0 0 1-.5 1.05zm2.446.45c.15.163.296.3.435.41.24.19.407.253.498.256a.107.107 0 0 0 .07-.015.307.307 0 0 0 .094-.125.436.436 0 0 0 .059-.2.095.095 0 0 0-.026-.063c-.052-.062-.2-.152-.518-.209a3.876 3.876 0 0 0-.612-.053zM8.078 7.8a6.7 6.7 0 0 0 .2-.828c.031-.188.043-.343.038-.465a.613.613 0 0 0-.032-.198.517.517 0 0 0-.145.04c-.087.035-.158.106-.196.283-.04.192-.03.469.046.822.024.111.054.227.09.346z"/>
+                            </svg>
+                        </span>
+                        <span class="export-label">
+                            <span class="export-name">Export as PDF</span>
+                            <span class="export-desc"></span>
+                        </span>
+                    </button>
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- Export Filename Modal -->
+<div class="modal fade" id="exportModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:420px">
+        <div class="modal-content border-0 shadow-lg" style="border-radius:16px;overflow:hidden">
+            <div class="export-modal-header" id="exportModalHeader">
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        style="position:absolute;top:16px;right:16px;opacity:0.8"></button>
+                <div class="export-modal-icon" id="exportModalIcon"></div>
+                <h5 class="export-modal-title" id="exportModalTitle"></h5>
+                <p class="export-modal-sub" id="exportModalSub"></p>
+            </div>
+            <div class="modal-body px-4 py-3">
+                <label class="form-label fw-semibold mb-1" style="font-size:.85rem;color:#475569">
+                    ชื่อไฟล์
+                </label>
+                <div class="input-group">
+                    <input type="text" id="exportFilename" class="form-control export-filename-input"
+                           placeholder="กรอกชื่อไฟล์..." autocomplete="off">
+                    <span class="input-group-text export-ext-badge" id="exportExtBadge"></span>
+                </div>
+                <div class="mt-1" style="font-size:.75rem;color:#94a3b8">
+                    ชื่อไฟล์ที่จะดาวน์โหลด: <span id="exportFilenamePreview" class="fw-semibold text-dark"></span>
+                </div>
+            </div>
+            <div class="px-4 pb-4 pt-1">
+                <button class="btn w-100 export-confirm-btn" id="exportConfirmBtn" onclick="doExport()">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" class="me-1" viewBox="0 0 16 16">
+                        <path d=".5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5"/>
+                        <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708z"/>
+                    </svg>
+                    ดาวน์โหลด
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* ── Export Dropdown Button ── */
+.btn-export-main {
+    background: linear-gradient(135deg, #334155 0%, #1e293b 100%);
+    color: #fff;
+    border: none;
+    font-weight: 600;
+    letter-spacing: .3px;
+    box-shadow: 0 2px 6px rgba(30,41,59,0.3);
+    transition: all .2s;
+    padding: 6px 14px;
+}
+.btn-export-main:hover, .btn-export-main:focus, .btn-export-main.show {
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(30,41,59,0.4);
+    transform: translateY(-1px);
+}
+.btn-export-main::after { margin-left: 6px; }
+
+/* ── Dropdown Menu ── */
+.export-dropdown {
+    min-width: 220px;
+    border-radius: 12px !important;
+    padding: 8px !important;
+}
+.export-option {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: background .15s;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    width: 100%;
+    text-align: left;
+}
+.export-option:hover { background: #f1f5f9 !important; }
+.export-option:active { background: #e2e8f0 !important; }
+.export-icon {
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+}
+.csv-icon { background: #dcfce7; color: #166534; }
+.pdf-icon { background: #fee2e2; color: #991b1b; }
+.export-label { display: flex; flex-direction: column; line-height: 1.3; }
+.export-name { font-size: .875rem; font-weight: 600; color: #1e293b; }
+.export-desc { font-size: .72rem; color: #94a3b8; margin-top: 1px; }
+
+/* ── Export Modal ── */
+.export-modal-header {
+    padding: 24px 24px 18px;
+    position: relative;
+}
+.export-modal-icon {
+    width: 48px; height: 48px;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    margin-bottom: 10px;
+    background: rgba(255,255,255,0.2);
+}
+.export-modal-title { font-size: 1.05rem; font-weight: 700; color: #fff; margin: 0 0 2px; }
+.export-modal-sub { font-size: .78rem; color: rgba(255,255,255,0.75); margin: 0; }
+
+.export-filename-input {
+    border-right: 0;
+    border-radius: 8px 0 0 8px !important;
+    font-size: .9rem;
+    padding: 9px 12px;
+}
+.export-filename-input:focus { box-shadow: none; border-color: #cbd5e1; }
+.export-ext-badge {
+    background: #f1f5f9;
+    border-left: 0;
+    border-radius: 0 8px 8px 0 !important;
+    font-size: .8rem;
+    font-weight: 700;
+    color: #475569;
+    letter-spacing: .05em;
+    padding: 0 14px;
+}
+.export-confirm-btn {
+    font-weight: 600;
+    font-size: .9rem;
+    padding: 10px;
+    border-radius: 10px;
+    border: none;
+    color: #fff;
+    transition: all .15s;
+}
+.export-confirm-btn:hover { opacity: .9; color: #fff; transform: translateY(-1px); }
+</style>
+
+<script>
+let _exportType = 'csv';
+let _exportModal = null;
+const _csvUrl = "{{ url_for('export_csv', scan_id=job.id) }}";
+const _pdfUrl = "{{ url_for('export_pdf', scan_id=job.id) }}";
+const _defaultName = "scan_{{ job.id }}_{{ job.target | replace('.', '_') | replace('/', '_') }}";
+
+function openExportModal(type) {
+    _exportType = type;
+    const isCsv = type === 'csv';
+
+    const header = document.getElementById('exportModalHeader');
+    const icon   = document.getElementById('exportModalIcon');
+    header.style.background = isCsv
+        ? 'linear-gradient(135deg,#166534,#16a34a)'
+        : 'linear-gradient(135deg,#991b1b,#dc2626)';
+    icon.textContent = isCsv ? '📊' : '📄';
+    document.getElementById('exportModalTitle').textContent = isCsv ? 'Export as CSV' : 'Export as PDF';
+    document.getElementById('exportModalSub').textContent   = isCsv
+        ? 'ข้อมูลตาราง เปิดด้วย Excel หรือ Google Sheets'
+        : ' ';
+
+    document.getElementById('exportExtBadge').textContent = isCsv ? '.csv' : '.pdf';
+    const btn = document.getElementById('exportConfirmBtn');
+    btn.style.background = isCsv
+        ? 'linear-gradient(135deg,#166534,#16a34a)'
+        : 'linear-gradient(135deg,#991b1b,#dc2626)';
+
+    const input = document.getElementById('exportFilename');
+    input.value = _defaultName;
+    updatePreview();
+
+    if (!_exportModal) _exportModal = new bootstrap.Modal(document.getElementById('exportModal'));
+    _exportModal.show();
+    setTimeout(() => input.select(), 300);
+}
+
+function updatePreview() {
+    const name = document.getElementById('exportFilename').value.trim() || 'export';
+    const ext  = _exportType === 'csv' ? '.csv' : '.pdf';
+    document.getElementById('exportFilenamePreview').textContent = name + ext;
+}
+
+function doExport() {
+    const name = document.getElementById('exportFilename').value.trim() || _defaultName;
+    const url  = (_exportType === 'csv' ? _csvUrl : _pdfUrl) + '?filename=' + encodeURIComponent(name);
+    window.location.href = url;
+    _exportModal.hide();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('exportFilename').addEventListener('input', updatePreview);
+    document.getElementById('exportFilename').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') doExport();
+    });
+});
+</script>
+
+
+<!-- Scan Info Card -->
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-dark text-white">
+        <h5 class="mb-0">Scan Report: Job #{{ owner_seq }}</h5>
+    </div>
+    <div class="card-body bg-white">
+        <div class="row">
+            <div class="col-md-4">
+                <strong>Target:</strong> {{ job.target }}
+                {% if target_scan_count > 1 %}
+                <span class="badge ms-1" style="font-size:.7rem;background:#EAF3DE;color:#3B6D11;border:0.5px solid #C0DD97;" title="สแกนครั้งที่ {{ scan_seq }} จากทั้งหมด {{ target_scan_count }} ครั้ง">count: {{ scan_seq }}/{{ target_scan_count }}</span>
+                {% endif %}
+            </div>
+            <div class="col-md-4">
+                <strong>Scan Profile:</strong>
+                <span class="badge bg-info text-dark">{{ job.scan_type | scan_label }}</span>
+            </div>
+            <div class="col-md-4">
+                <strong>Timestamp:</strong>
+                {{ job.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== NETWORK DIAGRAM ===== -->
+{% if scan_data %}
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-dark text-white d-flex align-items-center justify-content-between">
+        <h6 class="mb-0">Network Diagram</h6>
+        <div id="network-legend" class="d-flex gap-2 align-items-center flex-wrap">
+            <span style="display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:20px;padding:3px 10px 3px 7px;">
+                <svg width="10" height="10"><circle cx="5" cy="5" r="5" fill="#2ecc71"/></svg>
+                <span style="font-size:.75rem;color:#e2e8f0;font-weight:500;">&lt; 3 Port</span>
+            </span>
+            <span style="display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:20px;padding:3px 10px 3px 7px;">
+                <svg width="10" height="10"><circle cx="5" cy="5" r="5" fill="#f1c40f"/></svg>
+                <span style="font-size:.75rem;color:#e2e8f0;font-weight:500;">3–6 Port</span>
+            </span>
+            <span style="display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:20px;padding:3px 10px 3px 7px;">
+                <svg width="10" height="10"><circle cx="5" cy="5" r="5" fill="#e74c3c"/></svg>
+                <span style="font-size:.75rem;color:#e2e8f0;font-weight:500;">&gt; 6 Port</span>
+            </span>
+
+        </div>
+    </div>
+
+    <!-- Canvas + floating popup wrapper -->
+    <div style="position:relative;">
+        <div id="network-canvas" style="width:100%;height:440px;background:#ffffff;cursor:default;"></div>
+
+        <!-- hint overlay (แสดงตอนยังไม่ได้คลิก) -->
+        <div id="diagram-hint"
+             style="position:absolute;bottom:12px;left:50%;transform:translateX(-50%);
+                    background:rgba(0,0,0,0.55);color:#adb5bd;
+                    padding:5px 14px;border-radius:20px;font-size:.75rem;
+                    pointer-events:none;white-space:nowrap;">
+            🖱️ คลิกที่ node อุปกรณ์ในกราฟด้านบนเพื่อดูรายละเอียด
+        </div>
+
+        <!-- floating popup ตอนคลิก node — card style with tabs -->
+        <div id="node-popup"
+             style="display:none;position:absolute;z-index:10;
+                    background:#fff;
+                    border-radius:14px;
+                    min-width:300px;max-width:380px;
+                    box-shadow:0 8px 32px rgba(0,0,0,0.22);
+                    font-size:.82rem;overflow:hidden;">
+
+            <!-- Header -->
+            <div id="popup-header"
+                 style="background:#1e2a3a;padding:12px 14px 10px;
+                        display:flex;align-items:center;gap:10px;
+                        border-bottom:1px solid #2d3f55;">
+                <div style="background:#2d4a6b;border-radius:8px;padding:6px 8px;font-size:1.3rem;line-height:1;">🖥️</div>
+                <span id="popup-ip" style="font-weight:700;font-size:.95rem;font-family:monospace;color:#ffffff;"></span>
+                <button onclick="closePopup()"
+                        style="margin-left:auto;background:#e74c3c;border:none;
+                               width:28px;height:28px;border-radius:8px;
+                               color:#fff;font-size:1rem;cursor:pointer;
+                               display:flex;align-items:center;justify-content:center;line-height:1;">✕</button>
+            </div>
+
+            <!-- Tabs -->
+            <div style="display:flex;border-bottom:1px solid #e0e0e0;">
+                <button id="tab-detail" onclick="switchTab('detail')"
+                        style="flex:1;padding:9px 0;border:none;background:#e8e8e8;
+                               font-weight:600;font-size:.82rem;cursor:pointer;
+                               border-right:1px solid #e0e0e0;">
+                    Detail
+                </button>
+                <button id="tab-port" onclick="switchTab('port')"
+                        style="flex:1;padding:9px 0;border:none;background:#fff;
+                               font-weight:600;font-size:.82rem;cursor:pointer;">
+                    Port
+                </button>
+            </div>
+
+            <!-- Detail Panel -->
+            <div id="panel-detail" style="padding:14px 16px;">
+                <table style="width:100%;border-collapse:collapse;font-size:.82rem;">
+                    <tbody id="detail-tbody"></tbody>
+                </table>
+            </div>
+
+            <!-- Port Panel -->
+            <div id="panel-port" style="display:none;max-height:260px;overflow-y:auto;">
+                <table style="width:100%;border-collapse:collapse;font-size:.78rem;">
+                    <thead>
+                        <tr style="border-bottom:1px solid #e0e0e0;">
+                            <th style="padding:7px 12px;text-align:left;color:#555;font-weight:600;">Port</th>
+                            <th style="padding:7px 8px;text-align:left;color:#555;font-weight:600;">State</th>
+                            <th style="padding:7px 8px;text-align:left;color:#555;font-weight:600;">Service</th>
+                            <th style="padding:7px 8px;text-align:left;color:#555;font-weight:600;">Version</th>
+                        </tr>
+                    </thead>
+                    <tbody id="port-tbody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+<!-- ===== SUMMARY STATS ===== -->
+{% if scan_data %}
+{% set ns = namespace(total_ports=0, total_cves=0) %}
+{% for d in scan_data %}
+  {% set ns.total_ports = ns.total_ports + (d.ports | length) %}
+  {% for p in d.ports %}
+    {% set ns.total_cves = ns.total_cves + (p.cves | length if p.cves else 0) %}
+  {% endfor %}
+{% endfor %}
+<div class="row g-3 mb-4">
+    <div class="col-4">
+        <div class="stat-card-v2">
+            <div class="stat-icon-v2" style="background:#E6F1FB;">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#185FA5" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+                </svg>
+            </div>
+            <div>
+                <p class="stat-label-v2">Hosts</p>
+                <p class="stat-value-v2">{{ scan_data | length }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-4">
+        <div class="stat-card-v2">
+            <div class="stat-icon-v2" style="background:#EAF3DE;">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3B6D11" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18" stroke-width="2.5"/><path d="M9 7h6M9 11h4"/>
+                </svg>
+            </div>
+            <div>
+                <p class="stat-label-v2">Open Ports</p>
+                <p class="stat-value-v2">{{ ns.total_ports }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-4">
+        <div class="stat-card-v2">
+            <div class="stat-icon-v2" style="background:#FEE2E2;">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                </svg>
+            </div>
+            <div>
+                <p class="stat-label-v2">CVE Found</p>
+                <p class="stat-value-v2" style="color:{% if ns.total_cves > 0 %}#dc2626{% else %}#0f172a{% endif %};">{{ ns.total_cves }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<style>
+.stat-card-v2 {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 20px 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    height: 100%;
+}
+.stat-icon-v2 {
+    width: 48px; height: 48px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+}
+.stat-label-v2 {
+    font-size: .78rem;
+    color: #94a3b8;
+    margin: 0 0 2px;
+    font-weight: 500;
+}
+.stat-value-v2 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0;
+    line-height: 1;
+}
+</style>
+
+
+
+<!-- ===== BUILD CVE LIST ===== -->
+{% set cve_list = [] %}
+{% for item in scan_data %}
+  {% for port in item.ports %}
+    {% for cve in port.cves if port.cves %}
+      {% set _ = cve_list.append({'ip': item.ip, 'port': port.port, 'service': port.name, 'cve': cve}) %}
+    {% endfor %}
+  {% endfor %}
+{% endfor %}
+
+<!-- ===== TAB SWITCH: Scan Result / CVE ===== -->
+<style>
+/* ── Tab Nav ── */
+.sd-tab-nav {
+    display: flex;
+    align-items: stretch;
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 6px 6px 0 0;
+    border-bottom: none;
+    overflow: hidden;
+}
+.sd-tab-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 20px;
+    font-size: .875rem;
+    font-weight: 500;
+    color: #6c757d;
+    background: #f8f9fa;
+    border: none;
+    cursor: pointer;
+    transition: color .15s, background .15s;
+    border-right: 1px solid #dee2e6;
+    position: relative;
+}
+.sd-tab-btn:last-child { border-right: none; }
+.sd-tab-btn .sd-tab-badge {
+    font-size: .7rem;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 20px;
+    background: #dee2e6;
+    color: #495057;
+    transition: background .15s, color .15s;
+}
+.sd-tab-btn.active {
+    background: #fff;
+    color: #212529;
+    font-weight: 600;
+}
+.sd-tab-btn.active::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 3px;
+    background: #212529;
+    border-radius: 3px 3px 0 0;
+}
+.sd-tab-btn.active .sd-tab-badge {
+    background: #212529;
+    color: #fff;
+}
+.sd-tab-btn.active.cve-tab .sd-tab-badge {
+    background: #dc3545;
+    color: #fff;
+}
+.sd-tab-btn.active.cve-tab::after { background: #dc3545; }
+
+/* ── Tab Content ── */
+.sd-tab-panel {
+    display: none;
+}
+.sd-tab-panel.active { display: block; }
+
+/* ── Severity Badge ── */
+.sev-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: .72rem;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 4px;
+}
+
+/* ── CVE Empty State ── */
+.sd-cve-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    gap: 10px;
+}
+.sd-cve-empty-icon {
+    width: 56px; height: 56px;
+    border-radius: 50%;
+    background: #dcfce7;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.6rem;
+}
+.sd-cve-empty p { margin: 0; color: #6c757d; font-size: .9rem; }
+.sd-cve-empty strong { color: #198754; }
+
+/* ── CVE badge ── */
+.zmp-cve-badge {
+    display: inline-block; font-size: .65rem;
+    font-weight: 600; padding: 2px 7px; border-radius: 4px; white-space: nowrap;
+}
+</style>
+
+<!-- Tab Nav -->
+<div class="sd-tab-nav mb-0">
+    <button class="sd-tab-btn active" id="sdTab-result" onclick="sdSwitchTab('result')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/>
+        </svg>
+        Scan Result
+        <span class="sd-tab-badge">{{ scan_data | length }}</span>
+    </button>
+    <button class="sd-tab-btn cve-tab {% if not cve_list %}disabled{% endif %}" id="sdTab-cve" onclick="sdSwitchTab('cve')"
+            {% if not cve_list %}style="opacity:.55;cursor:default;"{% endif %}>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+        </svg>
+        CVE / Vulnerability
+        <span class="sd-tab-badge" {% if cve_list %}style="background:#fecaca;color:#991b1b;"{% endif %}>{{ cve_list | length }}</span>
+    </button>
+</div>
+
+<!-- ── Panel: Scan Result — same card+table style as scan_detail.html ── -->
+<div class="sd-tab-panel active" id="sdPanel-result">
+    <div class="card p-0 shadow-sm border-0" style="border-radius:0 0 6px 6px;">
+        <table class="table table-hover mb-0 align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>IP Address</th>
+                    <th>MAC Address</th>
+                    <th>OS / Status</th>
+                    <th>Port</th>
+                    <th>Protocol</th>
+                    <th>State</th>
+                    <th>Service</th>
+                    <th>Version / CVE</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in scan_data %}
+                    {% if item.ports %}
+                        {% for port in item.ports %}
+                        <tr>
+                            {% if loop.first %}
+                            <td class="fw-bold" rowspan="{{ item.ports | length }}">{{ item.ip }}</td>
+                            <td rowspan="{{ item.ports | length }}">
+                                {% if item.mac and item.mac != 'Unknown' %}
+                                    {{ item.mac }}
+                                    {% if item.mac_vendor %}<br><small class="text-muted">{{ item.mac_vendor }}</small>{% endif %}
+                                {% else %}
+                                    <span class="text-muted">—</span>
+                                {% endif %}
+                            </td>
+                            <td rowspan="{{ item.ports | length }}">{{ item.status if item.status else item.os }}</td>
+                            {% endif %}
+                            <td>{{ port.port }}</td>
+                            <td>{{ port.protocol | lower if port.protocol else 'tcp' }}</td>
+                            <td>open</td>
+                            <td>{% if port.name %}{{ port.name }}{% else %}—{% endif %}</td>
+                            <td class="text-secondary">
+                                {% if port.version_info and port.version_info != 'Unknown Version' %}
+                                    {{ port.version_info }}
+                                {% else %}
+                                    <i class="text-muted">Version unknown</i>
+                                {% endif %}
+                                {% if port.cves %}
+                                <div class="d-flex flex-column gap-1 mt-1">
+                                  {% for cve in port.cves %}
+                                    {% set sev = cve.severity | upper %}
+                                    {% set sev_color = {'CRITICAL':'#dc2626','HIGH':'#ea580c','MEDIUM':'#ca8a04','LOW':'#16a34a'}.get(sev,'#64748b') %}
+                                    {% set sev_bg    = {'CRITICAL':'#fee2e2','HIGH':'#ffedd5','MEDIUM':'#fef9c3','LOW':'#dcfce7'}.get(sev,'#f1f5f9') %}
+                                    <div class="d-flex align-items-center gap-1 flex-wrap">
+                                      <a href="https://nvd.nist.gov/vuln/detail/{{ cve.cve_id }}" target="_blank"
+                                         class="text-decoration-none d-inline-block" title="{{ cve.description }}">
+                                        <span class="zmp-cve-badge" style="background:{{ sev_bg }};color:{{ sev_color }};border:1px solid {{ sev_color }}40;">
+                                          {{ cve.cve_id }}{% if cve.cvss_score %} · <b>{{ cve.cvss_score }}</b>{% endif %}
+                                        </span>
+                                      </a>
+                                      {% if cve.cwe_name %}
+                                      <span style="font-size:.65rem;background:#f1f5f9;color:#475569;border:1px solid #cbd5e1;border-radius:4px;padding:1px 5px;white-space:nowrap;font-weight:500;">
+                                        {{ cve.cwe_name }}
+                                      </span>
+                                      {% endif %}
+                                    </div>
+                                  {% endfor %}
+                                </div>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                    <tr>
+                        <td class="fw-bold">{{ item.ip }}</td>
+                        <td>
+                            {% if item.mac and item.mac != 'Unknown' %}{{ item.mac }}
+                            {% else %}<span class="text-muted">—</span>{% endif %}
+                        </td>
+                        <td>{{ item.status if item.status else item.os }}</td>
+                        <td colspan="5"><span class="text-muted small">No ports open</span></td>
+                    </tr>
+                    {% endif %}
+                {% endfor %}
+                {% if not scan_data %}
+                <tr>
+                    <td colspan="8" class="text-center text-muted p-4">No data found or scan failed.</td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- ── Panel: CVE ── -->
+<div class="sd-tab-panel" id="sdPanel-cve">
+    <div class="card p-0 shadow-sm border-0" style="border-radius:0 0 6px 6px;">
+    {% if cve_list %}
+        <table class="table table-hover mb-0 align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th style="width:12%">IP</th>
+                    <th style="width:8%">Port</th>
+                    <th style="width:9%">Service</th>
+                    <th style="width:15%">CVE ID</th>
+                    <th style="width:8%">CVSS</th>
+                    <th style="width:11%">Severity</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for entry in cve_list %}
+                {% set sev = entry.cve.severity | upper %}
+                {% set sev_color = {
+                    'CRITICAL': '#dc2626',
+                    'HIGH':     '#ea580c',
+                    'MEDIUM':   '#ca8a04',
+                    'LOW':      '#16a34a',
+                }.get(sev, '#64748b') %}
+                {% set sev_bg = {
+                    'CRITICAL': '#fee2e2',
+                    'HIGH':     '#ffedd5',
+                    'MEDIUM':   '#fef9c3',
+                    'LOW':      '#dcfce7',
+                }.get(sev, '#f1f5f9') %}
+                <tr>
+                    <td class="fw-bold font-monospace small">{{ entry.ip }}</td>
+                    <td class="font-monospace small">{{ entry.port }}</td>
+                    <td class="small">{{ entry.service or '?' }}</td>
+                    <td>
+                        <a href="https://nvd.nist.gov/vuln/detail/{{ entry.cve.cve_id }}"
+                           target="_blank" class="font-monospace fw-semibold text-decoration-none d-inline-flex align-items-center gap-1 small"
+                           style="color:#1d4ed8;">
+                            {{ entry.cve.cve_id }}
+                            <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8.636 3.5a.5.5 0 0 0-.5-.5H1.5A1.5 1.5 0 0 0 0 4.5v10A1.5 1.5 0 0 0 1.5 16h10a1.5 1.5 0 0 0 1.5-1.5V7.864a.5.5 0 0 0-1 0V14.5a.5.5 0 0 1-.5.5h-10a.5.5 0 0 1-.5-.5v-10a.5.5 0 0 1 .5-.5h6.636a.5.5 0 0 0 .5-.5"/><path fill-rule="evenodd" d="M16 .5a.5.5 0 0 0-.5-.5h-5a.5.5 0 0 0 0 1h3.793L6.146 9.146a.5.5 0 1 0 .708.708L15 1.707V5.5a.5.5 0 0 0 1 0z"/></svg>
+                        </a>
+                        {% if entry.cve.cwe_name %}
+                        <div class="mt-1">
+                          <span style="font-size:.68rem;background:#f1f5f9;color:#475569;border:1px solid #cbd5e1;border-radius:4px;padding:1px 6px;font-weight:500;display:inline-block;">
+                            {{ entry.cve.cwe_name }}
+                          </span>
+                        </div>
+                        {% endif %}
+                    </td>
+                    <td class="fw-bold small" style="color:{{ sev_color }};font-family:monospace;">
+                        {{ entry.cve.cvss_score if entry.cve.cvss_score else '—' }}
+                    </td>
+                    <td>
+                        <span class="sev-badge" style="background:{{ sev_bg }};color:{{ sev_color }};">
+                            {% if sev == 'CRITICAL' %}🔴{% elif sev == 'HIGH' %}🟠{% elif sev == 'MEDIUM' %}🟡{% else %}🟢{% endif %}
+                            {{ sev }}
+                        </span>
+                    </td>
+                    <td class="small text-secondary" style="max-width:320px;">{{ entry.cve.description or '—' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+    <div class="sd-cve-empty">
+        <div class="sd-cve-empty-icon">✅</div>
+        <strong>No CVEs Found</strong>
+        <p>ไม่พบช่องโหว่ CVE จากการสแกนครั้งนี้</p>
+    </div>
+    {% endif %}
+    </div>
+</div>
+
+<script>
+function sdSwitchTab(tab) {
+    ['result', 'cve'].forEach(function(t) {
+        document.getElementById('sdTab-' + t).classList.toggle('active', t === tab);
+        document.getElementById('sdPanel-' + t).classList.toggle('active', t === tab);
+    });
+}
+</script>
+
+
+<style>
+.port-chip {
+    display: inline-flex;
+    flex-direction: column;
+    background: #f8f9fa;
+    border-radius: 6px;
+    padding: 5px 9px;
+    font-size: .72rem;
+    border: 1px solid #dee2e6;
+    margin: 3px;
+    font-family: monospace;
+    min-width: 72px;
+}
+.port-chip.critical { border-color:#ff2d55; background:#fff5f7; }
+.port-chip.critical .pnum { color:#ff2d55; font-weight:700; }
+.port-chip.high { border-color:#fd7e14; background:#fff8f0; }
+.port-chip.high .pnum { color:#fd7e14; font-weight:700; }
+.port-chip.medium { border-color:#ffc107; background:#fffdf0; }
+.port-chip.medium .pnum { color:#856404; font-weight:700; }
+.port-chip.low { border-color:#198754; background:#f0fff4; }
+.port-chip.low .pnum { color:#198754; font-weight:700; }
+.pnum { font-size:.82rem; }
+.psvc { color:#6c757d; }
+.pver { color:#adb5bd; font-size:.63rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:160px; }
+</style>
+
+<script>
+{% if scan_data %}
+const SCAN_DATA = {{ scan_data | tojson }};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Cisco-style SVG icons (outline, สีฟ้า #4a9fd4)  — returns data URI string
+// ═══════════════════════════════════════════════════════════════════════════
+const CISCO_ICONS = {
+
+  // ── Generic PC / Workstation ──────────────────────────────────────────────
+  pc: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 70" width="80" height="70">
+    <g fill="none" stroke="#4a9fd4" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <!-- monitor body -->
+      <rect x="8" y="4" width="48" height="34" rx="3"/>
+      <!-- screen -->
+      <rect x="13" y="9" width="38" height="24" rx="1.5" fill="#d6ecf8" stroke="#4a9fd4" stroke-width="1.4"/>
+      <!-- person silhouette on screen -->
+      <circle cx="32" cy="17" r="4.5" fill="#4a9fd4" stroke="none"/>
+      <path d="M22 30 Q32 22 42 30" fill="#4a9fd4" stroke="none"/>
+      <!-- neck/stand -->
+      <line x1="32" y1="38" x2="32" y2="46"/>
+      <!-- base -->
+      <line x1="20" y1="46" x2="44" y2="46"/>
+      <!-- keyboard -->
+      <rect x="10" y="50" width="44" height="8" rx="2"/>
+      <line x1="14" y1="53" x2="50" y2="53" stroke-width="1"/>
+      <line x1="14" y1="56" x2="50" y2="56" stroke-width="1"/>
+    </g>
+  </svg>`,
+
+  // ── Windows ───────────────────────────────────────────────────────────────
+  windows: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 70" width="80" height="70">
+    <g fill="none" stroke="#4a9fd4" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="8" y="4" width="48" height="34" rx="3"/>
+      <rect x="13" y="9" width="38" height="24" rx="1.5" fill="#d6ecf8" stroke="#4a9fd4" stroke-width="1.4"/>
+      <!-- Windows logo on screen -->
+      <rect x="20" y="14" width="8" height="8" rx="1" fill="#4a9fd4" stroke="none"/>
+      <rect x="30" y="14" width="8" height="8" rx="1" fill="#4a9fd4" stroke="none"/>
+      <rect x="20" y="24" width="8" height="8" rx="1" fill="#4a9fd4" stroke="none"/>
+      <rect x="30" y="24" width="8" height="8" rx="1" fill="#4a9fd4" stroke="none"/>
+      <line x1="32" y1="38" x2="32" y2="46"/>
+      <line x1="20" y1="46" x2="44" y2="46"/>
+      <rect x="10" y="50" width="44" height="8" rx="2"/>
+    </g>
+  </svg>`,
+
+  // ── Linux / Tux Penguin ───────────────────────────────────────────────────
+  linux: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 70" width="80" height="70">
+    <g transform="translate(40,38) scale(0.72)" fill="none" stroke="#4a9fd4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <ellipse cx="0" cy="18" rx="28" ry="36" fill="#d6ecf8" stroke="#4a9fd4"/>
+      <ellipse cx="0" cy="22" rx="17" ry="26" fill="#ffffff" stroke="#4a9fd4" stroke-width="1.3"/>
+      <ellipse cx="0" cy="-18" rx="22" ry="22" fill="#d6ecf8" stroke="#4a9fd4"/>
+      <ellipse cx="0" cy="-14" rx="13" ry="14" fill="#ffffff" stroke="#4a9fd4" stroke-width="1.3"/>
+      <circle cx="-8" cy="-22" r="3.5" fill="#4a9fd4" stroke="none"/>
+      <circle cx="-9" cy="-23" r="1" fill="#ffffff" stroke="none"/>
+      <circle cx="8" cy="-22" r="3.5" fill="#4a9fd4" stroke="none"/>
+      <circle cx="7" cy="-23" r="1" fill="#ffffff" stroke="none"/>
+      <path d="M-5 -8 Q0 -3 5 -8 Q3 -12 -3 -12 Z" fill="#f0a500" stroke="#c87800" stroke-width="1.2"/>
+      <path d="M-28 -6 Q-42 6 -28 28 Q-18 14 -18 -2 Z" fill="#d6ecf8" stroke="#4a9fd4"/>
+      <path d="M28 -6 Q42 6 28 28 Q18 14 18 -2 Z" fill="#d6ecf8" stroke="#4a9fd4"/>
+      <path d="M-16 52 Q-22 60 -28 57 Q-24 66 -14 64 Q-8 62 -6 54 Z" fill="#f0a500" stroke="#c87800" stroke-width="1.2"/>
+      <path d="M16 52 Q22 60 28 57 Q24 66 14 64 Q8 62 6 54 Z" fill="#f0a500" stroke="#c87800" stroke-width="1.2"/>
+      <path d="M0 -38 Q-3 -46 -4 -52 Q0 -44 4 -52 Q3 -46 0 -38Z" fill="#4a9fd4" stroke="none"/>
+    </g>
+  </svg>`,
+
+  // ── macOS ─────────────────────────────────────────────────────────────────
+  mac: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 70" width="80" height="70">
+    <g fill="none" stroke="#4a9fd4" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <!-- iMac thin display -->
+      <rect x="6" y="4" width="52" height="38" rx="4"/>
+      <rect x="11" y="9" width="42" height="28" rx="2" fill="#d6ecf8" stroke="#4a9fd4" stroke-width="1.4"/>
+      <!-- Apple logo outline -->
+      <path d="M32 16 Q32 12 36 12 Q36 16 32 16Z" fill="#4a9fd4" stroke="none"/>
+      <path d="M28 16 Q24 16 24 22 Q24 28 28 28 Q30 26 32 26 Q34 26 36 28 Q40 28 40 22 Q40 16 36 16 Q34 18 32 18 Q30 18 28 16Z" fill="#4a9fd4" stroke="none"/>
+      <!-- thin stand -->
+      <path d="M32 42 L32 50 Q28 52 36 52" stroke-width="2"/>
+      <!-- base oval -->
+      <ellipse cx="32" cy="52" rx="12" ry="3"/>
+    </g>
+  </svg>`,
+
+  // ── Router / Cisco / Gateway ──────────────────────────────────────────────
+  router: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 70" width="80" height="70">
+    <g fill="none" stroke="#4a9fd4" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <!-- cylinder body (router) -->
+      <ellipse cx="32" cy="18" rx="22" ry="7"/>
+      <line x1="10" y1="18" x2="10" y2="36"/>
+      <line x1="54" y1="18" x2="54" y2="36"/>
+      <ellipse cx="32" cy="36" rx="22" ry="7" fill="#d6ecf8" stroke="#4a9fd4" stroke-width="1.4"/>
+      <!-- antennas -->
+      <line x1="20" y1="18" x2="14" y2="4"/>
+      <line x1="44" y1="18" x2="50" y2="4"/>
+      <circle cx="14" cy="4" r="2" fill="#4a9fd4" stroke="none"/>
+      <circle cx="50" cy="4" r="2" fill="#4a9fd4" stroke="none"/>
+      <!-- port dots -->
+      <circle cx="24" cy="36" r="2" fill="#4a9fd4" stroke="none"/>
+      <circle cx="32" cy="36" r="2" fill="#4a9fd4" stroke="none"/>
+      <circle cx="40" cy="36" r="2" fill="#4a9fd4" stroke="none"/>
+    </g>
+  </svg>`,
+
+  // ── Switch ────────────────────────────────────────────────────────────────
+  switch: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 70" width="80" height="70">
+    <g fill="none" stroke="#4a9fd4" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <!-- switch box -->
+      <rect x="6" y="22" width="52" height="22" rx="3"/>
+      <!-- ports -->
+      <rect x="12" y="28" width="6" height="10" rx="1" fill="#d6ecf8" stroke="#4a9fd4" stroke-width="1.4"/>
+      <rect x="21" y="28" width="6" height="10" rx="1" fill="#d6ecf8" stroke="#4a9fd4" stroke-width="1.4"/>
+      <rect x="30" y="28" width="6" height="10" rx="1" fill="#d6ecf8" stroke="#4a9fd4" stroke-width="1.4"/>
+      <rect x="39" y="28" width="6" height="10" rx="1" fill="#d6ecf8" stroke="#4a9fd4" stroke-width="1.4"/>
+      <!-- LED strip -->
+      <circle cx="50" cy="30" r="1.5" fill="#4a9fd4" stroke="none"/>
+      <circle cx="50" cy="35" r="1.5" fill="#4a9fd4" stroke="none"/>
+      <circle cx="50" cy="40" r="1.5" fill="#4a9fd4" stroke="none"/>
+      <!-- uplink cables -->
+      <line x1="16" y1="22" x2="10" y2="10"/>
+      <line x1="48" y1="22" x2="54" y2="10"/>
+    </g>
+  </svg>`,
+
+  // ── Android / Mobile ──────────────────────────────────────────────────────
+  mobile: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 70" width="80" height="70">
+    <g fill="none" stroke="#4a9fd4" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="18" y="4" width="28" height="52" rx="5"/>
+      <rect x="22" y="10" width="20" height="34" rx="1.5" fill="#d6ecf8" stroke="#4a9fd4" stroke-width="1.4"/>
+      <!-- home button -->
+      <circle cx="32" cy="50" r="3"/>
+      <!-- speaker -->
+      <line x1="28" y1="7" x2="36" y2="7"/>
+    </g>
+  </svg>`,
+
+  // ── Printer ───────────────────────────────────────────────────────────────
+  printer: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 70" width="80" height="70">
+    <g fill="none" stroke="#4a9fd4" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="8" y="24" width="48" height="26" rx="3"/>
+      <rect x="14" y="10" width="36" height="16" rx="2"/>
+      <!-- paper out -->
+      <rect x="16" y="38" width="32" height="18" rx="1.5" fill="#d6ecf8" stroke="#4a9fd4" stroke-width="1.4"/>
+      <!-- lines on paper -->
+      <line x1="20" y1="43" x2="44" y2="43" stroke-width="1.2"/>
+      <line x1="20" y1="47" x2="44" y2="47" stroke-width="1.2"/>
+      <!-- LED -->
+      <circle cx="46" cy="30" r="2" fill="#4a9fd4" stroke="none"/>
+    </g>
+  </svg>`,
+
+  // ── Camera / IoT ──────────────────────────────────────────────────────────
+  camera: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 70" width="80" height="70">
+    <g fill="none" stroke="#4a9fd4" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M8 20 L20 14 L20 54 L8 48 Z"/>
+      <rect x="20" y="10" width="40" height="48" rx="4"/>
+      <circle cx="40" cy="34" r="12" fill="#d6ecf8" stroke="#4a9fd4" stroke-width="1.6"/>
+      <circle cx="40" cy="34" r="6" fill="#4a9fd4" stroke="none" opacity="0.35"/>
+      <circle cx="40" cy="34" r="2.5" fill="#4a9fd4" stroke="none"/>
+    </g>
+  </svg>`,
+
+  // ── Unknown device ────────────────────────────────────────────────────────
+  unknown: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 70" width="80" height="70">
+    <g fill="none" stroke="#4a9fd4" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="4" y="4" width="52" height="38" rx="4" fill="#d6ecf8" stroke="#4a9fd4"/>
+      <rect x="10" y="10" width="40" height="26" rx="2" fill="#ffffff" stroke="#4a9fd4" stroke-width="1.4"/>
+      <path d="M26 28 Q26 24 30 24 Q34 24 34 20 Q34 14 28 14 Q22 14 22 20" fill="none" stroke="#4a9fd4" stroke-width="2.5"/>
+      <circle cx="28" cy="31" r="1.8" fill="#4a9fd4" stroke="none"/>
+      <line x1="30" y1="42" x2="30" y2="50"/>
+      <line x1="18" y1="50" x2="42" y2="50"/>
+      <rect x="8" y="54" width="44" height="7" rx="2" fill="#d6ecf8" stroke="#4a9fd4"/>
+      <rect x="2" y="2" width="56" height="62" rx="5" stroke="#4a9fd4" stroke-width="1.2" stroke-dasharray="4,3"/>
+    </g>
+  </svg>`,
+
+  // ── Gateway (cloud-like) ──────────────────────────────────────────────────
+  gateway: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 70" width="80" height="70">
+    <g fill="none" stroke="#4a9fd4" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M14 44 Q10 44 10 38 Q10 30 18 30 Q18 22 26 20 Q34 14 44 20 Q52 18 56 26 Q64 26 64 36 Q64 44 56 44 Z" fill="#d6ecf8" stroke="#4a9fd4" stroke-width="2"/>
+      <!-- wifi-like lines -->
+      <path d="M28 56 Q32 50 40 50 Q48 50 52 56" stroke-width="2"/>
+      <path d="M32 62 Q36 58 40 58 Q44 58 48 62" stroke-width="2"/>
+    </g>
+  </svg>`
+};
+
+// Convert SVG string → base64 data URI
+function svgToDataUri(svgStr) {
+    return 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgStr)));
+}
+
+// Pre-render all icons
+const ICON_URI = {};
+for (const [k, v] of Object.entries(CISCO_ICONS)) {
+    ICON_URI[k] = svgToDataUri(v);
+}
+
+// Pick the right icon key per OS string
+function osIconKey(osStr) {
+    if (!osStr) return 'pc';
+    const s = osStr.toLowerCase();
+    if (s.includes('windows'))  return 'windows';
+    if (s.includes('linux')||s.includes('ubuntu')||s.includes('debian')||s.includes('centos')||s.includes('fedora')||s.includes('kali')) return 'linux';
+    if (s.includes('mac')||s.includes('darwin')||s.includes('macos')||s.includes('osx')) return 'mac';
+    if (s.includes('switch'))   return 'switch';
+    if (s.includes('cisco')||s.includes('router')) return 'router';
+    if (s.includes('android')||s.includes('ios')||s.includes('iphone')||s.includes('ipad')||s.includes('mobile')) return 'mobile';
+    if (s.includes('printer'))  return 'printer';
+    if (s.includes('camera'))   return 'camera';
+    return 'unknown';
+}
+
+// Emoji fallback for popup header icon
+function osEmoji(osStr) {
+    if (!osStr) return '🖥️';
+    const s = osStr.toLowerCase();
+    if (s.includes('windows')) return '🪟';
+    if (s.includes('linux')||s.includes('ubuntu')||s.includes('debian')||s.includes('centos')||s.includes('fedora')||s.includes('kali')) return '🐧';
+    if (s.includes('mac')||s.includes('darwin')) return '🍎';
+    if (s.includes('cisco')||s.includes('router')||s.includes('switch')) return '📡';
+    if (s.includes('android')) return '🤖';
+    if (s.includes('ios')||s.includes('iphone')) return '📱';
+    if (s.includes('printer')) return '🖨️';
+    if (s.includes('camera')) return '📷';
+    return '🖥️';
+}
+
+// Popup header colour per OS
+function osHeaderColor(osStr) {
+    if (!osStr) return { bg:'#2c3e50', fg:'#ecf0f1' };
+    const s = osStr.toLowerCase();
+    if (s.includes('windows')) return { bg:'#0078d7', fg:'#ffffff' };
+    if (s.includes('linux')||s.includes('ubuntu')||s.includes('debian')||s.includes('centos')||s.includes('fedora')||s.includes('kali')) return { bg:'#e67e22', fg:'#ffffff' };
+    if (s.includes('mac')||s.includes('darwin')) return { bg:'#555555', fg:'#ffffff' };
+    if (s.includes('cisco')||s.includes('router')||s.includes('switch')) return { bg:'#007ecc', fg:'#ffffff' };
+    if (s.includes('android')) return { bg:'#3ddc84', fg:'#000000' };
+    return { bg:'#2c3e50', fg:'#ecf0f1' };
+}
+
+// ── Dot colour by open-port count (for label badge) ───────────────────────
+function portDotColor(portCount) {
+    if (portCount <= 2)   return '#2ecc71';   // green — < 3 ports / unknown
+    if (portCount <= 6)   return '#f1c40f';   // yellow — 3–6 ports
+    return '#e74c3c';                          // red   — > 6 ports
+}
+
+// ── Build graph data ───────────────────────────────────────────────────────
+const nodesData = [], edgesData = [];
+
+// Gateway node
+nodesData.push({
+    id: 0,
+    label: 'Gateway',
+    image: ICON_URI['gateway'],
+    shape: 'image',
+    size: 38,
+    font: { color:'#1a6db5', size:12, face:'monospace', bold:true, vadjust: 6 },
+    title: 'Gateway / Router',
+    shadow: { enabled:true, color:'rgba(31,111,235,0.3)', size:14 },
+    fixed: true, x:0, y:0,
+    _device: null, _portCnt: 0
+});
+
+SCAN_DATA.forEach((device, i) => {
+    const iconKey = osIconKey(device.os || device.status);
+    const portCnt  = (device.ports && device.ports.length) ? device.ports.length : 0;
+    const hasPorts = portCnt > 0;
+    const dotColor = portDotColor(portCnt);
+
+    // Sort ports ascending for label badge reference
+    const sortedPorts = hasPorts
+        ? [...device.ports].sort((a, b) => a.port - b.port)
+        : [];
+
+    nodesData.push({
+        id: i + 1,
+        label: `<b>●</b> ${device.ip}`,
+        image: ICON_URI[iconKey],
+        shape: 'image',
+        size: 34,
+        font: {
+            color: '#1a3a5c',
+            size: 12,
+            face: 'monospace',
+            vadjust: 6,
+            multi: 'html',
+            bold: {
+                color: dotColor,
+                size: 13,
+                face: 'monospace',
+                mod: 'bold'
+            }
+        },
+        title: `คลิกเพื่อดูรายละเอียด: ${device.ip}`,
+        shadow: { enabled:true, color:'#00000018', size:8 },
+        _device: device,
+        _portCnt: portCnt,
+        _sortedPorts: sortedPorts
+    });
+
+    edgesData.push({
+        from: 0, to: i + 1,
+        color: { color:'#90a4ae', highlight:'#607d8b', hover:'#607d8b' },
+        width: 1.6,
+        dashes: portCnt === 0,
+        smooth: false
+    });
+});
+
+// (legend colours set directly in HTML)
+
+const container = document.getElementById('network-canvas');
+const network = new vis.Network(
+    container,
+    { nodes: new vis.DataSet(nodesData), edges: new vis.DataSet(edgesData) },
+    {
+        physics: {
+            solver: 'forceAtlas2Based',
+            forceAtlas2Based: { gravitationalConstant:-130, springLength:170, springConstant:0.04, damping:0.5 },
+            stabilization: { iterations:200 }
+        },
+        interaction: { hover:true, zoomView:true, tooltipDelay:300 },
+        layout: { improvedLayout:true }
+    }
+);
+
+network.on('hoverNode', () => { container.style.cursor = 'pointer'; });
+network.on('blurNode',  () => { container.style.cursor = 'default'; });
+
+const popup = document.getElementById('node-popup');
+const hint  = document.getElementById('diagram-hint');
+
+function closePopup() {
+    popup.style.display = 'none';
+    network.unselectAll();
+}
+
+function switchTab(tab) {
+    const isDetail = tab === 'detail';
+    document.getElementById('panel-detail').style.display = isDetail ? 'block' : 'none';
+    document.getElementById('panel-port').style.display   = isDetail ? 'none'  : 'block';
+    document.getElementById('tab-detail').style.background = isDetail ? '#e8e8e8' : '#fff';
+    document.getElementById('tab-port').style.background   = isDetail ? '#fff' : '#e8e8e8';
+}
+
+network.on('click', function(params) {
+    if (!params.nodes.length || params.nodes[0] === 0) { closePopup(); return; }
+
+    const nodeId = params.nodes[0];
+    const node   = nodesData[nodeId];
+    const dev    = node._device;
+    const osStr  = dev.os || dev.status || '';
+    const icon   = osEmoji(osStr);
+    const hc     = osHeaderColor(osStr);
+
+    // ── Popup header: OS-specific colour + icon ──
+    const header = document.getElementById('popup-header');
+    header.style.background   = hc.bg;
+    header.style.borderBottom = '1px solid ' + hc.bg;
+    header.querySelector('div').textContent = icon;
+    header.querySelector('div').style.background = 'rgba(255,255,255,0.18)';
+    document.getElementById('popup-ip').style.color = hc.fg;
+    document.getElementById('popup-ip').textContent = dev.ip;
+    header.querySelector('button').style.background = 'rgba(0,0,0,0.25)';
+    header.querySelector('button').style.color = hc.fg;
+
+    // ── Detail tab ──
+    const detailRows = [
+        ['Name:',   dev.hostname || dev.ip],
+        ['IPv4:',   dev.ip],
+        ['IPv6:',   dev.ipv6 || 'Not Available'],
+        ['MAC:',    (dev.mac && dev.mac !== 'Unknown') ? dev.mac : 'Unknown'],
+        ['OS:',     osStr || 'Unknown'],
+        ['Ports:',  node._portCnt + ' open'],
+    ];
+    document.getElementById('detail-tbody').innerHTML = detailRows.map(([label, value]) => `
+        <tr>
+            <td style="padding:5px 0;color:#777;white-space:nowrap;width:40%;">${label}</td>
+            <td style="padding:5px 0;font-family:monospace;word-break:break-all;">${value}</td>
+        </tr>`).join('');
+
+    // ── Port tab ──
+    const portTbody = document.getElementById('port-tbody');
+    if (dev.ports && dev.ports.length) {
+        const sortedPorts = [...dev.ports].sort((a, b) => a.port - b.port);
+        portTbody.innerHTML = sortedPorts.map(p => {
+            const proto = p.protocol ? p.protocol.toLowerCase() : 'tcp';
+            const ver   = (p.version_info && p.version_info !== 'Unknown Version') ? p.version_info : '—';
+            return `<tr style="border-bottom:1px solid #f0f0f0;">
+                <td style="padding:6px 12px;font-family:monospace;font-weight:600;">${p.port}/${proto}</td>
+                <td style="padding:6px 8px;"><span style="color:#198754;font-weight:600;">open</span></td>
+                <td style="padding:6px 8px;">${p.name || '?'}</td>
+                <td style="padding:6px 8px;color:#555;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${ver}">${ver}</td>
+            </tr>`;
+        }).join('');
+    } else {
+        portTbody.innerHTML = `<tr><td colspan="4" style="padding:12px;text-align:center;color:#aaa;">ไม่พบ open ports</td></tr>`;
+    }
+
+    switchTab('detail');
+
+    // ── Position popup ──
+    const domPos = params.pointer.DOM;
+    let left = domPos.x + 16;
+    let top  = domPos.y - 10;
+    if (left + 390 > container.offsetWidth)  left = domPos.x - 390;
+    if (left < 4) left = 4;
+    if (top < 4)  top  = 4;
+    if (top + 340 > container.offsetHeight)  top = container.offsetHeight - 350;
+
+    popup.style.left    = left + 'px';
+    popup.style.top     = top  + 'px';
+    popup.style.display = 'block';
+    hint.style.display  = 'none';
+});
+
+network.on('deselectNode', closePopup);
+{% endif %}
+</script>
+
+{% endblock %}

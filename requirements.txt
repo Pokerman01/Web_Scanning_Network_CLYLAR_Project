@@ -1,0 +1,8 @@
+flask
+flask-login
+flask-sqlalchemy
+werkzeug
+apscheduler
+python-nmap
+requests
+xhtml2pdf

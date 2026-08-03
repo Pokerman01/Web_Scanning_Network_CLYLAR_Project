@@ -1,0 +1,379 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<h2 class="mb-1">Network Dashboard</h2>
+<p class="text-muted mb-4">ภาพรวมเครือข่าย</p>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ 'success' if category == 'success' else 'danger' }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
+<!-- ===== KPI SUMMARY CARDS ===== -->
+<div class="row g-3 mb-4">
+    <!-- Total Devices -->
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm h-100" style="border-left: 4px solid #0d6efd !important;">
+            <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <p class="text-muted small mb-1">อุปกรณ์ทั้งหมด</p>
+                        <h2 class="fw-bold mb-0 text-primary">{{ total_devices }}</h2>
+                    </div>
+                    <div style="font-size:2rem">🖥️</div>
+                </div>
+                
+            </div>
+        </div>
+    </div>
+
+    <!-- Open Ports -->
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm h-100" style="border-left: 4px solid #198754 !important;">
+            <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <p class="text-muted small mb-1">Open ports</p>
+                        <h2 class="fw-bold mb-0 text-success">{{ total_open_ports }}</h2>
+                    </div>
+                    <div style="font-size:2rem">🔌</div>
+                </div>
+                <small class="text-muted">unique port จากทุกการสแกน (ไม่นับซ้ำ)</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- CVE Found -->
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm h-100" style="border-left: 4px solid #f87171 !important;">
+            <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <p class="text-muted small mb-1">CVE Found</p>
+                        <h2 class="fw-bold mb-0" style="color:#f87171">{{ total_cves_found }}</h2>
+                    </div>
+                    <div style="font-size:2rem">🛡️</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Total Tasks -->
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm h-100" style="border-left: 4px solid #0dcaf0 !important;">
+            <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <p class="text-muted small mb-1">Total Task</p>
+                        <h2 class="fw-bold mb-0" style="color:#0dcaf0">{{ total_tasks }}</h2>
+                    </div>
+                    <div style="font-size:2rem">📋</div>
+                </div>
+                <small class="text-success">Complete: {{ task_completed }}</small>
+                <span class="text-muted small"> / </span>
+                <small class="text-danger">Wait: {{ task_wait }}</small>
+                <span class="text-muted small"> / </span>
+                <small class="text-warning">Running: {{ task_running }}</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== CHARTS ROW ===== -->
+{% if total_devices > 0 %}
+<div class="row g-3 mb-5">
+
+    <!-- Donut: Device Port Count -->
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body d-flex flex-column">
+                <h6 class="fw-bold mb-3">Device Status</h6>
+                <div class="d-flex align-items-center flex-grow-1" style="gap:0">
+                    <!-- Legend flush left -->
+                    <div class="d-flex flex-column gap-3" id="deviceStatusLegend" style="font-size:.82rem;min-width:180px;align-self:center">
+                        <!-- Populated by JS -->
+                    </div>
+                    <!-- Donut chart centered in remaining space -->
+                    <div class="d-flex align-items-center justify-content-center flex-grow-1">
+                        <canvas id="deviceStatusChart" style="max-height:220px;max-width:220px;margin-right:150px"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bar Chart: Task Status -->
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body d-flex flex-column">
+                <h6 class="fw-bold mb-1">Task Status</h6>
+                <p class="text-muted small mb-3">Total Task {{ total_tasks }}</p>
+                <div class="flex-grow-1 d-flex align-items-center justify-content-center">
+                    <canvas id="taskStatusChart" style="max-height:220px;width:100%"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endif %}
+
+<!-- Chart Scripts -->
+<script>
+{% if total_devices > 0 %}
+// ===== Device Port Donut Chart =====
+const devicePortData = {{ device_port_data | tojson }};
+
+const unknown = devicePortData.filter(d => d.count === 0).length;
+const safeRaw = devicePortData.filter(d => d.count > 0 && d.count < 3).length;
+const safe    = safeRaw + unknown;  // merge unknown into < 3 Port
+const warning = devicePortData.filter(d => d.count >= 3 && d.count <= 6).length;
+const danger  = devicePortData.filter(d => d.count > 6).length;
+
+const totalDevices = safe + warning + danger;
+
+// Build legend
+const legendData = [
+  { label: '< 3 Port', count: safe,    color: '#198754' },
+  { label: '3–6 Port', count: warning, color: '#ffc107' },
+  { label: '> 6 Port', count: danger,  color: '#dc3545' },
+];
+const legendEl = document.getElementById('deviceStatusLegend');
+legendData.forEach(item => {
+  const pct = totalDevices > 0 ? Math.round(item.count / totalDevices * 100) : 0;
+  const row = document.createElement('div');
+  row.style.cssText = 'display:flex;align-items:center;gap:8px;';
+  row.innerHTML = `
+    <span style="display:inline-block;width:12px;height:12px;background:${item.color};border-radius:50%;flex-shrink:0"></span>
+    <span style="flex:1;color:#555">${item.label}</span>
+    <span style="font-weight:600;color:#222">${item.count} Device${item.count !== 1 ? 's' : ''}</span>
+    <span style="color:#888;min-width:38px;text-align:right">${pct}%</span>
+  `;
+  legendEl.appendChild(row);
+});
+
+new Chart(document.getElementById('deviceStatusChart'), {
+  type: 'doughnut',
+  data: {
+    labels: ['< 3 Port', '3–6 Port', '> 6 Port'],
+    datasets: [{
+      data: [safe, warning, danger],
+      backgroundColor: ['#198754', '#ffc107', '#dc3545'],
+      hoverBackgroundColor: ['#157347', '#e0a800', '#b02a37'],
+      borderWidth: 3,
+      borderColor: '#fff',
+      hoverOffset: 14
+    }]
+  },
+  options: {
+    cutout: '62%',
+    responsive: true,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: function(ctx) {
+            return `  ${ctx.parsed} Device${ctx.parsed !== 1 ? 's' : ''}`;
+          }
+        },
+        bodyFont: { size: 14, weight: 'bold' },
+        padding: 10
+      }
+    }
+  }
+});
+
+// ===== Task Status Bar Chart (numbers shown directly on bars) =====
+const taskData = [{{ task_completed }}, {{ task_wait }}, {{ task_running }}];
+const taskTotal = taskData.reduce((a,b) => a+b, 0);
+
+// Plugin to draw value labels on top of each bar
+const taskBarLabelPlugin = {
+  id: 'taskBarLabel',
+  afterDatasetsDraw(chart) {
+    const { ctx, data } = chart;
+    ctx.save();
+    data.datasets[0].data.forEach((value, i) => {
+      const meta = chart.getDatasetMeta(0);
+      const bar = meta.data[i];
+      const pct = taskTotal > 0 ? Math.round(value / taskTotal * 100) : 0;
+      ctx.fillStyle = '#333';
+      ctx.font = 'bold 13px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'bottom';
+      ctx.fillText(`${value}`, bar.x, bar.y - 18);
+      ctx.fillStyle = '#888';
+      ctx.font = '11px sans-serif';
+      ctx.fillText(`(${pct}%)`, bar.x, bar.y - 4);
+    });
+    ctx.restore();
+  }
+};
+
+new Chart(document.getElementById('taskStatusChart'), {
+  type: 'bar',
+  data: {
+    labels: ['Complete', 'Wait Schedule', 'Running'],
+    datasets: [{
+      data: taskData,
+      backgroundColor: ['#4caf82', '#e05c5c', '#ffc107'],
+      hoverBackgroundColor: ['#3d9a6a', '#c94e4e', '#e0a800'],
+      borderRadius: 8,
+      borderSkipped: false,
+      barPercentage: 0.55,
+    }]
+  },
+  options: {
+    responsive: true,
+    layout: { padding: { top: 36 } },
+    plugins: {
+      legend: { display: false },
+      tooltip: { enabled: false }
+    },
+    scales: {
+      x: {
+        grid: { display: false },
+        ticks: { font: { size: 12 } }
+      },
+      y: {
+        beginAtZero: true,
+        grid: { color: '#f0f0f0' },
+        ticks: {
+          stepSize: 1,
+          precision: 0,
+          font: { size: 11 }
+        }
+      }
+    }
+  },
+  plugins: [taskBarLabelPlugin]
+});
+
+{% endif %}
+</script>
+
+<!-- Scan Section -->
+<div class="row mb-5">
+
+    <!-- Latest Results (full width) -->
+    <div class="col-12">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white border-bottom d-flex align-items-center justify-content-between py-3 px-4">
+                <h5 class="mb-0">Latest Scan Results</h5>
+                {% if history %}
+                <a href="{{ url_for('scan_detail', scan_id=history[0].id) }}"
+                   class="btn btn-sm btn-outline-primary">
+                    View Full Report →
+                </a>
+                {% endif %}
+            </div>
+            {% if history %}
+            {% set latest = history[0] %}
+            <div class="card-body border-bottom bg-white py-3 px-4">
+                <div class="row align-items-center g-2">
+                    <div class="col-auto">
+                        <span class="fw-bold text-dark">Scan Report: Job #{{ latest_owner_seq if latest_owner_seq is not none else latest.id }}</span>
+                    </div>
+                    {% if latest.scan_name %}
+                    <div class="col-auto">
+                        <span class="text-muted">|</span>
+                        <span class="ms-2 fw-semibold text-primary">{{ latest.scan_name }}</span>
+                    </div>
+                    {% endif %}
+                    <div class="col-auto ms-auto d-flex flex-wrap gap-4 text-muted small">
+                        <span><strong class="text-dark">Target:</strong> {{ latest.target }}</span>
+                        <span>
+                            <strong class="text-dark">Scan Profile:</strong>
+                            <span class="badge bg-info text-dark ms-1">{{ latest.scan_type | scan_label }}</span>
+                        </span>
+                        <span><strong class="text-dark">Timestamp:</strong> {{ latest.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</span>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            <div class="p-4">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>IP Address</th>
+                            <th>MAC Address</th>
+                            <th>OS / Status</th>
+                            <th>Open Ports / Protocal / Service Version</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in scan_data %}
+                        {% set loop_idx = loop.index %}
+                        <tr>
+                            <td class="fw-bold">{{ item.ip }}</td>
+                            <td>
+                                {% if item.mac and item.mac != 'Unknown' %}
+                                    <span class="font-monospace small">{{ item.mac }}</span>
+                                    {% if item.mac_vendor %}
+                                        <br><span class="text-muted" style="font-size:.72rem;">{{ item.mac_vendor }}</span>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="text-muted small">—</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ item.status if item.status else item.os }}</td>
+                            <td>
+                                {% if item.ports %}
+                                    <button class="btn btn-sm btn-outline-primary py-0 px-2"
+                                            type="button"
+                                            data-bs-toggle="collapse"
+                                            data-bs-target="#ports-dash-{{ loop_idx }}"
+                                            aria-expanded="false">
+                                        🔌 {{ item.ports|length }} ports
+                                        <span class="ms-1" style="font-size:.7rem">▼</span>
+                                    </button>
+                                    <div class="collapse mt-2" id="ports-dash-{{ loop_idx }}">
+                                        <div class="card card-body py-2 px-3 border-0 bg-light rounded">
+                                            {% for port in item.ports %}
+                                            <div class="d-flex align-items-start gap-2 mb-1">
+                                                <span class="badge bg-primary mt-1" style="min-width:80px;font-size:.72rem;">{{ port.port }}/{{ port.protocol | upper if port.protocol else port.name }}</span>
+                                                {% if port.name %}<span class="badge bg-secondary mt-1" style="font-size:.65rem;">{{ port.name }}</span>{% endif %}
+                                                <span class="text-secondary small">
+                                                    {% if port.version_info and port.version_info != 'Unknown Version' %}
+                                                        {{ port.version_info }}
+                                                    {% else %}
+                                                        <i class="text-muted">Unknown version</i>
+                                                    {% endif %}
+                                                </span>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                {% else %}
+                                    <span class="text-muted small">—</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            </div>{# end p-4 #}
+        </div>
+    </div>
+
+</div>
+
+
+<!-- History Section -> ย้ายไปหน้าแยกแล้ว -->
+<div class="card border-0 shadow-sm p-4 mb-4 text-center" id="history-section">
+    <div style="font-size:2.5rem">🕒</div>
+    <h5 class="mt-2 mb-1">Scan History</h5>
+    <p class="text-muted small mb-3">ดูประวัติการสแกนทั้งหมดได้ที่หน้า Scan History</p>
+    <a href="{{ url_for('history_page') }}" class="btn btn-outline-primary btn-sm">ไปหน้า Scan History →</a>
+</div>
+
+{% endblock %}
