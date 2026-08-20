@@ -1,8 +1,23 @@
 import nmap
 import json
+import re
+
+def is_valid_target(target):
+    if not target:
+        return False
+    tokens = target.split()
+    for token in tokens:
+        if token.startswith('-'):
+            return False
+        if not re.fullmatch(r'[a-zA-Z0-9.:/,\-]+', token):
+            return False
+    return True
 
 
 def run_network_scan(target_ip, scan_type='discovery', custom_args=None):
+    if not is_valid_target(target_ip):
+        return json.dumps([{"error": "Invalid target specified."}])
+
     nm = nmap.PortScanner()
     scan_results = []
 
@@ -144,7 +159,6 @@ def run_network_scan(target_ip, scan_type='discovery', custom_args=None):
                     if '=' not in token and i + 1 < len(tokens) and not tokens[i + 1].startswith('-'):
                         next_val = tokens[i + 1]
                         # อนุญาตเฉพาะ alphanumeric, -, ,, * (สำหรับ port ranges)
-                        import re
                         if not re.fullmatch(r'[\w,\-\*]+', next_val):
                             return json.dumps([{"error": f"Invalid value for {flag}: {next_val}"}])
                         validated_tokens.append(next_val)
@@ -340,6 +354,9 @@ def run_vuln_scan(target_ip):
     Vulnerability Scan: nmap -sV -O to detect services + OS, then query NVD API for CVEs.
     Returns same structure as other scans but each port has a 'cves' list.
     """
+    if not is_valid_target(target_ip):
+        return json.dumps([{"error": "Invalid target specified."}])
+
     nm = nmap.PortScanner()
     scan_results = []
 

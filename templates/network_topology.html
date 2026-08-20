@@ -304,6 +304,33 @@
 .job-list::-webkit-scrollbar { width: 4px; }
 .filter-date-list::-webkit-scrollbar-thumb,
 .job-list::-webkit-scrollbar-thumb { background: #dee2e6; border-radius: 4px; }
+
+/* Zoom controls */
+.topo-zoom-controls {
+    position: absolute;
+    top: 18px;
+    right: 18px;
+    z-index: 10;
+}
+.topo-zoom-btn {
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #495057;
+    font-weight: 500;
+    transition: all 0.15s;
+}
+.topo-zoom-btn:hover {
+    background: #f8f9fa;
+    color: #0d6efd;
+}
 </style>
 
 <div class="topology-page">
@@ -366,6 +393,19 @@
         </div>
 
         <div class="topo-canvas-wrapper">
+
+            <!-- Zoom Controls -->
+            <div class="topo-zoom-controls">
+                <button class="topo-zoom-btn" onclick="resetZoom()" title="Reset Zoom">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M15 3h6v6"></path>
+                        <path d="M9 21H3v-6"></path>
+                        <path d="M21 3l-7 7"></path>
+                        <path d="M3 21l7-7"></path>
+                    </svg>
+                    Reset Zoom
+                </button>
+            </div>
 
             <!-- vis-network canvas -->
             <div id="topoCanvas" style="width:100%;height:100%;background:#ffffff;cursor:default;"></div>
@@ -788,6 +828,13 @@ function buildAndDraw() {
     visNetwork.on('hoverNode', () => { container.style.cursor = 'pointer'; });
     visNetwork.on('blurNode',  () => { container.style.cursor = 'default'; });
 
+    visNetwork.on('zoom', function() {
+        const minScale = 0.15;
+        if (visNetwork.getScale() < minScale) {
+            visNetwork.moveTo({ scale: minScale });
+        }
+    });
+
     visNetwork.on('click', function(params) {
         if (!params.nodes.length || params.nodes[0] === 0) { closePopup(); return; }
         const nodeId = params.nodes[0];
@@ -876,6 +923,12 @@ function switchTab(tab) {
 function formatDate(d) {
     const dt = new Date(d + 'T00:00:00');
     return dt.toLocaleDateString('th-TH', { year:'numeric', month:'short', day:'numeric' });
+}
+
+function resetZoom() {
+    if (visNetwork) {
+        visNetwork.fit({ animation: { duration: 500, easingFunction: 'easeInOutQuad' } });
+    }
 }
 
 // ─── Go ───

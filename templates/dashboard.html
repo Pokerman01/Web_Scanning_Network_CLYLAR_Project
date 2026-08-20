@@ -6,309 +6,721 @@
 <p class="text-muted mb-4">ภาพรวมเครือข่าย</p>
 
 {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-        {% for category, message in messages %}
-        <div class="alert alert-{{ 'success' if category == 'success' else 'danger' }} alert-dismissible fade show" role="alert">
-            {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-        {% endfor %}
-    {% endif %}
+{% if messages %}
+{% for category, message in messages %}
+<div class="alert alert-{{ 'success' if category == 'success' else 'danger' }} alert-dismissible fade show"
+  role="alert">
+  {{ message }}
+  <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+{% endfor %}
+{% endif %}
 {% endwith %}
 
 <!-- ===== KPI SUMMARY CARDS ===== -->
-<div class="row g-3 mb-4">
-    <!-- Total Devices -->
-    <div class="col-6 col-md-3">
-        <div class="card border-0 shadow-sm h-100" style="border-left: 4px solid #0d6efd !important;">
-            <div class="card-body">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                        <p class="text-muted small mb-1">อุปกรณ์ทั้งหมด</p>
-                        <h2 class="fw-bold mb-0 text-primary">{{ total_devices }}</h2>
-                    </div>
-                    <div style="font-size:2rem">🖥️</div>
-                </div>
-                
-            </div>
-        </div>
-    </div>
+<div class="row g-3 mb-4" id="kpi-cards-row">
 
-    <!-- Open Ports -->
-    <div class="col-6 col-md-3">
-        <div class="card border-0 shadow-sm h-100" style="border-left: 4px solid #198754 !important;">
-            <div class="card-body">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                        <p class="text-muted small mb-1">Open ports</p>
-                        <h2 class="fw-bold mb-0 text-success">{{ total_open_ports }}</h2>
-                    </div>
-                    <div style="font-size:2rem">🔌</div>
-                </div>
-                <small class="text-muted">unique port จากทุกการสแกน (ไม่นับซ้ำ)</small>
-            </div>
+  <!-- Total Devices -->
+  <div class="col-6 col-md-3">
+    <div class="stat-card card border-0 shadow-sm h-100" id="card-devices" data-card="devices"
+      style="border-left: 4px solid #0d6efd !important; cursor:pointer; transform-origin: center center;">
+      <div class="card-body">
+        <div class="d-flex align-items-center justify-content-between">
+          <div>
+            <p class="text-muted small mb-1">อุปกรณ์ทั้งหมด</p>
+            <h2 class="fw-bold mb-0 text-primary">{{ total_devices }}</h2>
+          </div>
+          <div style="font-size:2rem">🖥️</div>
         </div>
+        <div class="mt-2">
+          <small class="text-muted" style="font-size:.72rem">คลิกเพื่อดูรายละเอียด →</small>
+        </div>
+      </div>
     </div>
+  </div>
 
-    <!-- CVE Found -->
-    <div class="col-6 col-md-3">
-        <div class="card border-0 shadow-sm h-100" style="border-left: 4px solid #f87171 !important;">
-            <div class="card-body">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                        <p class="text-muted small mb-1">CVE Found</p>
-                        <h2 class="fw-bold mb-0" style="color:#f87171">{{ total_cves_found }}</h2>
-                    </div>
-                    <div style="font-size:2rem">🛡️</div>
-                </div>
-            </div>
+  <!-- Open Ports -->
+  <div class="col-6 col-md-3">
+    <div class="stat-card card border-0 shadow-sm h-100" id="card-ports" data-card="ports"
+      style="border-left: 4px solid #198754 !important; cursor:pointer; transform-origin: center center;">
+      <div class="card-body">
+        <div class="d-flex align-items-center justify-content-between">
+          <div>
+            <p class="text-muted small mb-1">Open ports</p>
+            <h2 class="fw-bold mb-0 text-success">{{ total_open_ports }}</h2>
+          </div>
+          <div style="font-size:2rem">🔌</div>
         </div>
+        <small class="text-muted">unique port จากทุกการสแกน (ไม่นับซ้ำ)</small>
+      </div>
     </div>
+  </div>
 
-    <!-- Total Tasks -->
-    <div class="col-6 col-md-3">
-        <div class="card border-0 shadow-sm h-100" style="border-left: 4px solid #0dcaf0 !important;">
-            <div class="card-body">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                        <p class="text-muted small mb-1">Total Task</p>
-                        <h2 class="fw-bold mb-0" style="color:#0dcaf0">{{ total_tasks }}</h2>
-                    </div>
-                    <div style="font-size:2rem">📋</div>
-                </div>
-                <small class="text-success">Complete: {{ task_completed }}</small>
-                <span class="text-muted small"> / </span>
-                <small class="text-danger">Wait: {{ task_wait }}</small>
-                <span class="text-muted small"> / </span>
-                <small class="text-warning">Running: {{ task_running }}</small>
-            </div>
+  <!-- CVE Found -->
+  <div class="col-6 col-md-3">
+    <div class="stat-card card border-0 shadow-sm h-100" id="card-cve" data-card="cve"
+      style="border-left: 4px solid #f87171 !important; cursor:pointer; transform-origin: center center;">
+      <div class="card-body">
+        <div class="d-flex align-items-center justify-content-between">
+          <div>
+            <p class="text-muted small mb-1">CVE Found</p>
+            <h2 class="fw-bold mb-0" style="color:#f87171">{{ total_cves_found }}</h2>
+          </div>
+          <div style="font-size:2rem">🛡️</div>
         </div>
+        <div class="mt-2">
+          <small class="text-muted" style="font-size:.72rem">คลิกเพื่อดูรายละเอียด →</small>
+        </div>
+      </div>
     </div>
+  </div>
+
+  <!-- Total Tasks -->
+  <div class="col-6 col-md-3">
+    <div class="stat-card card border-0 shadow-sm h-100" id="card-tasks" data-card="tasks"
+      style="border-left: 4px solid #0dcaf0 !important; cursor:pointer; transform-origin: center center;">
+      <div class="card-body">
+        <div class="d-flex align-items-center justify-content-between">
+          <div>
+            <p class="text-muted small mb-1">Total Task</p>
+            <h2 class="fw-bold mb-0" style="color:#0dcaf0">{{ total_tasks }}</h2>
+          </div>
+          <div style="font-size:2rem">📋</div>
+        </div>
+        <small class="text-success">Complete: {{ task_completed }}</small>
+        <span class="text-muted small"> / </span>
+        <small class="text-danger">Wait: {{ task_wait }}</small>
+        <span class="text-muted small"> / </span>
+        <small class="text-warning">Running: {{ task_running }}</small>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- ===== CHARTS ROW ===== -->
 {% if total_devices > 0 %}
 <div class="row g-3 mb-5">
 
-    <!-- Donut: Device Port Count -->
-    <div class="col-md-6">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-body d-flex flex-column">
-                <h6 class="fw-bold mb-3">Device Status</h6>
-                <div class="d-flex align-items-center flex-grow-1" style="gap:0">
-                    <!-- Legend flush left -->
-                    <div class="d-flex flex-column gap-3" id="deviceStatusLegend" style="font-size:.82rem;min-width:180px;align-self:center">
-                        <!-- Populated by JS -->
-                    </div>
-                    <!-- Donut chart centered in remaining space -->
-                    <div class="d-flex align-items-center justify-content-center flex-grow-1">
-                        <canvas id="deviceStatusChart" style="max-height:220px;max-width:220px;margin-right:150px"></canvas>
-                    </div>
-                </div>
-            </div>
+  <!-- Donut: Device Port Count -->
+  <div class="col-md-6">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body d-flex flex-column">
+        <h6 class="fw-bold mb-3">Device Status</h6>
+        <div class="d-flex align-items-center flex-grow-1" style="gap:0">
+          <!-- Legend flush left -->
+          <div class="d-flex flex-column gap-3" id="deviceStatusLegend"
+            style="font-size:.82rem;min-width:180px;align-self:center">
+            <!-- Populated by JS -->
+          </div>
+          <!-- Donut chart centered in remaining space -->
+          <div class="d-flex align-items-center justify-content-center flex-grow-1">
+            <canvas id="deviceStatusChart" style="max-height:220px;max-width:220px;margin-right:150px"></canvas>
+          </div>
         </div>
+        <!-- Animated filtered device list -->
+        <div id="donut-filter-panel" style="display:none; margin-top:16px;">
+          <div id="donut-filter-header"
+            style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+            <span id="donut-filter-title" style="font-weight:600;font-size:.9rem;"></span>
+            <button id="donut-filter-clear"
+              style="background:none;border:1px solid #dee2e6;border-radius:6px;padding:3px 10px;font-size:.75rem;cursor:pointer;color:#6c757d;"
+              onclick="clearDonutFilter()">✕ ล้าง</button>
+          </div>
+          <div id="donut-device-list" style="display:flex;flex-direction:column;gap:6px;"></div>
+        </div>
+      </div>
     </div>
+  </div>
 
-    <!-- Bar Chart: Task Status -->
-    <div class="col-md-6">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-body d-flex flex-column">
-                <h6 class="fw-bold mb-1">Task Status</h6>
-                <p class="text-muted small mb-3">Total Task {{ total_tasks }}</p>
-                <div class="flex-grow-1 d-flex align-items-center justify-content-center">
-                    <canvas id="taskStatusChart" style="max-height:220px;width:100%"></canvas>
-                </div>
-            </div>
+  <!-- Bar Chart: Task Status -->
+  <div class="col-md-6">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body d-flex flex-column" id="task-chart-body">
+        <div id="task-chart-header">
+          <h6 class="fw-bold mb-1">Task Status</h6>
+          <p class="text-muted small mb-3">Total Task {{ total_tasks }}</p>
         </div>
+        <!-- Chart view -->
+        <div class="flex-grow-1 d-flex align-items-center justify-content-center" id="task-chart-view">
+          <canvas id="taskStatusChart" style="max-height:220px;width:100%"></canvas>
+        </div>
+        <!-- Drill-down view (hidden initially) -->
+        <div id="task-drilldown-view" style="display:none;flex-direction:column;gap:0;">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+            <button id="task-back-btn" onclick="closeDrilldown()"
+              style="background:none;border:1px solid #dee2e6;border-radius:8px;padding:4px 12px;font-size:.8rem;cursor:pointer;color:#495057;display:flex;align-items:center;gap:4px;">
+              ← กลับ
+            </button>
+            <span id="task-drilldown-title" style="font-weight:600;font-size:.95rem;"></span>
+          </div>
+          <div id="task-drilldown-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+        </div>
+      </div>
     </div>
+  </div>
 
 </div>
 {% endif %}
 
 <!-- Chart Scripts -->
-<script>
 {% if total_devices > 0 %}
-// ===== Device Port Donut Chart =====
-const devicePortData = {{ device_port_data | tojson }};
+<script>
+  // ========================================================
+  // MOTION ONE — Loaded inline via CDN (see base script tag)
+  // We use a thin wrapper so we can use animate() + spring()
+  // ========================================================
 
-const unknown = devicePortData.filter(d => d.count === 0).length;
-const safeRaw = devicePortData.filter(d => d.count > 0 && d.count < 3).length;
-const safe    = safeRaw + unknown;  // merge unknown into < 3 Port
-const warning = devicePortData.filter(d => d.count >= 3 && d.count <= 6).length;
-const danger  = devicePortData.filter(d => d.count > 6).length;
+  // ───── Device Port Donut Chart Data ─────
+  const devicePortData = {{ device_port_data | tojson }};
+  const topPortsData = {{ top_ports | tojson }};
+  const scanDataRaw = {{ scan_data | tojson }};
 
-const totalDevices = safe + warning + danger;
+  // Severity buckets for devices
+  const unknown = devicePortData.filter(d => d.count === 0).length;
+  const safeRaw = devicePortData.filter(d => d.count > 0 && d.count < 3).length;
+  const safe = safeRaw + unknown;
+  const warning = devicePortData.filter(d => d.count >= 3 && d.count <= 6).length;
+  const danger = devicePortData.filter(d => d.count > 6).length;
+  const totalDevices = safe + warning + danger;
 
-// Build legend
-const legendData = [
-  { label: '< 3 Port', count: safe,    color: '#198754' },
-  { label: '3–6 Port', count: warning, color: '#ffc107' },
-  { label: '> 6 Port', count: danger,  color: '#dc3545' },
-];
-const legendEl = document.getElementById('deviceStatusLegend');
-legendData.forEach(item => {
-  const pct = totalDevices > 0 ? Math.round(item.count / totalDevices * 100) : 0;
-  const row = document.createElement('div');
-  row.style.cssText = 'display:flex;align-items:center;gap:8px;';
-  row.innerHTML = `
+  // Store device lists per segment
+  const segmentDevices = {
+    0: devicePortData.filter(d => d.count < 3),      // safe (< 3 ports)
+    1: devicePortData.filter(d => d.count >= 3 && d.count <= 6), // warning
+    2: devicePortData.filter(d => d.count > 6),       // danger
+  };
+  const segmentLabels = ['< 3 Port', '3–6 Port', '> 6 Port'];
+  const segmentColors = ['#198754', '#ffc107', '#dc3545'];
+
+  // Build legend
+  const legendData = [
+    { label: '< 3 Port', count: safe, color: '#198754' },
+    { label: '3–6 Port', count: warning, color: '#ffc107' },
+    { label: '> 6 Port', count: danger, color: '#dc3545' },
+  ];
+  const legendEl = document.getElementById('deviceStatusLegend');
+  legendData.forEach((item, idx) => {
+    const pct = totalDevices > 0 ? Math.round(item.count / totalDevices * 100) : 0;
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:8px;cursor:pointer;padding:4px 6px;border-radius:6px;transition:background 0.15s;';
+    row.dataset.segmentIdx = idx;
+    row.innerHTML = `
     <span style="display:inline-block;width:12px;height:12px;background:${item.color};border-radius:50%;flex-shrink:0"></span>
     <span style="flex:1;color:#555">${item.label}</span>
     <span style="font-weight:600;color:#222">${item.count} Device${item.count !== 1 ? 's' : ''}</span>
     <span style="color:#888;min-width:38px;text-align:right">${pct}%</span>
   `;
-  legendEl.appendChild(row);
-});
+    row.addEventListener('mouseenter', () => { row.style.background = '#f0f4ff'; });
+    row.addEventListener('mouseleave', () => { row.style.background = ''; });
+    row.addEventListener('click', () => handleDonutSegmentClick(idx));
+    legendEl.appendChild(row);
+  });
 
-new Chart(document.getElementById('deviceStatusChart'), {
-  type: 'doughnut',
-  data: {
-    labels: ['< 3 Port', '3–6 Port', '> 6 Port'],
-    datasets: [{
-      data: [safe, warning, danger],
-      backgroundColor: ['#198754', '#ffc107', '#dc3545'],
-      hoverBackgroundColor: ['#157347', '#e0a800', '#b02a37'],
-      borderWidth: 3,
-      borderColor: '#fff',
-      hoverOffset: 14
-    }]
-  },
-  options: {
-    cutout: '62%',
-    responsive: true,
-    plugins: {
-      legend: { display: false },
-      tooltip: {
-        callbacks: {
-          label: function(ctx) {
-            return `  ${ctx.parsed} Device${ctx.parsed !== 1 ? 's' : ''}`;
-          }
-        },
-        bodyFont: { size: 14, weight: 'bold' },
-        padding: 10
-      }
-    }
-  }
-});
-
-// ===== Task Status Bar Chart (numbers shown directly on bars) =====
-const taskData = [{{ task_completed }}, {{ task_wait }}, {{ task_running }}];
-const taskTotal = taskData.reduce((a,b) => a+b, 0);
-
-// Plugin to draw value labels on top of each bar
-const taskBarLabelPlugin = {
-  id: 'taskBarLabel',
-  afterDatasetsDraw(chart) {
-    const { ctx, data } = chart;
-    ctx.save();
-    data.datasets[0].data.forEach((value, i) => {
-      const meta = chart.getDatasetMeta(0);
-      const bar = meta.data[i];
-      const pct = taskTotal > 0 ? Math.round(value / taskTotal * 100) : 0;
-      ctx.fillStyle = '#333';
-      ctx.font = 'bold 13px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'bottom';
-      ctx.fillText(`${value}`, bar.x, bar.y - 18);
-      ctx.fillStyle = '#888';
-      ctx.font = '11px sans-serif';
-      ctx.fillText(`(${pct}%)`, bar.x, bar.y - 4);
-    });
-    ctx.restore();
-  }
-};
-
-new Chart(document.getElementById('taskStatusChart'), {
-  type: 'bar',
-  data: {
-    labels: ['Complete', 'Wait Schedule', 'Running'],
-    datasets: [{
-      data: taskData,
-      backgroundColor: ['#4caf82', '#e05c5c', '#ffc107'],
-      hoverBackgroundColor: ['#3d9a6a', '#c94e4e', '#e0a800'],
-      borderRadius: 8,
-      borderSkipped: false,
-      barPercentage: 0.55,
-    }]
-  },
-  options: {
-    responsive: true,
-    layout: { padding: { top: 36 } },
-    plugins: {
-      legend: { display: false },
-      tooltip: { enabled: false }
+  // ───── Donut Chart ─────
+  let activeSegment = null;
+  const donutChart = new Chart(document.getElementById('deviceStatusChart'), {
+    type: 'doughnut',
+    data: {
+      labels: ['< 3 Port', '3–6 Port', '> 6 Port'],
+      datasets: [{
+        data: [safe, warning, danger],
+        backgroundColor: ['#198754', '#ffc107', '#dc3545'],
+        hoverBackgroundColor: ['#157347', '#e0a800', '#b02a37'],
+        borderWidth: 3,
+        borderColor: '#fff',
+        hoverOffset: 14
+      }]
     },
-    scales: {
-      x: {
-        grid: { display: false },
-        ticks: { font: { size: 12 } }
+    options: {
+      cutout: '62%',
+      responsive: true,
+      layout: {
+        padding: 15
       },
-      y: {
-        beginAtZero: true,
-        grid: { color: '#f0f0f0' },
-        ticks: {
-          stepSize: 1,
-          precision: 0,
-          font: { size: 11 }
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: function (ctx) {
+              return `  ${ctx.parsed} Device${ctx.parsed !== 1 ? 's' : ''}`;
+            }
+          },
+          bodyFont: { size: 14, weight: 'bold' },
+          padding: 10
+        }
+      },
+      onClick: function (evt, elements) {
+        if (elements && elements.length > 0) {
+          const segIdx = elements[0].index;
+          handleDonutSegmentClick(segIdx);
         }
       }
     }
-  },
-  plugins: [taskBarLabelPlugin]
-});
+  });
 
-{% endif %}
+  function handleDonutSegmentClick(segIdx) {
+    if (activeSegment === segIdx) {
+      clearDonutFilter();
+      return;
+    }
+    activeSegment = segIdx;
+
+    // Update chart colors to highlight selected segment
+    const bg = segmentColors.map((c, i) => i === segIdx ? c : hexWithOpacity(c, 0.2));
+    donutChart.data.datasets[0].backgroundColor = bg;
+    donutChart.data.datasets[0].hoverBackgroundColor = bg;
+    donutChart.update('active');
+
+    // Show filtered device list
+    const panel = document.getElementById('donut-filter-panel');
+    const titleEl = document.getElementById('donut-filter-title');
+    const listEl = document.getElementById('donut-device-list');
+
+    titleEl.textContent = `อุปกรณ์ที่มี ${segmentLabels[segIdx]} (${segmentDevices[segIdx].length} เครื่อง)`;
+    titleEl.style.color = segmentColors[segIdx];
+    listEl.innerHTML = '';
+
+    const devices = segmentDevices[segIdx];
+    if (devices.length === 0) {
+      listEl.innerHTML = '<span style="color:#aaa;font-size:.85rem">ไม่มีอุปกรณ์ในกลุ่มนี้</span>';
+    } else {
+      devices.forEach((d, i) => {
+        const chip = document.createElement('div');
+        chip.style.cssText = `
+        display:flex;align-items:center;gap:10px;
+        background:#f8f9fa;border-radius:8px;padding:7px 12px;
+        border-left:3px solid ${segmentColors[segIdx]};
+        opacity:0;transform:translateY(10px);
+        font-size:.83rem;
+      `;
+        let portsHtml = '';
+        if (d.ports && d.ports.length > 0) {
+          portsHtml = '<div style="margin-top: 6px; display: flex; flex-wrap: wrap; gap: 4px;">' +
+            d.ports.map(p => `<span style="background: #fff; color: #495057; font-size: .7rem; padding: 2px 6px; border-radius: 4px; border: 1px solid #dee2e6;">${p}</span>`).join('') +
+            '</div>';
+        }
+        chip.innerHTML = `
+        <div style="display:flex; flex-direction:column; width: 100%;">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <span style="font-weight:600;color:#333;font-family:monospace">${d.ip}</span>
+            <span style="color:#aaa">|</span>
+            <span style="color:${segmentColors[segIdx]};font-weight:500">${d.count} port${d.count !== 1 ? 's' : ''}</span>
+          </div>
+          ${portsHtml}
+        </div>
+      `;
+        listEl.appendChild(chip);
+      });
+    }
+
+    // Animate panel open
+    panel.style.display = 'block';
+    panel.style.opacity = '0';
+    panel.style.transform = 'translateY(8px)';
+
+    // Use requestAnimationFrame for smooth entry
+    requestAnimationFrame(() => {
+      panel.style.transition = 'opacity 0.25s ease, transform 0.25s ease';
+      panel.style.opacity = '1';
+      panel.style.transform = 'translateY(0)';
+    });
+
+    // Stagger device chips
+    const chips = listEl.querySelectorAll('div');
+    chips.forEach((chip, i) => {
+      setTimeout(() => {
+        chip.style.transition = 'opacity 0.22s ease, transform 0.22s ease';
+        chip.style.opacity = '1';
+        chip.style.transform = 'translateY(0)';
+      }, 40 + i * 50);
+    });
+  }
+
+  function clearDonutFilter() {
+    activeSegment = null;
+    donutChart.data.datasets[0].backgroundColor = segmentColors;
+    donutChart.data.datasets[0].hoverBackgroundColor = ['#157347', '#e0a800', '#b02a37'];
+    donutChart.update('active');
+
+    const panel = document.getElementById('donut-filter-panel');
+    panel.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
+    panel.style.opacity = '0';
+    panel.style.transform = 'translateY(6px)';
+    setTimeout(() => { panel.style.display = 'none'; }, 220);
+  }
+
+  function hexWithOpacity(hex, alpha) {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return `rgba(${r},${g},${b},${alpha})`;
+  }
+
+  // ───── Task Status Bar Chart ─────
+  const taskCompleted = {{ task_completed }};
+  const taskWait = {{ task_wait }};
+  const taskRunning = {{ task_running }};
+  const taskData = [taskCompleted, taskWait, taskRunning];
+  const taskTotal = taskData.reduce((a, b) => a + b, 0);
+  const taskCategoryLabels = ['Complete', 'Wait Schedule', 'Running'];
+  const taskCategoryColors = ['#4caf82', '#e05c5c', '#ffc107'];
+  const taskCategoryThai = ['สแกนเสร็จสิ้น', 'รอตามกำหนด', 'กำลังทำงาน'];
+
+  const taskBarLabelPlugin = {
+    id: 'taskBarLabel',
+    afterDatasetsDraw(chart) {
+      const { ctx, data } = chart;
+      ctx.save();
+      data.datasets[0].data.forEach((value, i) => {
+        const meta = chart.getDatasetMeta(0);
+        const bar = meta.data[i];
+        const pct = taskTotal > 0 ? Math.round(value / taskTotal * 100) : 0;
+        ctx.fillStyle = '#333';
+        ctx.font = 'bold 13px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText(`${value}`, bar.x, bar.y - 18);
+        ctx.fillStyle = '#888';
+        ctx.font = '11px sans-serif';
+        ctx.fillText(`(${pct}%)`, bar.x, bar.y - 4);
+      });
+      ctx.restore();
+    }
+  };
+
+  const taskChart = new Chart(document.getElementById('taskStatusChart'), {
+    type: 'bar',
+    data: {
+      labels: taskCategoryLabels,
+      datasets: [{
+        data: taskData,
+        backgroundColor: taskCategoryColors,
+        hoverBackgroundColor: ['#3d9a6a', '#c94e4e', '#e0a800'],
+        borderRadius: 8,
+        borderSkipped: false,
+        barPercentage: 0.55,
+      }]
+    },
+    options: {
+      responsive: true,
+      layout: { padding: { top: 36 } },
+      plugins: {
+        legend: { display: false },
+        tooltip: { enabled: false }
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { font: { size: 12 } }
+        },
+        y: {
+          beginAtZero: true,
+          grid: { color: '#f0f0f0' },
+          ticks: { stepSize: 1, precision: 0, font: { size: 11 } }
+        }
+      },
+      onClick: function (evt, elements) {
+        if (elements && elements.length > 0) {
+          const idx = elements[0].index;
+          openTaskDrilldown(idx);
+        }
+      }
+    },
+    plugins: [taskBarLabelPlugin]
+  });
+
+  function openTaskDrilldown(categoryIdx) {
+    const chartView = document.getElementById('task-chart-view');
+    const drillView = document.getElementById('task-drilldown-view');
+    const titleEl = document.getElementById('task-drilldown-title');
+    const listEl = document.getElementById('task-drilldown-list');
+    const count = taskData[categoryIdx];
+    const color = taskCategoryColors[categoryIdx];
+
+    titleEl.textContent = `${taskCategoryLabels[categoryIdx]} — ${taskCategoryThai[categoryIdx]} (${count} งาน)`;
+    titleEl.style.color = color;
+    listEl.innerHTML = '';
+
+    if (count === 0) {
+      listEl.innerHTML = '<span style="color:#aaa;font-size:.85rem">ไม่มีงานในหมวดนี้</span>';
+    } else {
+      for (let i = 0; i < count; i++) {
+        const row = document.createElement('div');
+        row.style.cssText = `
+        display:flex;align-items:center;gap:10px;
+        padding:9px 14px;border-radius:8px;
+        background:#f8f9fa;border-left:3px solid ${color};
+        opacity:0;transform:translateX(-12px);
+        font-size:.83rem;
+      `;
+        const icons = { 0: '✅', 1: '⏳', 2: '🔄' };
+        row.innerHTML = `
+        <span>${icons[categoryIdx] || '📋'}</span>
+        <span style="font-weight:600;color:#333">Job #${i + 1}</span>
+        <span style="color:#aaa">|</span>
+        <span style="color:${color};font-weight:500">${taskCategoryLabels[categoryIdx]}</span>
+      `;
+        listEl.appendChild(row);
+      }
+    }
+
+    // Animate chart out → drilldown in
+    chartView.style.transition = 'opacity 0.18s ease, transform 0.18s ease';
+    chartView.style.opacity = '0';
+    chartView.style.transform = 'translateX(-20px)';
+
+    setTimeout(() => {
+      chartView.style.display = 'none';
+      drillView.style.display = 'flex';
+      drillView.style.opacity = '0';
+      drillView.style.transform = 'translateX(20px)';
+      requestAnimationFrame(() => {
+        drillView.style.transition = 'opacity 0.22s ease, transform 0.22s ease';
+        drillView.style.opacity = '1';
+        drillView.style.transform = 'translateX(0)';
+      });
+
+      // Stagger rows
+      const rows = listEl.querySelectorAll('div');
+      rows.forEach((row, i) => {
+        setTimeout(() => {
+          row.style.transition = 'opacity 0.22s ease, transform 0.22s ease';
+          row.style.opacity = '1';
+          row.style.transform = 'translateX(0)';
+        }, 30 + i * 55);
+      });
+    }, 200);
+  }
+
+  function closeDrilldown() {
+    const chartView = document.getElementById('task-chart-view');
+    const drillView = document.getElementById('task-drilldown-view');
+
+    drillView.style.transition = 'opacity 0.18s ease, transform 0.18s ease';
+    drillView.style.opacity = '0';
+    drillView.style.transform = 'translateX(20px)';
+
+    setTimeout(() => {
+      drillView.style.display = 'none';
+      chartView.style.display = 'flex';
+      chartView.style.opacity = '0';
+      chartView.style.transform = 'translateX(-20px)';
+      requestAnimationFrame(() => {
+        chartView.style.transition = 'opacity 0.22s ease, transform 0.22s ease';
+        chartView.style.opacity = '1';
+        chartView.style.transform = 'translateX(0)';
+      });
+    }, 200);
+  }
+
 </script>
+{% endif %}
+
+<!-- ===== STAT CARD MODAL OVERLAY ===== -->
+<div id="stat-modal-backdrop" style="
+       display:none;
+       position:fixed;inset:0;
+       background:rgba(0,0,0,0);
+       z-index:9000;
+       backdrop-filter:blur(0px);
+       -webkit-backdrop-filter:blur(0px);
+       transition:background 0.28s ease, backdrop-filter 0.28s ease;
+     " onclick="closeStatModal()">
+</div>
+
+<div id="stat-modal" style="
+       display:none;
+       position:fixed;
+       z-index:9001;
+       background:#fff;
+       border-radius:16px;
+       box-shadow:0 24px 80px rgba(0,0,0,0.2);
+       overflow:hidden;
+       will-change:transform,opacity;
+     ">
+  <div id="stat-modal-inner" style="padding:28px 32px;min-width:320px;max-width:560px;max-height:80vh;overflow-y:auto;">
+    <!-- Header -->
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;">
+      <div>
+        <div id="stat-modal-emoji" style="font-size:2rem;margin-bottom:4px;"></div>
+        <h5 id="stat-modal-title" style="margin:0;font-weight:700;font-size:1.15rem;"></h5>
+        <p id="stat-modal-subtitle" style="margin:0;color:#6c757d;font-size:.83rem;"></p>
+      </div>
+      <button onclick="closeStatModal()"
+        style="background:none;border:none;font-size:1.3rem;cursor:pointer;color:#aaa;padding:0;line-height:1;margin-left:16px;flex-shrink:0;"
+        aria-label="ปิด">✕</button>
+    </div>
+    <div id="stat-modal-body"></div>
+  </div>
+</div>
+
+<!-- ===== STYLES ===== -->
+<style>
+  /* Stat card hover state */
+  .stat-card {
+    transition: box-shadow 0.2s ease;
+    will-change: transform;
+  }
+
+  .stat-card:hover {
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.13) !important;
+  }
+
+  /* Modal scrollbar */
+  #stat-modal-inner::-webkit-scrollbar {
+    width: 5px;
+  }
+
+  #stat-modal-inner::-webkit-scrollbar-thumb {
+    background: #dee2e6;
+    border-radius: 4px;
+  }
+
+  /* Scan table row expansion */
+  .scan-row-detail {
+    overflow: hidden;
+    transition: max-height 0.32s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.28s ease;
+    max-height: 0;
+    opacity: 0;
+  }
+
+  .scan-row-detail.open {
+    opacity: 1;
+  }
+
+  .scan-row-clickable {
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .scan-row-clickable:hover td {
+    background: #f0f4ff !important;
+  }
+
+  .scan-row-toggle-icon {
+    display: inline-block;
+    transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+    font-size: .7rem;
+    margin-left: 4px;
+  }
+
+  .scan-row-toggle-icon.open {
+    transform: rotate(180deg);
+  }
+
+  /* Severity badge colors */
+  .sev-critical {
+    background: #7c3aed;
+    color: #fff;
+  }
+
+  .sev-high {
+    background: #dc3545;
+    color: #fff;
+  }
+
+  .sev-medium {
+    background: #ffc107;
+    color: #212529;
+  }
+
+  .sev-low {
+    background: #198754;
+    color: #fff;
+  }
+
+  .sev-info {
+    background: #0dcaf0;
+    color: #212529;
+  }
+
+  .sev-unknown {
+    background: #6c757d;
+    color: #fff;
+  }
+
+  /* Task drilldown scroll */
+  #task-drilldown-list {
+    max-height: 200px;
+    overflow-y: auto;
+  }
+
+  #task-drilldown-list::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  #task-drilldown-list::-webkit-scrollbar-thumb {
+    background: #dee2e6;
+    border-radius: 4px;
+  }
+
+  /* Donut filter device list scroll */
+  #donut-device-list {
+    max-height: 160px;
+    overflow-y: auto;
+  }
+
+  #donut-device-list::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  #donut-device-list::-webkit-scrollbar-thumb {
+    background: #dee2e6;
+    border-radius: 4px;
+  }
+</style>
 
 <!-- Scan Section -->
 <div class="row mb-5">
 
-    <!-- Latest Results (full width) -->
-    <div class="col-12">
-        <div class="card shadow-sm border-0">
-            <div class="card-header bg-white border-bottom d-flex align-items-center justify-content-between py-3 px-4">
-                <h5 class="mb-0">Latest Scan Results</h5>
-                {% if history %}
-                <a href="{{ url_for('scan_detail', scan_id=history[0].id) }}"
-                   class="btn btn-sm btn-outline-primary">
-                    View Full Report →
-                </a>
-                {% endif %}
-            </div>
-            {% if history %}
-            {% set latest = history[0] %}
-            <div class="card-body border-bottom bg-white py-3 px-4">
-                <div class="row align-items-center g-2">
-                    <div class="col-auto">
-                        <span class="fw-bold text-dark">Scan Report: Job #{{ latest_owner_seq if latest_owner_seq is not none else latest.id }}</span>
-                    </div>
-                    {% if latest.scan_name %}
-                    <div class="col-auto">
-                        <span class="text-muted">|</span>
-                        <span class="ms-2 fw-semibold text-primary">{{ latest.scan_name }}</span>
-                    </div>
-                    {% endif %}
-                    <div class="col-auto ms-auto d-flex flex-wrap gap-4 text-muted small">
-                        <span><strong class="text-dark">Target:</strong> {{ latest.target }}</span>
-                        <span>
-                            <strong class="text-dark">Scan Profile:</strong>
-                            <span class="badge bg-info text-dark ms-1">{{ latest.scan_type | scan_label }}</span>
-                        </span>
-                        <span><strong class="text-dark">Timestamp:</strong> {{ latest.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</span>
-                    </div>
-                </div>
-            </div>
-            {% endif %}
-            <div class="p-4">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle">
-                    <thead class="table-light">
-                        <tr>
+  <!-- Latest Results (full width) -->
+  <div class="col-12">
+    <div class="card shadow-sm border-0">
+      <div class="card-header bg-white border-bottom d-flex align-items-center justify-content-between py-3 px-4">
+        <h5 class="mb-0">Latest Scan Results</h5>
+        {% if history %}
+        <a href="{{ url_for('scan_detail', scan_id=history[0].id) }}" class="btn btn-sm btn-outline-primary">
+          View Full Report →
+        </a>
+        {% endif %}
+      </div>
+      {% if history %}
+      {% set latest = history[0] %}
+      <div class="card-body border-bottom bg-white py-3 px-4">
+        <div class="row align-items-center g-2">
+          <div class="col-auto">
+            <span class="fw-bold text-dark">Scan Report: Job #{{ latest_owner_seq if latest_owner_seq is not none else
+              latest.id }}</span>
+          </div>
+          {% if latest.scan_name %}
+          <div class="col-auto">
+            <span class="text-muted">|</span>
+            <span class="ms-2 fw-semibold text-primary">{{ latest.scan_name }}</span>
+          </div>
+          {% endif %}
+          <div class="col-auto ms-auto d-flex flex-wrap gap-4 text-muted small">
+            <span><strong class="text-dark">Target:</strong> {{ latest.target }}</span>
+            <span>
+              <strong class="text-dark">Scan Profile:</strong>
+              <span class="badge bg-info text-dark ms-1">{{ latest.scan_type | scan_label }}</span>
+            </span>
+            <span><strong class="text-dark">Timestamp:</strong> {{ latest.timestamp.strftime('%Y-%m-%d %H:%M:%S')
+              }}</span>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+      <div class="p-4">
+        <div class="table-responsive">
+          <table class="table align-middle" id="scan-results-table">
+            <thead class="table-light">
+              <tr>
                             <th>IP Address</th>
                             <th>MAC Address</th>
                             <th>OS / Status</th>
                             <th>Open Ports / Protocal / Service Version</th>
-                        </tr>
-                    </thead>
+              </tr>
+            </thead>
                     <tbody>
                         {% for item in scan_data %}
                         {% set loop_idx = loop.index %}
@@ -359,21 +771,394 @@ new Chart(document.getElementById('taskStatusChart'), {
                         </tr>
                         {% endfor %}
                     </tbody>
-                </table>
-            </div>
-            </div>{# end p-4 #}
+          </table>
         </div>
+      </div>{# end p-4 #}
     </div>
+  </div>
 
 </div>
 
 
-<!-- History Section -> ย้ายไปหน้าแยกแล้ว -->
+<!-- History Section -->
 <div class="card border-0 shadow-sm p-4 mb-4 text-center" id="history-section">
-    <div style="font-size:2.5rem">🕒</div>
-    <h5 class="mt-2 mb-1">Scan History</h5>
-    <p class="text-muted small mb-3">ดูประวัติการสแกนทั้งหมดได้ที่หน้า Scan History</p>
-    <a href="{{ url_for('history_page') }}" class="btn btn-outline-primary btn-sm">ไปหน้า Scan History →</a>
+  <div style="font-size:2.5rem">🕒</div>
+  <h5 class="mt-2 mb-1">Scan History</h5>
+  <p class="text-muted small mb-3">ดูประวัติการสแกนทั้งหมดได้ที่หน้า Scan History</p>
+  <a href="{{ url_for('history_page') }}" class="btn btn-outline-primary btn-sm">ไปหน้า Scan History →</a>
 </div>
+
+
+<!-- ===== INTERACTIVE JAVASCRIPT ===== -->
+<script>
+  // ──────────────────────────────────────────────────────
+  // 1. STAT CARD HOVER + FLIP MODAL
+  // ──────────────────────────────────────────────────────
+
+  // Data injected from Jinja
+  const DASH_DATA = {
+    total_devices: {{ total_devices }},
+    total_open_ports: {{ total_open_ports }},
+    total_cves_found: {{ total_cves_found }},
+    total_tasks: {{ total_tasks }},
+    task_completed: {{ task_completed }},
+    task_wait: {{ task_wait }},
+    task_running: {{ task_running }},
+    device_port_data: {{ device_port_data | tojson }},
+    top_ports: {{ top_ports | tojson }},
+  };
+
+  // Hover spring animation (CSS-based for performance)
+  document.querySelectorAll('.stat-card').forEach(card => {
+    let hoverAnim = null;
+
+    card.addEventListener('mouseenter', () => {
+      animateCard(card, { scale: 1.03, y: -5 }, 200);
+    });
+    card.addEventListener('mouseleave', () => {
+      animateCard(card, { scale: 1, y: 0 }, 220);
+    });
+    card.addEventListener('mousedown', () => {
+      animateCard(card, { scale: 0.97, y: 0 }, 100);
+    });
+    card.addEventListener('mouseup', () => {
+      animateCard(card, { scale: 1.03, y: -5 }, 150);
+    });
+  });
+
+  function animateCard(el, { scale, y }, duration) {
+    el.style.transition = `transform ${duration}ms cubic-bezier(0.34,1.56,0.64,1)`;
+    el.style.transform = `scale(${scale}) translateY(${y}px)`;
+  }
+
+  // Click → FLIP modal
+  document.querySelectorAll('.stat-card').forEach(card => {
+    card.addEventListener('click', () => {
+      const type = card.dataset.card;
+      openStatModal(type, card);
+    });
+  });
+
+  function openStatModal(type, sourceCard) {
+    const modal = document.getElementById('stat-modal');
+    const backdrop = document.getElementById('stat-modal-backdrop');
+    const emoji = document.getElementById('stat-modal-emoji');
+    const title = document.getElementById('stat-modal-title');
+    const subtitle = document.getElementById('stat-modal-subtitle');
+    const body = document.getElementById('stat-modal-body');
+
+    // Populate content
+    const content = buildModalContent(type);
+    emoji.textContent = content.emoji;
+    title.textContent = content.title;
+    subtitle.textContent = content.subtitle;
+    body.innerHTML = content.html;
+
+    // Get source card position (FLIP technique)
+    const srcRect = sourceCard.getBoundingClientRect();
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+
+    // Target: centered, 560px wide max
+    const targetW = Math.min(560, vw * 0.9);
+    const targetH = Math.min(600, vh * 0.8);
+    const targetX = (vw - targetW) / 2;
+    const targetY = (vh - targetH) / 2;
+
+    // Start from source card rect
+    modal.style.display = 'block';
+    modal.style.width = srcRect.width + 'px';
+    modal.style.height = srcRect.height + 'px';
+    modal.style.left = srcRect.left + 'px';
+    modal.style.top = srcRect.top + window.scrollY + 'px';
+    modal.style.borderRadius = '12px';
+    modal.style.opacity = '0.4';
+    modal.style.transform = 'scale(0.95)';
+    modal.style.transition = 'none';
+
+    // Show backdrop
+    backdrop.style.display = 'block';
+    backdrop.style.background = 'rgba(0,0,0,0)';
+    backdrop.style.backdropFilter = 'blur(0px)';
+
+    // Animate to target on next frame (FLIP)
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        modal.style.transition = [
+          'left 0.35s cubic-bezier(0.34,1.2,0.64,1)',
+          'top 0.35s cubic-bezier(0.34,1.2,0.64,1)',
+          'width 0.35s cubic-bezier(0.34,1.2,0.64,1)',
+          'height 0.35s cubic-bezier(0.34,1.2,0.64,1)',
+          'opacity 0.25s ease',
+          'transform 0.3s cubic-bezier(0.34,1.2,0.64,1)',
+          'border-radius 0.3s ease',
+        ].join(',');
+
+        modal.style.left = targetX + 'px';
+        modal.style.top = targetY + 'px';
+        modal.style.width = targetW + 'px';
+        modal.style.height = 'auto';
+        modal.style.opacity = '1';
+        modal.style.transform = 'scale(1)';
+        modal.style.borderRadius = '16px';
+
+        backdrop.style.transition = 'background 0.3s ease, backdrop-filter 0.3s ease';
+        backdrop.style.background = 'rgba(0,0,0,0.45)';
+        backdrop.style.backdropFilter = 'blur(4px)';
+      });
+    });
+
+    // Stagger content items after modal opens
+    setTimeout(() => {
+      body.querySelectorAll('.modal-item').forEach((el, i) => {
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(8px)';
+        setTimeout(() => {
+          el.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
+          el.style.opacity = '1';
+          el.style.transform = 'translateY(0)';
+        }, 60 + i * 45);
+      });
+    }, 280);
+  }
+
+  function closeStatModal() {
+    const modal = document.getElementById('stat-modal');
+    const backdrop = document.getElementById('stat-modal-backdrop');
+
+    modal.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
+    modal.style.opacity = '0';
+    modal.style.transform = 'scale(0.94) translateY(12px)';
+
+    backdrop.style.transition = 'background 0.2s ease, backdrop-filter 0.2s ease';
+    backdrop.style.background = 'rgba(0,0,0,0)';
+    backdrop.style.backdropFilter = 'blur(0px)';
+
+    setTimeout(() => {
+      modal.style.display = 'none';
+      backdrop.style.display = 'none';
+      modal.style.transform = '';
+    }, 220);
+  }
+
+  // Close on Escape
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeStatModal();
+  });
+
+  // ─── Build modal content per card type ───
+  function buildModalContent(type) {
+    const d = DASH_DATA;
+
+    if (type === 'devices') {
+      const safe = d.device_port_data.filter(x => x.count < 3);
+      const warning = d.device_port_data.filter(x => x.count >= 3 && x.count <= 6);
+      const danger = d.device_port_data.filter(x => x.count > 6);
+
+      const makeGroup = (label, color, icon, items) => {
+        if (items.length === 0) return '';
+        const rows = items.map(d =>
+          `<div class="modal-item" style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#f8f9fb;border-radius:8px;border-left:3px solid ${color};font-size:.83rem;">
+          <span style="font-weight:600;font-family:monospace;color:#333">${d.ip}</span>
+          <span style="color:#aaa">|</span>
+          <span style="color:${color};font-weight:500">${d.count} port${d.count !== 1 ? 's' : ''}</span>
+        </div>`
+        ).join('');
+        return `
+        <div class="modal-item" style="margin-bottom:8px;margin-top:14px;">
+          <div style="font-weight:600;font-size:.82rem;color:${color};margin-bottom:6px;">${icon} ${label} (${items.length} เครื่อง)</div>
+          <div style="display:flex;flex-direction:column;gap:5px;">${rows}</div>
+        </div>`;
+      };
+
+      return {
+        emoji: '🖥️',
+        title: `อุปกรณ์ทั้งหมด — ${d.total_devices} เครื่อง`,
+        subtitle: 'แบ่งตามจำนวน Open Ports',
+        html: `
+        <div style="display:flex;gap:12px;margin-bottom:4px;">
+          ${makePill('#198754', '< 3 Port', safe.length)}
+          ${makePill('#ffc107', '3–6 Port', warning.length, '#212529')}
+          ${makePill('#dc3545', '> 6 Port', danger.length)}
+        </div>
+        ${makeGroup('ความปลอดภัยสูง (< 3 Port)', '#198754', '🟢', safe)}
+        ${makeGroup('ระมัดระวัง (3–6 Port)', '#ffc107', '🟡', warning)}
+        ${makeGroup('ความเสี่ยงสูง (> 6 Port)', '#dc3545', '🔴', danger)}
+      `
+      };
+    }
+
+    if (type === 'ports') {
+      const portRows = d.top_ports.length > 0
+        ? d.top_ports.map(([port, count], i) =>
+          `<div class="modal-item" style="display:flex;align-items:center;gap:10px;padding:9px 14px;background:#f8f9fb;border-radius:8px;border-left:3px solid #198754;font-size:.83rem;">
+            <span style="font-weight:700;color:#198754;min-width:20px;text-align:center">#${i + 1}</span>
+            <span style="font-family:monospace;font-weight:600;color:#333;flex:1">${port}</span>
+            <span style="background:#198754;color:#fff;border-radius:20px;padding:2px 10px;font-size:.75rem;font-weight:600">${count} อุปกรณ์</span>
+          </div>`
+        ).join('')
+        : '<div class="modal-item" style="color:#aaa;font-size:.85rem">ยังไม่มีข้อมูล Port</div>';
+
+      return {
+        emoji: '🔌',
+        title: `Open Ports — ${d.total_open_ports} unique ports`,
+        subtitle: 'Top ports ที่พบมากที่สุดจากทุกการสแกน',
+        html: `
+        <div class="modal-item" style="color:#888;font-size:.8rem;margin-bottom:10px;">Unique ports (ไม่นับซ้ำ) จากทุกการสแกน</div>
+        <div style="display:flex;flex-direction:column;gap:6px;">${portRows}</div>
+      `
+      };
+    }
+
+    if (type === 'cve') {
+      // CVE list pre-computed from all scans (passed from backend)
+      const cveList = {{ all_cves_json | safe }};
+
+  // Sort: critical first
+  const sevOrder = { critical: 0, high: 1, medium: 2, low: 3, info: 4, unknown: 5 };
+  cveList.sort((a, b) => (sevOrder[a.severity.toLowerCase()] ?? 5) - (sevOrder[b.severity.toLowerCase()] ?? 5));
+
+  const counts = {};
+  cveList.forEach(c => {
+    const s = c.severity.toLowerCase();
+    counts[s] = (counts[s] || 0) + 1;
+  });
+
+  const sevRows = cveList.length > 0
+    ? cveList.slice(0, 20).map(c => {
+      const sev = c.severity.toLowerCase();
+      const cls = `sev-${sev}`;
+      return `<div class="modal-item" style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#f8f9fb;border-radius:8px;font-size:.8rem;">
+            <span style="font-family:monospace;font-weight:600;color:#333;flex:1">${c.id}</span>
+            ${c.port ? `<span style="color:#aaa;font-size:.72rem">Port ${c.port}</span>` : ''}
+            <span class="badge ${cls}" style="font-size:.7rem;text-transform:uppercase">${c.severity || 'unknown'}</span>
+          </div>`;
+    }).join('')
+    : '<div class="modal-item" style="color:#198754;font-size:.85rem">✅ ไม่พบ CVE ในการสแกนล่าสุด</div>';
+
+  const summaryPills = Object.entries(counts).map(([sev, cnt]) =>
+    makePill(
+      sev === 'critical' ? '#7c3aed' :
+        sev === 'high' ? '#dc3545' :
+          sev === 'medium' ? '#ffc107' :
+            sev === 'low' ? '#198754' : '#6c757d',
+      sev.charAt(0).toUpperCase() + sev.slice(1),
+      cnt,
+      ['medium', 'info'].includes(sev) ? '#212529' : '#fff'
+    )
+  ).join('');
+
+  return {
+    emoji: '🛡️',
+    title: `CVE Found — ${d.total_cves_found} รายการ`,
+    subtitle: 'ช่องโหว่ที่ตรวจพบในการสแกนล่าสุด',
+    html: `
+        ${summaryPills ? `<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;" class="modal-item">${summaryPills}</div>` : ''}
+        <div style="display:flex;flex-direction:column;gap:5px;">${sevRows}</div>
+        ${cveList.length > 20 ? `<div style="color:#aaa;font-size:.78rem;margin-top:8px;text-align:center">แสดง 20 รายการแรก (ทั้งหมด ${cveList.length} รายการ)</div>` : ''}
+      `
+  };
+  }
+
+  if (type === 'tasks') {
+    const statusGroups = [
+      { label: 'Complete', labelTh: 'เสร็จสิ้น', count: d.task_completed, color: '#4caf82', icon: '✅' },
+      { label: 'Wait Schedule', labelTh: 'รอตามกำหนด', count: d.task_wait, color: '#e05c5c', icon: '⏳' },
+      { label: 'Running', labelTh: 'กำลังทำงาน', count: d.task_running, color: '#ffc107', icon: '🔄' },
+    ];
+
+    const bars = statusGroups.map(g => {
+      const pct = d.total_tasks > 0 ? Math.round(g.count / d.total_tasks * 100) : 0;
+      return `<div class="modal-item" style="margin-bottom:10px;">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:.83rem;">
+          <span>${g.icon} ${g.label} <span style="color:#999;font-size:.78rem">(${g.labelTh})</span></span>
+          <span style="font-weight:600;color:${g.color}">${g.count} งาน</span>
+        </div>
+        <div style="height:8px;background:#f0f0f0;border-radius:8px;overflow:hidden;">
+          <div style="height:100%;width:0;background:${g.color};border-radius:8px;transition:width 0.5s cubic-bezier(0.34,1.2,0.64,1);will-change:width;"
+               data-target-width="${pct}%"
+               class="progress-bar-anim">
+          </div>
+        </div>
+        <div style="text-align:right;font-size:.72rem;color:#aaa;margin-top:2px">${pct}%</div>
+      </div>`;
+    }).join('');
+
+    return {
+      emoji: '📋',
+      title: `Total Task — ${d.total_tasks} งาน`,
+      subtitle: 'สรุปสถานะงานทั้งหมด',
+      html: `
+        <div style="display:flex;gap:12px;margin-bottom:16px;" class="modal-item">
+          ${makePill('#4caf82', 'Complete', d.task_completed)}
+          ${makePill('#e05c5c', 'Wait', d.task_wait)}
+          ${makePill('#ffc107', 'Running', d.task_running, '#212529')}
+        </div>
+        ${bars}
+      `
+    };
+  }
+
+  return { emoji: '📊', title: 'รายละเอียด', subtitle: '', html: '' };
+}
+
+  function makePill(bg, label, count, textColor = '#fff') {
+    return `<div style="
+    background:${bg};color:${textColor};
+    padding:6px 14px;border-radius:20px;
+    font-size:.8rem;font-weight:600;
+    display:flex;flex-direction:column;align-items:center;
+    min-width:60px;
+  ">
+    <span style="font-size:1.1rem;font-weight:700;">${count}</span>
+    <span style="font-size:.7rem;opacity:0.85">${label}</span>
+  </div>`;
+  }
+
+  // Animate progress bars inside modal after open
+  document.getElementById('stat-modal').addEventListener('transitionend', () => {
+    document.querySelectorAll('.progress-bar-anim').forEach(bar => {
+      const target = bar.dataset.targetWidth;
+      if (target && bar.style.width !== target) {
+        setTimeout(() => { bar.style.width = target; }, 50);
+      }
+    });
+  }, { passive: true });
+
+
+  // ──────────────────────────────────────────────────────
+  // 4. SCAN RESULTS TABLE — Smooth row expand
+  // ──────────────────────────────────────────────────────
+  function toggleScanRow(idx, portCount) {
+    const detail = document.getElementById(`scan-detail-${idx}`);
+    const icon = document.getElementById(`scan-toggle-icon-${idx}`);
+    const isOpen = detail.classList.contains('open');
+
+    if (isOpen) {
+      // Close: animate height to 0
+      detail.style.maxHeight = detail.scrollHeight + 'px';
+      detail.style.opacity = '0';
+      requestAnimationFrame(() => {
+        detail.style.transition = 'max-height 0.3s cubic-bezier(0.4,0,0.2,1), opacity 0.22s ease';
+        detail.style.maxHeight = '0';
+      });
+      detail.classList.remove('open');
+      icon.classList.remove('open');
+    } else {
+      // Open: animate height from 0 to scrollHeight
+      detail.style.maxHeight = '0';
+      detail.style.opacity = '0';
+      detail.style.transition = 'none';
+      detail.classList.add('open');
+
+      requestAnimationFrame(() => {
+        detail.style.transition = 'max-height 0.32s cubic-bezier(0.4,0,0.2,1), opacity 0.25s ease';
+        detail.style.maxHeight = detail.scrollHeight + 300 + 'px'; // +buffer for safety
+        detail.style.opacity = '1';
+      });
+      icon.classList.add('open');
+    }
+  }
+</script>
 
 {% endblock %}

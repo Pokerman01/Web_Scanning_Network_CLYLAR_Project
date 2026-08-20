@@ -17,8 +17,10 @@ def now_th():
     return datetime.now(TZ).replace(tzinfo=None)
 
 
+import os
+
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'super-secret-key-change-me'
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'super-secret-key-change-me')
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///scanner.db'
 
 db.init_app(app)
@@ -379,6 +381,7 @@ def dashboard():
     all_ports_global = set()
     total_cves_found = 0
     seen_cves = set()
+    all_cves_list = []  # for the CVE detail modal
     for job in history:
         if not job.result_data:
             continue
@@ -396,7 +399,14 @@ def dashboard():
                     if cve_id not in seen_cves:
                         seen_cves.add(cve_id)
                         total_cves_found += 1
-    total_open_ports = len(all_ports_global)
+                        severity = cve.get('severity', 'unknown') if isinstance(cve, dict) else 'unknown'
+                        all_cves_list.append({
+                            'id': cve_id,
+                            'severity': severity,
+                            'port': p.get('port', ''),
+                            'service': p.get('name', ''),
+                            'ip': d.get('ip', ''),
+                        })
     total_open_ports = len(all_ports_global)
 
     # คำนวณ owner_seq ของ latest_scan เพื่อโชว์ #N ที่ถูกต้องใน dashboard
@@ -422,6 +432,7 @@ def dashboard():
         task_wait=task_wait,
         latest_owner_seq=latest_owner_seq,
         total_cves_found=total_cves_found,
+        all_cves_json=json.dumps(all_cves_list),
     )
 
 
@@ -639,7 +650,7 @@ def api_jobs():
             'scan_type': j.scan_type,
             'status': j.status,
             'triggered_by': j.triggered_by or 'manual',
-            'timestamp': j.timestamp.strftime('%Y-%m-%d %H:%M') if j.timestamp else '',
+            'timestamp': j.timestamp.strftime('%Y-%m-%d %H:%M:%S') if j.timestamp else '',
             'scan_seq': seq,
             'scan_total': total,
         })

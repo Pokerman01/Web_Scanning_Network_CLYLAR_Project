@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CLYLHA Network Scanner</title>
+    <title>CLYLAR Network Scanner</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -172,7 +172,7 @@
                 <i class="ti ti-radar" aria-hidden="true"></i>
             </div>
             <div>
-                <div class="sidebar-logo-text">CLYLHA</div>
+                <div class="sidebar-logo-text">CLYLAR</div>
                 <div class="sidebar-logo-sub">Network Scanner</div>
             </div>
         </div>
@@ -495,7 +495,7 @@
 
 {% if current_user.is_authenticated %}
 <!-- Floating button -->
-<button id="chatbot-btn" onclick="toggleChat()" title="CLYLHA Chatbot">
+<button id="chatbot-btn" onclick="toggleChat()" title="CLYLAR Chatbot">
   <span id="chatbot-badge">1</span>
   <!-- Chat icon -->
   <svg class="icon-chat" width="26" height="26" viewBox="0 0 24 24" fill="none">
@@ -513,7 +513,7 @@
   <div class="cb-header">
     <div class="cb-avatar">🤖</div>
     <div class="cb-header-info">
-      <h6>CLYLHA Chatbot</h6>
+      <h6>CLYLAR Chatbot</h6>
       <span>🟢 Online — อยู่ระหว่างการพัฒนา</span>
     </div>
     <button class="cb-close" onclick="toggleChat()">✕</button>
@@ -524,7 +524,7 @@
     <div class="cb-msg bot">
       <div>
         <div class="cb-bubble">
-          สวัสดีครับ! ผมคือ CLYLHA Chatbot<br>
+          สวัสดีครับ! ผมคือ CLYLAR Chatbot<br>
           
         </div>
         <div class="cb-time">เพิ่งเมื่อกี้</div>
@@ -643,6 +643,208 @@ function sendQuick(text) {
             dropdown.classList.remove('show');
         }
     });
+</script>
+
+<!-- Global Scan Notification Toast -->
+<style>
+/* Premium Toast Styling */
+#globalScanToast {
+    background: rgba(255, 255, 255, 0.98) !important;
+    backdrop-filter: blur(12px);
+    border-radius: 14px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.12);
+    border: 1px solid rgba(0,0,0,0.06);
+    overflow: hidden;
+    min-width: 320px;
+}
+.toast-indicator {
+    width: 6px;
+    background: #10b981; 
+}
+.toast-content-wrapper {
+    display: flex;
+    padding: 16px 20px 16px 16px;
+    align-items: center;
+    gap: 16px;
+    flex-grow: 1;
+}
+.toast-icon-box {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.toast-success .toast-indicator { background: #10b981; }
+.toast-success .toast-icon-box { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+.toast-error .toast-indicator { background: #ef4444; }
+.toast-error .toast-icon-box { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+
+.toast-text-content {
+    flex-grow: 1;
+}
+.toast-title {
+    font-weight: 700;
+    color: #1e293b;
+    font-size: 0.95rem;
+    margin-bottom: 3px;
+    letter-spacing: -0.2px;
+}
+.toast-desc {
+    color: #64748b;
+    font-size: 0.85rem;
+    line-height: 1.4;
+}
+.toast-desc strong { color: #334155; }
+.toast-close-btn {
+    background: none;
+    border: none;
+    color: #94a3b8;
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 0 16px 0 0;
+    transition: color 0.2s;
+}
+.toast-close-btn:hover {
+    color: #475569;
+}
+#globalScanToast.show {
+    display: flex !important;
+    flex-direction: row;
+}
+</style>
+
+{% if current_user.is_authenticated %}
+<div class="toast-container position-fixed bottom-0 end-0 p-4" style="z-index: 10005;">
+  <div id="globalScanToast" class="toast border-0 p-0" role="alert" aria-live="assertive" aria-atomic="true">
+    <div class="toast-indicator" id="scanToastIndicator"></div>
+    <div class="toast-content-wrapper">
+      <div class="toast-icon-box" id="scanToastIcon">
+      </div>
+      <div class="toast-text-content">
+        <div class="toast-title" id="scanToastTitle">Scan Update</div>
+        <div class="toast-desc" id="globalScanToastBody">Your scan status has been updated.</div>
+      </div>
+    </div>
+    <button type="button" class="toast-close-btn" data-bs-dismiss="toast" aria-label="Close">✕</button>
+  </div>
+</div>
+{% endif %}
+
+<script>
+    {% if current_user.is_authenticated %}
+    document.addEventListener('DOMContentLoaded', () => {
+        const toastEl = document.getElementById('globalScanToast');
+        if (!toastEl) return;
+        const toastBody = document.getElementById('globalScanToastBody');
+        const bsToast = new bootstrap.Toast(toastEl, { autohide: true, delay: 6000 });
+
+        // Clear any stale localStorage from previous code versions.
+        localStorage.removeItem('notifiedJobs');
+
+        // --- Toast queue (one at a time) ---
+        const notifQueue = [];
+        let toastBusy = false;
+
+        function showNextInQueue() {
+            if (notifQueue.length === 0) { toastBusy = false; return; }
+            toastBusy = true;
+            const job = notifQueue.shift();
+            toastEl.classList.remove('toast-success', 'toast-error');
+            if (job.status === 'Completed') {
+                toastEl.classList.add('toast-success');
+                document.getElementById('scanToastIcon').innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+                document.getElementById('scanToastTitle').innerText = 'Scan Complete';
+                toastBody.innerHTML = `Job <strong>#${job.owner_seq}</strong> to <em>${job.target}</em> has successfully finished.`;
+            } else {
+                toastEl.classList.add('toast-error');
+                document.getElementById('scanToastIcon').innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
+                document.getElementById('scanToastTitle').innerText = 'Scan Failed';
+                toastBody.innerHTML = `Job <strong>#${job.owner_seq}</strong> to <em>${job.target}</em> encountered an error.`;
+            }
+            bsToast.show();
+        }
+        toastEl.addEventListener('hidden.bs.toast', () => showNextInQueue());
+        function enqueueNotification(job) {
+            notifQueue.push(job);
+            if (!toastBusy) showNextInQueue();
+        }
+
+        // --- Session-only helpers ---
+        function getShown() { return JSON.parse(sessionStorage.getItem('toastShownIds') || '[]'); }
+        function addShown(id) {
+            const a = getShown(); if (!a.includes(id)) { a.push(id); sessionStorage.setItem('toastShownIds', JSON.stringify(a)); }
+        }
+        function getWatched() { return JSON.parse(sessionStorage.getItem('watchRunningJobs') || '[]'); }
+        function setWatched(ids) { sessionStorage.setItem('watchRunningJobs', JSON.stringify(ids)); }
+
+        // --- Flag form submits so next page load can detect a scan result ---
+        document.querySelectorAll('form').forEach(form => {
+            form.addEventListener('submit', () => {
+                sessionStorage.setItem('expectScanResult', Date.now().toString());
+            });
+        });
+
+        function processJobs(jobs, isInitialLoad) {
+            const watched = getWatched();
+            const shown = getShown();
+            const newRunning = [];
+            let consumedExpect = false;
+
+            jobs.forEach(job => {
+                if (job.status === 'Running') {
+                    if (!newRunning.includes(job.id)) newRunning.push(job.id);
+                    return; // forEach continue
+                }
+
+                if (job.status !== 'Completed' && job.status !== 'Failed') return;
+                if (shown.includes(job.id)) return; // already toasted
+
+                // PATH 1: Job was Running in a previous poll/page → now finished.
+                if (watched.includes(job.id)) {
+                    addShown(job.id);
+                    enqueueNotification(job);
+                    return;
+                }
+
+                // PATH 2: On page load after user submitted a form.
+                // The scan ran synchronously so we never saw it as Running.
+                // Notify for the FIRST (newest) unshown finished job only.
+                if (isInitialLoad && !consumedExpect) {
+                    const expectAt = parseInt(sessionStorage.getItem('expectScanResult') || '0');
+                    if (expectAt > 0 && (Date.now() - expectAt) < 5 * 60 * 1000) {
+                        consumedExpect = true;
+                        sessionStorage.removeItem('expectScanResult');
+                        addShown(job.id);
+                        enqueueNotification(job);
+                        return;
+                    }
+                }
+
+                // Old job from before this session — mark silently.
+                addShown(job.id);
+            });
+
+            setWatched(newRunning);
+        }
+
+        // Initial fetch on page load.
+        fetch('/api/jobs')
+            .then(r => r.json())
+            .then(jobs => processJobs(jobs, true))
+            .catch(e => console.log('Error fetching jobs:', e))
+            .finally(() => {
+                setInterval(() => {
+                    fetch('/api/jobs')
+                        .then(r => r.json())
+                        .then(jobs => processJobs(jobs, false))
+                        .catch(e => console.log('Error polling jobs:', e));
+                }, 5000);
+            });
+    });
+    {% endif %}
 </script>
 </body>
 </html>
