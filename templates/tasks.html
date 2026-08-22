@@ -549,9 +549,10 @@ function typeBadge(t) {
 }
 
 function srcBadge(src) {
-    return src === 'schedule'
-        ? `<span class="badge text-bg-dark">⏰ Schedule</span>`
-        : `<span class="badge text-bg-light text-dark border">👤 Manual</span>`;
+    if (src === 'schedule')  return `<span class="badge text-bg-dark">⏰ Schedule</span>`;
+    if (src === 'rescan')    return `<span class="badge" style="background:#e0f2fe;color:#0369a1;border:1px solid #7dd3fc;">🔁 Rescan</span>`;
+    if (src === 'drilldown') return `<span class="badge" style="background:#ede9fe;color:#6d28d9;border:1px solid #c4b5fd;">🔍 Drill-down</span>`;
+    return `<span class="badge text-bg-light text-dark border">👤 Manual</span>`;
 }
 
 function renderJobs() {

@@ -766,7 +766,7 @@ def cancel_job(job_id):
 @login_required
 @admin_required
 def rescan_job(job_id):
-    """ลบ job เดิม แล้วสร้าง job ใหม่ด้วย target เดิม + scan_type ที่เลือกใหม่"""
+    """สร้าง job ใหม่ด้วย target เดิม + scan_type ที่เลือกใหม่ (เก็บ job เดิมไว้เป็นประวัติ)"""
     original = visible_scans_query().filter_by(id=job_id).first_or_404()
 
     # ห้าม rescan ถ้า scan มาจาก XML Upload
@@ -785,17 +785,14 @@ def rescan_job(job_id):
     target      = original.target
     custom_args = request.form.get('custom_args', '').strip() or None
 
-    # ลบ job เดิมออก
-    db.session.delete(original)
-    db.session.flush()
-
-    # สร้าง job ใหม่แทนที่
+    # เก็บ job เดิมไว้เป็นประวัติ — ไม่ลบ
+    # สร้าง job ใหม่เพิ่มเข้าไป
     new_job = ScanJob(
         target=target,
         scan_type=scan_type,
         scan_name=scan_name,
         status='Running',
-        triggered_by='manual',
+        triggered_by='rescan',
         owner_id=current_user.id,
     )
     db.session.add(new_job)
@@ -811,9 +808,64 @@ def rescan_job(job_id):
     if has_error:
         flash(f'Rescan failed: {results_data[0]["error"]}', 'danger')
     else:
-        flash(f'🔁 Rescan "{target}" เสร็จสิ้น!', 'success')
+        flash(f'🔁 Rescan "{target}" เสร็จสิ้น! (ประวัติเดิมถูกเก็บไว้)', 'success')
 
     return redirect(url_for('tasks_page'))
+
+
+
+@app.route('/scan/<int:scan_id>/drilldown', methods=['POST'])
+@login_required
+@admin_required
+def drilldown_scan(scan_id):
+    """Progressive Drill-down: สแกน host เฉพาะตัวจากผลสแกนครั้งก่อน"""
+    parent_job = visible_scans_query().filter_by(id=scan_id).first_or_404()
+
+    host_ip   = request.form.get('host_ip', '').strip()
+    scan_type = request.form.get('scan_type', 'fast_scan')
+    custom_args = request.form.get('custom_args', '').strip() or None
+
+    if not host_ip:
+        flash('กรุณาระบุ IP ที่ต้องการสแกน', 'danger')
+        return redirect(url_for('scan_detail', scan_id=scan_id))
+
+    # ตรวจว่า IP นี้กำลังสแกนอยู่หรือไม่
+    running = visible_scans_query().filter_by(target=host_ip, status='Running').first()
+    if running:
+        flash(f'❌ Target "{host_ip}" กำลังสแกนอยู่ กรุณารอให้เสร็จก่อน', 'danger')
+        return redirect(url_for('scan_detail', scan_id=scan_id))
+
+    # สร้าง scan name ที่อ้างอิง parent scan
+    parent_label = parent_job.scan_name or f'Scan #{parent_job.id}'
+    scan_name = f'Drill-down: {host_ip} (from {parent_label})'
+
+    new_job = ScanJob(
+        target=host_ip,
+        scan_type=scan_type,
+        scan_name=scan_name,
+        status='Running',
+        triggered_by='drilldown',
+        owner_id=current_user.id,
+    )
+    db.session.add(new_job)
+    # บันทึก IP ไว้ในรายชื่อ saved targets ถ้ายังไม่มี
+    if not SavedTarget.query.filter_by(target=host_ip).first():
+        db.session.add(SavedTarget(target=host_ip))
+    db.session.commit()
+
+    results = run_vuln_scan(host_ip) if scan_type == 'vuln_scan' else run_network_scan(host_ip, scan_type, custom_args=custom_args)
+    results_data = json.loads(results)
+    has_error = results_data and results_data[0].get('error')
+    new_job.status = 'Failed' if has_error else 'Completed'
+    new_job.result_data = results
+    db.session.commit()
+
+    if has_error:
+        flash(f'Drill-down scan failed: {results_data[0]["error"]}', 'danger')
+        return redirect(url_for('scan_detail', scan_id=scan_id))
+
+    flash(f'🔍 Drill-down scan on {host_ip} completed!', 'success')
+    return redirect(url_for('scan_detail', scan_id=new_job.id))
 
 
 @app.route('/schedules/<int:schedule_id>/run_now', methods=['POST'])

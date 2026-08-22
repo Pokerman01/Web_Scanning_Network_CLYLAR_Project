@@ -4,6 +4,17 @@
 
 <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
 
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ 'success' if category == 'success' else 'danger' }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
 <div class="mb-4 d-flex gap-2 align-items-center flex-wrap">
     <a href="{{ url_for('dashboard') }}"
        class="btn btn-outline-secondary btn-sm">
@@ -348,6 +359,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 <table style="width:100%;border-collapse:collapse;font-size:.82rem;">
                     <tbody id="detail-tbody"></tbody>
                 </table>
+                {% if current_user.is_any_admin %}
+                <div id="popup-drilldown-area" style="padding:8px 0 2px;border-top:1px solid #eee;margin-top:8px;display:none;">
+                    <button id="popup-drilldown-btn" class="btn btn-sm w-100 fw-semibold"
+                            style="background:linear-gradient(135deg,#0f3460,#1a5276);color:#fff;border:none;border-radius:8px;padding:8px;font-size:.82rem;"
+                            onclick="openDrilldownFromPopup()">
+                        🔍 Scan This Host
+                    </button>
+                </div>
+                {% endif %}
             </div>
 
             <!-- Port Panel -->
@@ -449,6 +469,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 <th>State</th>
                 <th>Service</th>
                 <th>Version</th>
+                {% if current_user.is_any_admin %}
+                <th style="width:100px;text-align:center;">Actions</th>
+                {% endif %}
             </tr>
         </thead>
         <tbody>
@@ -479,6 +502,15 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <i class="text-muted">Version unknown</i>
                             {% endif %}
                         </td>
+                        {% if current_user.is_any_admin and loop.first %}
+                        <td rowspan="{{ item.ports | length }}" class="text-center">
+                            <button class="btn btn-sm btn-drilldown"
+                                    onclick="openDrilldownModal('{{ item.ip }}')"
+                                    title="Scan this host deeper">
+                                🔍 Scan
+                            </button>
+                        </td>
+                        {% endif %}
                     </tr>
                     {% endfor %}
                 {% else %}
@@ -489,13 +521,22 @@ document.addEventListener('DOMContentLoaded', function() {
                         {% else %}<span class="text-muted">—</span>{% endif %}
                     </td>
                     <td>{{ item.status if item.status else item.os }}</td>
-                    <td colspan="5"><span class="text-muted small">No ports open</span></td>
+                    <td colspan="{% if current_user.is_any_admin %}5{% else %}5{% endif %}"><span class="text-muted small">No ports open</span></td>
+                    {% if current_user.is_any_admin %}
+                    <td class="text-center">
+                        <button class="btn btn-sm btn-drilldown"
+                                onclick="openDrilldownModal('{{ item.ip }}')"
+                                title="Scan this host deeper">
+                            🔍 Scan
+                        </button>
+                    </td>
+                    {% endif %}
                 </tr>
                 {% endif %}
             {% endfor %}
             {% if not scan_data %}
             <tr>
-                <td colspan="4" class="text-center text-muted p-4">No data found or scan failed.</td>
+                <td colspan="{% if current_user.is_any_admin %}9{% else %}8{% endif %}" class="text-center text-muted p-4">No data found or scan failed.</td>
             </tr>
             {% endif %}
 
@@ -910,6 +951,10 @@ network.on('click', function(params) {
             <td style="padding:5px 0;font-family:monospace;word-break:break-all;">${value}</td>
         </tr>`).join('');
 
+    // Show drill-down button in popup (if admin)
+    const ddArea = document.getElementById('popup-drilldown-area');
+    if (ddArea) ddArea.style.display = 'block';
+
     // ── Port tab ──
     const portTbody = document.getElementById('port-tbody');
     if (dev.ports && dev.ports.length) {
@@ -948,5 +993,182 @@ network.on('click', function(params) {
 network.on('deselectNode', closePopup);
 {% endif %}
 </script>
+
+
+{% if current_user.is_any_admin %}
+<!-- ========== DRILLDOWN SCAN MODAL ========== -->
+<div class="modal fade" id="drilldownModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:440px">
+        <div class="modal-content border-0 shadow-lg" style="border-radius:16px;overflow:hidden">
+            <!-- Header -->
+            <div style="background:linear-gradient(135deg,#0f3460,#1a5276);padding:22px 24px 16px;position:relative;">
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        style="position:absolute;top:14px;right:14px;opacity:0.8"></button>
+                <div style="width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;background:rgba(255,255,255,0.15);margin-bottom:8px;">🔍</div>
+                <h5 style="font-size:1.05rem;font-weight:700;color:#fff;margin:0 0 4px;">Drill-down Scan</h5>
+                <p style="font-size:.8rem;color:rgba(255,255,255,0.7);margin:0;">
+                    Target: <code id="drilldownTargetDisplay" style="color:#93c5fd;background:rgba(0,0,0,0.2);padding:1px 6px;border-radius:4px;"></code>
+                </p>
+            </div>
+            <!-- Body -->
+            <div class="p-4">
+                <form method="POST" id="drilldownForm">
+                    <input type="hidden" name="host_ip" id="drilldownHostIp">
+
+                    <label class="form-label fw-semibold" style="font-size:.85rem;color:#475569;">Scan Profile</label>
+                    <div class="drilldown-options mb-3">
+                        <label class="drilldown-option">
+                            <input type="radio" name="scan_type" value="fast_scan" checked>
+                            <div class="drilldown-option-card">
+                                <span class="drilldown-option-icon" style="background:#E6F1FB;color:#185FA5;">⚡</span>
+                                <div>
+                                    <div class="fw-semibold" style="font-size:.88rem;">Fast Scan</div>
+                                    <div style="font-size:.72rem;color:#94a3b8;">Quick port scan + service detection</div>
+                                </div>
+                            </div>
+                        </label>
+                        <label class="drilldown-option">
+                            <input type="radio" name="scan_type" value="intense">
+                            <div class="drilldown-option-card">
+                                <span class="drilldown-option-icon" style="background:#FEF3C7;color:#92400E;">🔥</span>
+                                <div>
+                                    <div class="fw-semibold" style="font-size:.88rem;">Intense Scan</div>
+                                    <div style="font-size:.72rem;color:#94a3b8;">Full scan: OS, scripts, traceroute</div>
+                                </div>
+                            </div>
+                        </label>
+                        <label class="drilldown-option">
+                            <input type="radio" name="scan_type" value="vuln_scan">
+                            <div class="drilldown-option-card">
+                                <span class="drilldown-option-icon" style="background:#FEE2E2;color:#991B1B;">🛡️</span>
+                                <div>
+                                    <div class="fw-semibold" style="font-size:.88rem;">Vulnerability Scan</div>
+                                    <div style="font-size:.72rem;color:#94a3b8;">Detect CVEs via NVD API</div>
+                                </div>
+                            </div>
+                        </label>
+                        <label class="drilldown-option">
+                            <input type="radio" name="scan_type" value="discovery">
+                            <div class="drilldown-option-card">
+                                <span class="drilldown-option-icon" style="background:#DCFCE7;color:#166534;">📡</span>
+                                <div>
+                                    <div class="fw-semibold" style="font-size:.88rem;">Discovery</div>
+                                    <div style="font-size:.72rem;color:#94a3b8;">Ping sweep — check if online</div>
+                                </div>
+                            </div>
+                        </label>
+                    </div>
+
+                    <button type="submit" class="btn w-100 fw-semibold"
+                            style="background:linear-gradient(135deg,#0f3460,#1a5276);color:#fff;border:none;border-radius:10px;padding:10px;font-size:.9rem;">
+                        🔍 Start Drill-down Scan
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* ── Drill-down Button ── */
+.btn-drilldown {
+    background: linear-gradient(135deg, #0f3460, #1a5276);
+    color: #fff;
+    border: none;
+    font-weight: 600;
+    font-size: .75rem;
+    padding: 5px 12px;
+    border-radius: 6px;
+    letter-spacing: .02em;
+    transition: all .18s;
+    white-space: nowrap;
+}
+.btn-drilldown:hover {
+    background: linear-gradient(135deg, #1a5276, #2980b9);
+    color: #fff;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(15,52,96,0.35);
+}
+
+/* ── Drill-down Modal Options ── */
+.drilldown-options {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.drilldown-option {
+    cursor: pointer;
+    margin: 0;
+}
+.drilldown-option input[type="radio"] {
+    display: none;
+}
+.drilldown-option-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border: 2px solid #e2e8f0;
+    border-radius: 10px;
+    transition: all .15s;
+    background: #fff;
+}
+.drilldown-option input:checked + .drilldown-option-card {
+    border-color: #0f3460;
+    background: #f0f6ff;
+    box-shadow: 0 0 0 1px #0f3460;
+}
+.drilldown-option:hover .drilldown-option-card {
+    border-color: #94a3b8;
+    background: #f8fafc;
+}
+.drilldown-option-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+}
+</style>
+
+<script>
+let _drilldownModal = null;
+let _drilldownIp = '';
+
+function openDrilldownModal(ip) {
+    _drilldownIp = ip;
+    document.getElementById('drilldownHostIp').value = ip;
+    document.getElementById('drilldownTargetDisplay').textContent = ip;
+    document.getElementById('drilldownForm').action = '/scan/{{ job.id }}/drilldown';
+
+    // Reset to Fast Scan
+    const radios = document.querySelectorAll('#drilldownForm input[name="scan_type"]');
+    radios.forEach(r => r.checked = r.value === 'fast_scan');
+
+    if (!_drilldownModal) _drilldownModal = new bootstrap.Modal(document.getElementById('drilldownModal'));
+    _drilldownModal.show();
+}
+
+{% if scan_data %}
+function openDrilldownFromPopup() {
+    const ip = document.getElementById('popup-ip').textContent;
+    if (ip) {
+        closePopup();
+        openDrilldownModal(ip);
+    }
+}
+{% endif %}
+
+// Loading state on form submit
+document.getElementById('drilldownForm')?.addEventListener('submit', function() {
+    const btn = this.querySelector('button[type="submit"]');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Scanning…';
+});
+</script>
+{% endif %}
 
 {% endblock %}
