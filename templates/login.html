@@ -1,49 +1,501 @@
-{% extends 'base.html' %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login — CLYLAR Network Scanner</title>
+    <meta name="description" content="Sign in to CLYLAR Network Scanner — National Telecom security platform">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* ═══════════════════════════════════════════
+           RESET & BASE
+           ═══════════════════════════════════════════ */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-{% block content %}
-<div class="container d-flex justify-content-center align-items-center"
-     style="min-height: 80vh;">
+        html, body {
+            height: 100%;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #f7f7f8;
+            color: #1a1a2e;
+            -webkit-font-smoothing: antialiased;
+        }
 
-    <div class="card shadow-lg p-4"
-         style="width: 100%; max-width: 400px; border-radius: 12px;">
+        /* ═══════════════════════════════════════════
+           LAYOUT — split screen
+           ═══════════════════════════════════════════ */
+        .login-wrapper {
+            display: flex;
+            min-height: 100vh;
+        }
 
-        <div class="text-center mb-4">
-            <div style="font-size:1.6rem; font-weight:700; letter-spacing:1px; color:#212529;">CLYLAR</div>
-            <div style="font-size:0.85rem; color:#6c757d; margin-top:2px;">Network Scanner</div>
+        /* ——— LEFT PANEL (form side) ——— */
+        .login-left {
+            flex: 0 0 480px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 60px 56px;
+            background: #ffffff;
+            position: relative;
+            z-index: 2;
+        }
+
+        /* ——— RIGHT PANEL (image side) ——— */
+        .login-right {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            background: #e8e8ec;
+        }
+
+        .login-right img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+            filter: brightness(0.92) saturate(1.05);
+            transition: transform 8s ease-out;
+        }
+
+        .login-right:hover img {
+            transform: scale(1.03);
+        }
+
+        /* Soft gradient overlay to blend the edge */
+        .login-right::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(
+                90deg,
+                rgba(255, 255, 255, 0.15) 0%,
+                transparent 15%,
+                transparent 100%
+            );
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        /* ═══════════════════════════════════════════
+           NT LOGO (SVG-based)
+           ═══════════════════════════════════════════ */
+        .nt-logo {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin-bottom: 52px;
+        }
+
+        .nt-logo-icon {
+            display: flex;
+            gap: 3px;
+            align-items: flex-end;
+        }
+
+        .nt-logo-bar {
+            width: 8px;
+            border-radius: 4px;
+            background: #f5c518;
+        }
+        .nt-logo-bar:nth-child(1) { height: 18px; }
+        .nt-logo-bar:nth-child(2) { height: 28px; }
+        .nt-logo-bar:nth-child(3) { height: 18px; }
+        .nt-logo-bar:nth-child(4) { height: 28px; }
+        .nt-logo-bar:nth-child(5) { height: 18px; }
+
+        .nt-logo-text {
+            display: flex;
+            flex-direction: column;
+            line-height: 1;
+        }
+
+        .nt-logo-text .nt-main {
+            font-size: 34px;
+            font-weight: 700;
+            color: #2d2d3a;
+            letter-spacing: -1px;
+            line-height: 0.9;
+        }
+
+        .nt-logo-text .nt-sub {
+            font-size: 11px;
+            font-weight: 600;
+            color: #6b6b7b;
+            letter-spacing: 0.5px;
+            margin-top: 3px;
+        }
+
+        /* ═══════════════════════════════════════════
+           FORM
+           ═══════════════════════════════════════════ */
+        .login-heading {
+            font-size: 26px;
+            font-weight: 700;
+            color: #1a1a2e;
+            margin-bottom: 6px;
+            letter-spacing: -0.5px;
+        }
+
+        .login-subheading {
+            font-size: 14px;
+            color: #8c8c9e;
+            margin-bottom: 36px;
+            font-weight: 400;
+        }
+
+        .form-group {
+            margin-bottom: 22px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: #4a4a5a;
+            margin-bottom: 8px;
+            letter-spacing: 0.2px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 13px 16px;
+            border: 1.5px solid #e2e2ea;
+            border-radius: 10px;
+            font-size: 14.5px;
+            font-family: inherit;
+            color: #1a1a2e;
+            background: #fafafc;
+            outline: none;
+            transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .form-group input::placeholder {
+            color: #b5b5c3;
+        }
+
+        .form-group input:focus {
+            border-color: #f5c518;
+            background: #ffffff;
+            box-shadow: 0 0 0 3.5px rgba(245, 197, 24, 0.12);
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 10px;
+            background: #2d2d3a;
+            color: #ffffff;
+            font-size: 15px;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            letter-spacing: 0.3px;
+            transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+            margin-top: 6px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .login-btn:hover {
+            background: #1a1a28;
+            transform: translateY(-1px);
+            box-shadow: 0 6px 24px rgba(45, 45, 58, 0.25);
+        }
+
+        .login-btn:active {
+            transform: translateY(0);
+            box-shadow: none;
+        }
+
+        /* Subtle shimmer on hover */
+        .login-btn::after {
+            content: '';
+            position: absolute;
+            top: 0; left: -75%;
+            width: 50%; height: 100%;
+            background: linear-gradient(
+                90deg,
+                transparent,
+                rgba(255,255,255,0.07),
+                transparent
+            );
+            transition: left 0.6s ease;
+        }
+
+        .login-btn:hover::after {
+            left: 125%;
+        }
+
+        /* ═══════════════════════════════════════════
+           FLASH MESSAGE
+           ═══════════════════════════════════════════ */
+        .alert-error {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #b91c1c;
+            padding: 12px 16px;
+            border-radius: 10px;
+            font-size: 13.5px;
+            font-weight: 500;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: shake 0.4s ease;
+        }
+
+        .alert-error::before {
+            content: '⚠';
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-6px); }
+            40%, 80% { transform: translateX(6px); }
+        }
+
+        /* ═══════════════════════════════════════════
+           FOOTER
+           ═══════════════════════════════════════════ */
+        .login-footer {
+            margin-top: 44px;
+            font-size: 12px;
+            color: #b5b5c3;
+            line-height: 1.6;
+        }
+
+        .login-footer span {
+            color: #8c8c9e;
+        }
+
+        /* ═══════════════════════════════════════════
+           RESPONSIVE
+           ═══════════════════════════════════════════ */
+        @media (max-width: 960px) {
+            .login-wrapper {
+                flex-direction: column-reverse;
+            }
+
+            .login-left {
+                flex: none;
+                padding: 40px 32px 48px;
+            }
+
+            .login-right {
+                height: 220px;
+                flex: none;
+            }
+
+            .nt-logo {
+                margin-bottom: 36px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .login-left {
+                padding: 32px 24px 40px;
+            }
+
+            .login-heading {
+                font-size: 22px;
+            }
+
+            .login-right {
+                height: 180px;
+            }
+        }
+
+        /* ═══════════════════════════════════════════
+           ANIMATIONS
+           ═══════════════════════════════════════════ */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(18px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .login-left > * {
+            animation: fadeInUp 0.6s ease forwards;
+            opacity: 0;
+        }
+
+        .login-left > :nth-child(1) { animation-delay: 0.1s; }
+        .login-left > :nth-child(2) { animation-delay: 0.2s; }
+        .login-left > :nth-child(3) { animation-delay: 0.25s; }
+        .login-left > :nth-child(4) { animation-delay: 0.3s; }
+        .login-left > :nth-child(5) { animation-delay: 0.35s; }
+        .login-left > :nth-child(6) { animation-delay: 0.4s; }
+        .login-left > :nth-child(7) { animation-delay: 0.45s; }
+        .login-left > :nth-child(8) { animation-delay: 0.5s; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to   { opacity: 1; }
+        }
+
+        .login-right img {
+            animation: fadeIn 1s ease 0.3s forwards;
+            opacity: 0;
+        }
+
+        /* ═══════════════════════════════════════════
+           PASSWORD EYE TOGGLE
+           ═══════════════════════════════════════════ */
+        .password-wrapper {
+            position: relative;
+        }
+
+        .password-wrapper input {
+            padding-right: 44px;
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #b5b5c3;
+            font-size: 18px;
+            padding: 2px;
+            line-height: 1;
+            transition: color 0.2s ease;
+        }
+
+        .password-toggle:hover {
+            color: #6b6b7b;
+        }
+    </style>
+</head>
+<body>
+
+<div class="login-wrapper">
+
+    <!-- ═══ LEFT: Logo + Form ═══ -->
+    <div class="login-left">
+
+        <!-- NT Logo -->
+        <div class="nt-logo">
+            <div class="nt-logo-icon">
+                <div class="nt-logo-bar"></div>
+                <div class="nt-logo-bar"></div>
+                <div class="nt-logo-bar"></div>
+                <div class="nt-logo-bar"></div>
+                <div class="nt-logo-bar"></div>
+            </div>
+            <div class="nt-logo-text">
+                <span class="nt-main">nt</span>
+                <span class="nt-sub">National Telecom</span>
+            </div>
         </div>
 
+        <!-- Heading -->
+        <h1 class="login-heading">Welcome back</h1>
+        <p class="login-subheading">Sign in to CLYLAR Network Scanner</p>
+
+        <!-- Flash messages -->
         {% with messages = get_flashed_messages() %}
             {% if messages %}
-                <div class="alert alert-danger py-2 text-center">
-                    {{ messages[0] }}
-                </div>
+                <div class="alert-error">{{ messages[0] }}</div>
             {% endif %}
         {% endwith %}
 
-        <form method="POST">
+        <!-- Login form -->
+        <form method="POST" autocomplete="on">
 
-            <div class="mb-3">
-                <label class="form-label text-muted">Username</label>
+            <div class="form-group">
+                <label for="login-username">Username</label>
                 <input type="text"
+                       id="login-username"
                        name="username"
-                       class="form-control"
-                       required>
+                       placeholder="Enter your username"
+                       autocomplete="username"
+                       required
+                       autofocus>
             </div>
 
-            <div class="mb-4">
-                <label class="form-label text-muted">Password</label>
-                <input type="password"
-                       name="password"
-                       class="form-control"
-                       required>
+            <div class="form-group">
+                <label for="login-password">Password</label>
+                <div class="password-wrapper">
+                    <input type="password"
+                           id="login-password"
+                           name="password"
+                           placeholder="Enter your password"
+                           autocomplete="current-password"
+                           required>
+                    <button type="button"
+                            class="password-toggle"
+                            onclick="togglePassword()"
+                            aria-label="Toggle password visibility"
+                            tabindex="-1">
+                        <!-- Eye-off (closed) — default when password is hidden -->
+                        <svg id="icon-eye-off" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                             stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+                            <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+                            <path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/>
+                            <line x1="1" y1="1" x2="23" y2="23"/>
+                        </svg>
+                        <!-- Eye-open — shown when password is visible -->
+                        <svg id="icon-eye-open" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                             stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
+                             style="display:none;">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                            <circle cx="12" cy="12" r="3"/>
+                        </svg>
+                    </button>
+                </div>
             </div>
 
-            <button type="submit"
-                    class="btn btn-primary w-100 fw-bold">
-                Login
+            <button type="submit" class="login-btn" id="login-submit-btn">
+                Sign In
             </button>
 
         </form>
+
+        <!-- Footer -->
+        <div class="login-footer">
+            <span>CLYLAR</span> · Network Security Platform<br>
+            © 2025 National Telecom
+        </div>
+
     </div>
+
+    <!-- ═══ RIGHT: Image ═══ -->
+    <div class="login-right">
+        <img src="{{ url_for('static', filename='images/office-team.jpg') }}"
+             alt="National Telecom team collaborating"
+             loading="eager">
+    </div>
+
 </div>
-{% endblock %}
+
+<script>
+    function togglePassword() {
+        const input = document.getElementById('login-password');
+        const eyeOff = document.getElementById('icon-eye-off');
+        const eyeOpen = document.getElementById('icon-eye-open');
+        if (input.type === 'password') {
+            input.type = 'text';
+            eyeOff.style.display = 'none';
+            eyeOpen.style.display = 'block';
+        } else {
+            input.type = 'password';
+            eyeOff.style.display = 'block';
+            eyeOpen.style.display = 'none';
+        }
+    }
+</script>
+
+</body>
+</html>
