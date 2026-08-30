@@ -453,7 +453,7 @@
 
             <!-- Empty state -->
             <div class="topo-empty" id="topoEmpty" style="display:none;">
-                <div class="icon">🔍</div>
+                <div class="icon"><i class="ti ti-search"></i></div>
                 <p>ไม่มีข้อมูลที่ตรงกับ Filter</p>
             </div>
         </div>
@@ -760,15 +760,29 @@ function buildAndDraw() {
     const nodesData = [], edgesData = [];
     nodesDataArr = [];
 
-    // Gateway node
+    // Gateway node — derive gateway IP from the most common /24 subnet
+    let gwIp = '';
+    if (hosts.length > 0) {
+        const prefixCount = {};
+        hosts.forEach(h => {
+            const parts = h.ip.split('.');
+            if (parts.length === 4) {
+                const prefix = parts.slice(0, 3).join('.');
+                prefixCount[prefix] = (prefixCount[prefix] || 0) + 1;
+            }
+        });
+        const topPrefix = Object.keys(prefixCount).sort((a, b) => prefixCount[b] - prefixCount[a])[0];
+        if (topPrefix) gwIp = topPrefix + '.1';
+    }
+    const gwLabel = gwIp ? `Gateway\n${gwIp}` : 'Gateway';
     nodesData.push({
         id: 0,
-        label: 'Gateway',
+        label: gwLabel,
         image: ICON_URI['gateway'],
         shape: 'image',
         size: 38,
-        font: { color:'#1a6db5', size:12, face:'monospace', bold:true, vadjust:6 },
-        title: 'Gateway / Router',
+        font: { color:'#1a6db5', size:12, face:'monospace', bold:true, vadjust:6, multi:'html' },
+        title: gwIp ? `Gateway / Router\n${gwIp}` : 'Gateway / Router',
         shadow: { enabled:true, color:'rgba(31,111,235,0.3)', size:14 },
         fixed: true, x:0, y:0,
         _device: null, _portCnt: 0
@@ -830,8 +844,12 @@ function buildAndDraw() {
 
     visNetwork.on('zoom', function() {
         const minScale = 0.15;
-        if (visNetwork.getScale() < minScale) {
+        const maxScale = 2.5;
+        const currentScale = visNetwork.getScale();
+        if (currentScale < minScale) {
             visNetwork.moveTo({ scale: minScale });
+        } else if (currentScale > maxScale) {
+            visNetwork.moveTo({ scale: maxScale });
         }
     });
 
@@ -865,7 +883,6 @@ function buildAndDraw() {
             ['IPv4:',   dev.ip],
             ['IPv6:',   dev.ipv6 || 'Not Available'],
             ['MAC:',    (dev.mac && dev.mac !== 'Unknown') ? dev.mac : 'Unknown'],
-            ['Vendor:',  dev.mac_vendor || '–'],
             ['OS:',     dev.os || '–'],
             ['Ports:',  dev.ports.length + ' open'],
         ];

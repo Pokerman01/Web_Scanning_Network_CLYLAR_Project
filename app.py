@@ -564,6 +564,41 @@ def delete_scans_by_target():
     return redirect(url_for('history_page'))
 
 
+@app.route('/history/bulk-delete', methods=['POST'])
+@login_required
+def delete_scans_bulk():
+    # เฉพาะ admin และ superadmin เท่านั้นที่ลบได้
+    if not current_user.is_any_admin:
+        abort(403)
+    scan_ids = request.form.getlist('scan_ids')
+    if not scan_ids:
+        data = request.get_json(silent=True)
+        if data and 'scan_ids' in data:
+            scan_ids = data['scan_ids']
+
+    clean_ids = []
+    for sid in scan_ids:
+        try:
+            clean_ids.append(int(sid))
+        except (ValueError, TypeError):
+            continue
+
+    if not clean_ids:
+        flash('ไม่ได้เลือกรายการที่จะลบ', 'warning')
+        return redirect(url_for('history_page'))
+
+    # กรองเฉพาะ scan ที่อยู่ในขอบเขต visible และสถานะไม่ใช่ Running
+    jobs = visible_scans_query().filter(ScanJob.id.in_(clean_ids)).all()
+    deletable_jobs = [j for j in jobs if j.status != 'Running']
+    count = len(deletable_jobs)
+    for job in deletable_jobs:
+        db.session.delete(job)
+    db.session.commit()
+    flash(f'ลบ Scan ทั้งหมด {count} รายการเรียบร้อยแล้ว', 'success')
+    return redirect(url_for('history_page'))
+
+
+
 # ─────────────────────────────────────────
 #  TASKS
 # ─────────────────────────────────────────

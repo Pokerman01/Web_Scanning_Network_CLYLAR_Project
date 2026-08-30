@@ -5,9 +5,9 @@
 <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
 
 <div class="mb-4 d-flex gap-2 align-items-center flex-wrap">
-    <a href="{{ url_for('dashboard') }}"
+    <a href="{{ url_for('tasks_page') }}"
        class="btn btn-outline-secondary btn-sm">
-        &larr; Back to Dashboard
+        &larr; Back to Tasks
     </a>
 
     <!-- Export Dropdown Button -->
@@ -185,6 +185,35 @@
     transition: all .15s;
 }
 .export-confirm-btn:hover { opacity: .9; color: #fff; transform: translateY(-1px); }
+
+/* ── Network Diagram Zoom Controls ── */
+.network-zoom-controls {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    z-index: 5;
+}
+.network-zoom-btn {
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    padding: 5px 11px;
+    font-size: 0.78rem;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.08);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: #495057;
+    font-weight: 500;
+    transition: all 0.15s ease;
+}
+.network-zoom-btn:hover {
+    background: #ffffff;
+    color: #0d6efd;
+    border-color: #cbd5e1;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.12);
+}
 </style>
 
 <script>
@@ -295,6 +324,19 @@ document.addEventListener('DOMContentLoaded', function() {
 
     <!-- Canvas + floating popup wrapper -->
     <div style="position:relative;">
+        <!-- Zoom Controls -->
+        <div class="network-zoom-controls">
+            <button type="button" class="network-zoom-btn" onclick="resetZoom()" title="Reset Zoom">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M15 3h6v6"></path>
+                    <path d="M9 21H3v-6"></path>
+                    <path d="M21 3l-7 7"></path>
+                    <path d="M3 21l7-7"></path>
+                </svg>
+                Reset Zoom
+            </button>
+        </div>
+
         <div id="network-canvas" style="width:100%;height:440px;background:#ffffff;cursor:default;"></div>
 
         <!-- hint overlay (แสดงตอนยังไม่ได้คลิก) -->
@@ -734,7 +776,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     </td>
                     <td>
                         <span class="sev-badge" style="background:{{ sev_bg }};color:{{ sev_color }};">
-                            {% if sev == 'CRITICAL' %}🔴{% elif sev == 'HIGH' %}🟠{% elif sev == 'MEDIUM' %}🟡{% else %}🟢{% endif %}
                             {{ sev }}
                         </span>
                     </td>
@@ -1037,15 +1078,29 @@ function portDotColor(portCount) {
 // ── Build graph data ───────────────────────────────────────────────────────
 const nodesData = [], edgesData = [];
 
-// Gateway node
+// Gateway node — derive gateway IP from the most common /24 subnet
+let gwIp = '';
+if (SCAN_DATA.length > 0) {
+    const prefixCount = {};
+    SCAN_DATA.forEach(h => {
+        const parts = (h.ip || '').split('.');
+        if (parts.length === 4) {
+            const prefix = parts.slice(0, 3).join('.');
+            prefixCount[prefix] = (prefixCount[prefix] || 0) + 1;
+        }
+    });
+    const topPrefix = Object.keys(prefixCount).sort((a, b) => prefixCount[b] - prefixCount[a])[0];
+    if (topPrefix) gwIp = topPrefix + '.1';
+}
+const gwLabel = gwIp ? `Gateway\n${gwIp}` : 'Gateway';
 nodesData.push({
     id: 0,
-    label: 'Gateway',
+    label: gwLabel,
     image: ICON_URI['gateway'],
     shape: 'image',
     size: 38,
-    font: { color:'#1a6db5', size:12, face:'monospace', bold:true, vadjust: 6 },
-    title: 'Gateway / Router',
+    font: { color:'#1a6db5', size:12, face:'monospace', bold:true, vadjust: 6, multi:'html' },
+    title: gwIp ? `Gateway / Router\n${gwIp}` : 'Gateway / Router',
     shadow: { enabled:true, color:'rgba(31,111,235,0.3)', size:14 },
     fixed: true, x:0, y:0,
     _device: null, _portCnt: 0
@@ -1116,6 +1171,23 @@ const network = new vis.Network(
 
 network.on('hoverNode', () => { container.style.cursor = 'pointer'; });
 network.on('blurNode',  () => { container.style.cursor = 'default'; });
+
+network.on('zoom', function() {
+    const minScale = 0.2;
+    const maxScale = 2.5;
+    const currentScale = network.getScale();
+    if (currentScale < minScale) {
+        network.moveTo({ scale: minScale });
+    } else if (currentScale > maxScale) {
+        network.moveTo({ scale: maxScale });
+    }
+});
+
+function resetZoom() {
+    if (typeof network !== 'undefined' && network) {
+        network.fit({ animation: { duration: 500, easingFunction: 'easeInOutQuad' } });
+    }
+}
 
 const popup = document.getElementById('node-popup');
 const hint  = document.getElementById('diagram-hint');

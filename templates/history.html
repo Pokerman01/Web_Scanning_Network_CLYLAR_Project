@@ -90,6 +90,11 @@ const ALL_SCANS = [
     <table class="table table-hover mb-0" id="historyTable">
         <thead class="table-dark">
             <tr>
+                {% if current_user.is_any_admin %}
+                <th style="width: 42px; text-align: center;">
+                    <input type="checkbox" class="form-check-input" id="selectAllCheckbox" title="เลือกทั้งหมด" style="cursor: pointer;">
+                </th>
+                {% endif %}
                 <th>Job ID</th>
                 <th>Name</th>
                 <th>Target</th>
@@ -103,7 +108,17 @@ const ALL_SCANS = [
         <tbody id="historyBody">
             {% for job in history %}
             {% set job_data = job.result_data | from_json if job.result_data else [] %}
-            <tr data-target="{{ job.target }}" data-type="{{ job.scan_type }}" data-status="{{ job.status }}">
+            <tr data-target="{{ job.target }}" data-type="{{ job.scan_type }}" data-status="{{ job.status }}" id="scan-row-{{ job.id }}" class="history-row">
+                {% if current_user.is_any_admin %}
+                <td class="text-center cb-cell" style="user-select: none; cursor: pointer;">
+                    <input type="checkbox" class="form-check-input scan-row-cb"
+                           value="{{ job.id }}"
+                           data-scan-seq="#{{ owner_seq_map.get(job.id, job.id) }}"
+                           data-target="{{ job.target }}"
+                           data-name="{{ job.scan_name or '' }}"
+                           {% if job.status == 'Running' %}disabled title="ไม่สามารถเลือก task ที่กำลังทำงานอยู่ได้"{% else %}style="cursor: pointer;"{% endif %}>
+                </td>
+                {% endif %}
                 <td><span class="text-muted">#{{ owner_seq_map.get(job.id, job.id) }}</span></td>
                 <td>
                     {% if job.scan_name %}
@@ -122,9 +137,13 @@ const ALL_SCANS = [
                 <td><span class="badge bg-secondary">{{ job.scan_type | scan_label }}</span></td>
                 <td>
                     {% if job.triggered_by == 'schedule' %}
-                        <span class="badge bg-warning text-dark">⏰ Schedule</span>
+                        <span class="badge" style="background:#f1f5f9;color:#334155;border:1px solid #e2e8f0;font-weight:500;"><i class="ti ti-clock me-1"></i>Schedule</span>
+                    {% elif job.triggered_by == 'rescan' %}
+                        <span class="badge" style="background:#f0f9ff;color:#0369a1;border:1px solid #bae6fd;font-weight:500;"><i class="ti ti-refresh me-1"></i>Rescan</span>
+                    {% elif job.triggered_by == 'drilldown' %}
+                        <span class="badge" style="background:#f5f3ff;color:#6d28d9;border:1px solid #ddd6fe;font-weight:500;"><i class="ti ti-scan me-1"></i>Drill-down</span>
                     {% else %}
-                        <span class="badge bg-light text-dark border">👤 Manual</span>
+                        <span class="badge" style="background:#f8fafc;color:#475569;border:1px solid #e2e8f0;font-weight:500;"><i class="ti ti-user me-1"></i>Manual</span>
                     {% endif %}
                 </td>
                 <td>
@@ -138,23 +157,26 @@ const ALL_SCANS = [
                         <a href="{{ url_for('scan_detail', scan_id=job.id) }}"
                            class="btn btn-sm btn-outline-primary">View</a>
                         {% if current_user.is_any_admin %}
-                        <button class="btn btn-sm btn-outline-danger ms-1"
-                                onclick="confirmDelete({{ job.id }}, '{{ job.target }}', {{ scan_seq_map.get(job.id, (1,1))[1] }})">
-                            🗑
+                        <button class="btn btn-sm btn-outline-danger ms-1" title="Delete scan record"
+                                data-scan-id="{{ job.id }}" data-target="{{ job.target }}" data-total="{{ scan_seq_map.get(job.id, (1,1))[1] }}"
+                                onclick="confirmDelete(+this.dataset.scanId, this.dataset.target, +this.dataset.total)">
+                            <i class="ti ti-trash"></i>
                         </button>
                         {% endif %}
                     {% elif job.status == 'Failed' %}
                         {% if current_user.is_any_admin %}
-                        <button class="btn btn-sm btn-outline-danger"
-                                onclick="confirmDelete({{ job.id }}, '{{ job.target }}', {{ scan_seq_map.get(job.id, (1,1))[1] }})">
-                            🗑
+                        <button class="btn btn-sm btn-outline-danger" title="Delete scan record"
+                                data-scan-id="{{ job.id }}" data-target="{{ job.target }}" data-total="{{ scan_seq_map.get(job.id, (1,1))[1] }}"
+                                onclick="confirmDelete(+this.dataset.scanId, this.dataset.target, +this.dataset.total)">
+                            <i class="ti ti-trash"></i>
                         </button>
                         {% endif %}
                     {% elif job.status == 'Cancelled' %}
                         {% if current_user.is_any_admin %}
-                        <button class="btn btn-sm btn-outline-danger"
-                                onclick="confirmDelete({{ job.id }}, '{{ job.target }}', {{ scan_seq_map.get(job.id, (1,1))[1] }})">
-                            🗑
+                        <button class="btn btn-sm btn-outline-danger" title="Delete scan record"
+                                data-scan-id="{{ job.id }}" data-target="{{ job.target }}" data-total="{{ scan_seq_map.get(job.id, (1,1))[1] }}"
+                                onclick="confirmDelete(+this.dataset.scanId, this.dataset.target, +this.dataset.total)">
+                            <i class="ti ti-trash"></i>
                         </button>
                         {% endif %}
                     {% else %}
@@ -165,7 +187,7 @@ const ALL_SCANS = [
 
             {% else %}
             <tr>
-                <td colspan="8" class="text-center text-muted py-4">ยังไม่มีประวัติการสแกน</td>
+                <td colspan="{{ 9 if current_user.is_any_admin else 8 }}" class="text-center text-muted py-4">ยังไม่มีประวัติการสแกน</td>
             </tr>
             {% endfor %}
         </tbody>
@@ -308,6 +330,10 @@ function filterTable() {
                     && (!status || rStat === status);
         row.style.display = show ? '' : 'none';
     });
+
+    if (typeof updateBulkUI === 'function') {
+        updateBulkUI();
+    }
 }
 
 function clearFilters() {
@@ -322,120 +348,69 @@ document.getElementById('typeFilter').addEventListener('change', filterTable);
 document.getElementById('statusFilter').addEventListener('change', filterTable);
 </script>
 
-<!-- Delete Confirmation Modal -->
-<style>
-#deleteModal .modal-content {
-    border-radius: 16px;
-    overflow: hidden;
-}
-#deleteModal .delete-modal-header {
-    background: linear-gradient(135deg, #fff5f5 0%, #ffe8e8 100%);
-    padding: 24px 24px 16px;
-    border-bottom: 1px solid #ffd0d0;
-    position: relative;
-}
-#deleteModal .delete-icon-wrap {
-    width: 56px;
-    height: 56px;
-    background: #fee2e2;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 12px;
-    font-size: 24px;
-    border: 2px solid #fca5a5;
-}
-#deleteModal .delete-modal-title {
-    font-size: 1.15rem;
-    font-weight: 700;
-    color: #b91c1c;
-    margin: 0;
-}
-#deleteModal .delete-modal-subtitle {
-    font-size: 0.82rem;
-    color: #ef4444;
-    margin: 2px 0 0;
-    opacity: 0.8;
-}
-#deleteModal .modal-body {
-    padding: 20px 24px;
-}
-#deleteModal .scan-info-card {
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
-    border-radius: 10px;
-    padding: 12px 16px;
-    margin-bottom: 14px;
-}
-#deleteModal .scan-info-card .label {
-    font-size: 0.72rem;
-    color: #94a3b8;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    font-weight: 600;
-}
-#deleteModal .scan-info-card .value {
-    font-size: 0.95rem;
-    font-weight: 600;
-    color: #1e293b;
-}
-#deleteModal .delete-warning-text {
-    font-size: 0.82rem;
-    color: #64748b;
-    background: #fffbeb;
-    border: 1px solid #fde68a;
-    border-radius: 8px;
-    padding: 8px 12px;
-    display: flex;
-    align-items: flex-start;
-    gap: 8px;
-}
-#deleteModal .modal-footer-custom {
-    padding: 16px 24px 20px;
-    background: #f8fafc;
-    border-top: 1px solid #f1f5f9;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-#deleteModal .btn-delete-single {
-    background: #dc2626;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    padding: 10px 16px;
-    font-weight: 600;
-    font-size: 0.9rem;
-    width: 100%;
-    transition: background 0.15s;
-}
-#deleteModal .btn-delete-single:hover { background: #b91c1c; color: white; }
-#deleteModal .btn-delete-all {
-    background: white;
-    color: #dc2626;
-    border: 1.5px solid #fca5a5;
-    border-radius: 8px;
-    padding: 9px 16px;
-    font-weight: 600;
-    font-size: 0.85rem;
-    width: 100%;
-    transition: all 0.15s;
-}
-#deleteModal .btn-delete-all:hover { background: #fff5f5; border-color: #dc2626; color: #b91c1c; }
-#deleteModal .btn-cancel {
-    background: transparent;
-    color: #64748b;
-    border: none;
-    border-radius: 8px;
-    padding: 8px 16px;
-    font-size: 0.85rem;
-    width: 100%;
-    transition: background 0.15s;
-}
-#deleteModal .btn-cancel:hover { background: #e2e8f0; color: #334155; }
-</style>
+<!-- Floating Bulk Action Toolbar -->
+{% if current_user.is_any_admin %}
+<div id="bulkActionBar" class="bulk-action-bar" style="display:none;">
+    <div class="bulk-action-content">
+        <div class="d-flex align-items-center gap-2">
+            <span class="bulk-badge"><i class="ti ti-check me-1"></i><span id="selectedCount">0</span></span>
+            <span class="bulk-text">รายการที่เลือก</span>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <button type="button" class="btn btn-sm btn-danger d-flex align-items-center gap-1 shadow-sm fw-semibold" onclick="openBulkDeleteModal()">
+                <i class="ti ti-trash"></i> ลบที่เลือก (<span id="bulkBtnCount">0</span>)
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-light d-flex align-items-center gap-1" onclick="deselectAllRows()">
+                <i class="ti ti-x"></i> ยกเลิก
+            </button>
+        </div>
+    </div>
+</div>
 
+<!-- Bulk Delete Confirmation Modal -->
+<div class="modal fade" id="bulkDeleteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:440px">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 16px; overflow: hidden;">
+            <!-- Header -->
+            <div class="delete-modal-header">
+                <button type="button" class="btn-close" data-bs-dismiss="modal"
+                    style="position:absolute;top:16px;right:16px;"></button>
+                <div class="delete-icon-wrap">🗑️</div>
+                <h5 class="delete-modal-title">ยืนยันการลบหลายรายการ</h5>
+                <p class="delete-modal-subtitle">การดำเนินการนี้ไม่สามารถย้อนกลับได้</p>
+            </div>
+            <!-- Body -->
+            <div class="modal-body">
+                <div class="scan-info-card">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div class="label">รายการที่เลือก</div>
+                        <span class="badge bg-danger fs-6" id="bulkModalCountBadge">0 รายการ</span>
+                    </div>
+                    <div id="bulkModalSelectedList" class="small text-muted" style="max-height: 140px; overflow-y: auto; background: #fff; padding: 8px 12px; border-radius: 6px; border: 1px solid #e2e8f0;">
+                        <!-- Items populated via JS -->
+                    </div>
+                </div>
+                <div class="delete-warning-text">
+                    <span>⚠️</span>
+                    <span>ข้อมูลผลการสแกนและประวัติทั้งหมดของรายการที่เลือกจะถูกลบออกจากฐานข้อมูลอย่างถาวร</span>
+                </div>
+            </div>
+            <!-- Footer -->
+            <div class="modal-footer-custom">
+                <form id="bulkDeleteForm" method="POST" action="{{ url_for('delete_scans_bulk') }}" class="m-0 w-100">
+                    <div id="bulkDeleteHiddenInputs"></div>
+                    <button type="submit" class="btn-delete-single" id="bulkConfirmBtn">
+                        🗑️ ลบทั้งหมด (<span id="bulkConfirmBtnCount">0</span> รายการ)
+                    </button>
+                </form>
+                <button type="button" class="btn-cancel" data-bs-dismiss="modal">ยกเลิก</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Single Delete Confirmation Modal -->
 <div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered" style="max-width:400px">
         <div class="modal-content border-0 shadow-lg">
@@ -481,7 +456,297 @@ document.getElementById('statusFilter').addEventListener('change', filterTable);
     </div>
 </div>
 
+<style>
+/* Modal Common Styles */
+#deleteModal .modal-content, #bulkDeleteModal .modal-content {
+    border-radius: 16px;
+    overflow: hidden;
+}
+.delete-modal-header {
+    background: linear-gradient(135deg, #fff5f5 0%, #ffe8e8 100%);
+    padding: 24px 24px 16px;
+    border-bottom: 1px solid #ffd0d0;
+    position: relative;
+}
+.delete-icon-wrap {
+    width: 56px;
+    height: 56px;
+    background: #fee2e2;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 12px;
+    font-size: 24px;
+    border: 2px solid #fca5a5;
+}
+.delete-modal-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #b91c1c;
+    margin: 0;
+}
+.delete-modal-subtitle {
+    font-size: 0.82rem;
+    color: #ef4444;
+    margin: 2px 0 0;
+    opacity: 0.8;
+}
+.scan-info-card {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 12px 16px;
+    margin-bottom: 14px;
+}
+.scan-info-card .label {
+    font-size: 0.72rem;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+}
+.scan-info-card .value {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #1e293b;
+}
+.delete-warning-text {
+    font-size: 0.82rem;
+    color: #64748b;
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    border-radius: 8px;
+    padding: 8px 12px;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+}
+.modal-footer-custom {
+    padding: 16px 24px 20px;
+    background: #f8fafc;
+    border-top: 1px solid #f1f5f9;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.btn-delete-single {
+    background: #dc2626;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 16px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    width: 100%;
+    transition: background 0.15s;
+}
+.btn-delete-single:hover { background: #b91c1c; color: white; }
+.btn-delete-all {
+    background: white;
+    color: #dc2626;
+    border: 1.5px solid #fca5a5;
+    border-radius: 8px;
+    padding: 9px 16px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    width: 100%;
+    transition: all 0.15s;
+}
+.btn-delete-all:hover { background: #fff5f5; border-color: #dc2626; color: #b91c1c; }
+.btn-cancel {
+    background: transparent;
+    color: #64748b;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-size: 0.85rem;
+    width: 100%;
+    transition: background 0.15s;
+}
+.btn-cancel:hover { background: #e2e8f0; color: #334155; }
+
+/* Floating Bulk Action Bar */
+.bulk-action-bar {
+    position: fixed;
+    bottom: 28px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1050;
+    background: rgba(15, 23, 42, 0.95);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 50px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.15);
+    animation: bulkSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes bulkSlideUp {
+    from { transform: translate(-50%, 25px); opacity: 0; }
+    to { transform: translate(-50%, 0); opacity: 1; }
+}
+.bulk-action-content {
+    display: flex;
+    align-items: center;
+    gap: 22px;
+}
+.bulk-badge {
+    background: #3b82f6;
+    color: white;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+.bulk-text {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #e2e8f0;
+}
+.history-row.row-selected {
+    background-color: #f0f7ff !important;
+}
+.history-row.row-selected > td {
+    background-color: #f0f7ff !important;
+}
+</style>
+
 <script>
+// Bulk Selection & Shift+Click Functions
+let lastCheckedCheckbox = null;
+
+function getVisibleCheckboxes() {
+    const visibleCheckboxes = [];
+    const rows = document.querySelectorAll('#historyBody tr.history-row');
+    rows.forEach(row => {
+        if (row.style.display !== 'none') {
+            const cb = row.querySelector('.scan-row-cb');
+            if (cb && !cb.disabled) {
+                visibleCheckboxes.push(cb);
+            }
+        }
+    });
+    return visibleCheckboxes;
+}
+
+function getSelectedCheckboxes() {
+    return Array.from(document.querySelectorAll('.scan-row-cb:checked'));
+}
+
+function handleCheckboxClick(e) {
+    const currentCb = this;
+    
+    // Shift + Click range selection
+    if (e && e.shiftKey && lastCheckedCheckbox && lastCheckedCheckbox !== currentCb) {
+        const visibleCbs = getVisibleCheckboxes();
+        const startIdx = visibleCbs.indexOf(lastCheckedCheckbox);
+        const endIdx = visibleCbs.indexOf(currentCb);
+        
+        if (startIdx !== -1 && endIdx !== -1) {
+            const minIdx = Math.min(startIdx, endIdx);
+            const maxIdx = Math.max(startIdx, endIdx);
+            const targetState = currentCb.checked;
+            
+            for (let i = minIdx; i <= maxIdx; i++) {
+                visibleCbs[i].checked = targetState;
+            }
+            
+            // Clear any text selection that Shift+Click might create in browser
+            if (window.getSelection) {
+                window.getSelection().removeAllRanges();
+            }
+        }
+    }
+    
+    lastCheckedCheckbox = currentCb;
+    updateBulkUI();
+}
+
+function updateBulkUI() {
+    const selected = getSelectedCheckboxes();
+    const count = selected.length;
+    const bar = document.getElementById('bulkActionBar');
+    const selectAllCb = document.getElementById('selectAllCheckbox');
+    
+    // Update count labels
+    const countEl = document.getElementById('selectedCount');
+    const btnCountEl = document.getElementById('bulkBtnCount');
+    if (countEl) countEl.textContent = count;
+    if (btnCountEl) btnCountEl.textContent = count;
+    
+    // Toggle floating bar
+    if (bar) {
+        bar.style.display = count > 0 ? 'block' : 'none';
+    }
+    
+    // Update row highlights
+    document.querySelectorAll('.scan-row-cb').forEach(cb => {
+        const row = cb.closest('tr');
+        if (row) {
+            row.classList.toggle('row-selected', cb.checked);
+        }
+    });
+    
+    // Update select-all checkbox state based on visible checkboxes
+    if (selectAllCb) {
+        const visible = getVisibleCheckboxes();
+        if (visible.length === 0) {
+            selectAllCb.checked = false;
+            selectAllCb.indeterminate = false;
+        } else {
+            const visibleChecked = visible.filter(cb => cb.checked).length;
+            if (visibleChecked === 0) {
+                selectAllCb.checked = false;
+                selectAllCb.indeterminate = false;
+            } else if (visibleChecked === visible.length) {
+                selectAllCb.checked = true;
+                selectAllCb.indeterminate = false;
+            } else {
+                selectAllCb.checked = false;
+                selectAllCb.indeterminate = true;
+            }
+        }
+    }
+}
+
+function deselectAllRows() {
+    document.querySelectorAll('.scan-row-cb').forEach(cb => {
+        cb.checked = false;
+    });
+    lastCheckedCheckbox = null;
+    updateBulkUI();
+}
+
+function openBulkDeleteModal() {
+    const selected = getSelectedCheckboxes();
+    if (selected.length === 0) return;
+    
+    const countBadge = document.getElementById('bulkModalCountBadge');
+    const confirmBtnCount = document.getElementById('bulkConfirmBtnCount');
+    const listContainer = document.getElementById('bulkModalSelectedList');
+    const hiddenInputs = document.getElementById('bulkDeleteHiddenInputs');
+    
+    if (countBadge) countBadge.textContent = `${selected.length} รายการ`;
+    if (confirmBtnCount) confirmBtnCount.textContent = selected.length;
+    
+    if (hiddenInputs) {
+        hiddenInputs.innerHTML = selected.map(cb => `<input type="hidden" name="scan_ids" value="${cb.value}">`).join('');
+    }
+    
+    if (listContainer) {
+        listContainer.innerHTML = selected.map(cb => {
+            const seq = cb.dataset.scanSeq || `#${cb.value}`;
+            const target = cb.dataset.target || '';
+            const name = cb.dataset.name ? ` (${cb.dataset.name})` : '';
+            return `<div class="py-1 border-bottom d-flex justify-content-between"><span><strong>${seq}</strong> <code class="ms-1">${target}</code>${name}</span></div>`;
+        }).join('');
+    }
+    
+    new bootstrap.Modal(document.getElementById('bulkDeleteModal')).show();
+}
+
+// Single delete confirmation
 function confirmDelete(scanId, target, totalCount) {
     document.getElementById('deleteSingleForm').action = `/history/${scanId}/delete`;
     document.getElementById('deleteTargetInput').value = target;
@@ -514,5 +779,46 @@ function confirmDelete(scanId, target, totalCount) {
         }, { once: true });
     });
 }
+
+// Initialize event listeners
+document.addEventListener('DOMContentLoaded', function() {
+    const selectAllCb = document.getElementById('selectAllCheckbox');
+    if (selectAllCb) {
+        selectAllCb.addEventListener('change', function() {
+            const isChecked = this.checked;
+            const visible = getVisibleCheckboxes();
+            visible.forEach(cb => {
+                cb.checked = isChecked;
+            });
+            lastCheckedCheckbox = null;
+            updateBulkUI();
+        });
+    }
+    
+    // Attach click and change listeners to checkboxes
+    document.querySelectorAll('.scan-row-cb').forEach(cb => {
+        cb.addEventListener('click', handleCheckboxClick);
+    });
+
+    // Allow clicking the cell padding to toggle checkbox with Shift support
+    document.querySelectorAll('td.cb-cell').forEach(td => {
+        td.addEventListener('click', function(e) {
+            if (e.target.classList.contains('scan-row-cb')) return;
+            const cb = this.querySelector('.scan-row-cb');
+            if (cb && !cb.disabled) {
+                cb.checked = !cb.checked;
+                handleCheckboxClick.call(cb, e);
+            }
+        });
+    });
+
+    const bulkForm = document.getElementById('bulkDeleteForm');
+    if (bulkForm) {
+        bulkForm.addEventListener('submit', function() {
+            const bsModal = bootstrap.Modal.getInstance(document.getElementById('bulkDeleteModal'));
+            if (bsModal) bsModal.hide();
+        });
+    }
+});
 </script>
 {% endblock %}

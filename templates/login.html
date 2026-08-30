@@ -1,18 +1,25 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login — CLYLAR Network Scanner</title>
-    <meta name="description" content="Sign in to CLYLAR Network Scanner — National Telecom security platform">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Nunito:wght@900&family=Prompt:wght@500;600;700&family=Sarabun:wght@500;600;700&display=swap" rel="stylesheet">
     <style>
         /* ═══════════════════════════════════════════
            RESET & BASE
            ═══════════════════════════════════════════ */
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
 
-        html, body {
+        html,
+        body {
             height: 100%;
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             background: #f7f7f8;
@@ -45,84 +52,80 @@
             flex: 1;
             position: relative;
             overflow: hidden;
-            background: #e8e8ec;
+            background: #1a1a2e;
         }
 
-        .login-right img {
+        /* Slideshow slides — stacked absolutely */
+        .bg-slide {
+            position: absolute;
+            inset: 0;
             width: 100%;
             height: 100%;
             object-fit: cover;
             display: block;
-            filter: brightness(0.92) saturate(1.05);
-            transition: transform 8s ease-out;
+            filter: brightness(0.88) saturate(1.08);
+            opacity: 0;
+            transition: opacity 1.2s ease-in-out, transform 8s ease-out;
+            transform: scale(1.04);
+            will-change: opacity, transform;
         }
 
-        .login-right:hover img {
-            transform: scale(1.03);
+        .bg-slide.active {
+            opacity: 1;
+            transform: scale(1);
         }
 
-        /* Soft gradient overlay to blend the edge */
+        /* Dot indicators */
+        .slide-dots {
+            position: absolute;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 8px;
+            z-index: 3;
+        }
+
+        .slide-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.4);
+            border: 1.5px solid rgba(255, 255, 255, 0.6);
+            cursor: pointer;
+            transition: background 0.3s ease, transform 0.3s ease;
+        }
+
+        .slide-dot.active {
+            background: #f5c518;
+            border-color: #f5c518;
+            transform: scale(1.3);
+        }
+
+        /* Soft gradient overlay to blend the left edge */
         .login-right::before {
             content: '';
             position: absolute;
             inset: 0;
-            background: linear-gradient(
-                90deg,
-                rgba(255, 255, 255, 0.15) 0%,
-                transparent 15%,
-                transparent 100%
-            );
-            z-index: 1;
+            background: linear-gradient(90deg,
+                    rgba(255, 255, 255, 0.12) 0%,
+                    transparent 18%,
+                    transparent 100%);
+            z-index: 2;
             pointer-events: none;
         }
 
         /* ═══════════════════════════════════════════
-           NT LOGO (SVG-based)
+           NT LOGO (Official Vector)
            ═══════════════════════════════════════════ */
         .nt-logo {
-            display: flex;
-            align-items: flex-start;
-            gap: 10px;
-            margin-bottom: 52px;
+            margin-bottom: 44px;
         }
 
-        .nt-logo-icon {
-            display: flex;
-            gap: 3px;
-            align-items: flex-end;
-        }
-
-        .nt-logo-bar {
-            width: 8px;
-            border-radius: 4px;
-            background: #f5c518;
-        }
-        .nt-logo-bar:nth-child(1) { height: 18px; }
-        .nt-logo-bar:nth-child(2) { height: 28px; }
-        .nt-logo-bar:nth-child(3) { height: 18px; }
-        .nt-logo-bar:nth-child(4) { height: 28px; }
-        .nt-logo-bar:nth-child(5) { height: 18px; }
-
-        .nt-logo-text {
-            display: flex;
-            flex-direction: column;
-            line-height: 1;
-        }
-
-        .nt-logo-text .nt-main {
-            font-size: 34px;
-            font-weight: 700;
-            color: #2d2d3a;
-            letter-spacing: -1px;
-            line-height: 0.9;
-        }
-
-        .nt-logo-text .nt-sub {
-            font-size: 11px;
-            font-weight: 600;
-            color: #6b6b7b;
-            letter-spacing: 0.5px;
-            margin-top: 3px;
+        .nt-logo svg {
+            height: 52px;
+            width: auto;
+            display: block;
         }
 
         /* ═══════════════════════════════════════════
@@ -212,14 +215,14 @@
         .login-btn::after {
             content: '';
             position: absolute;
-            top: 0; left: -75%;
-            width: 50%; height: 100%;
-            background: linear-gradient(
-                90deg,
-                transparent,
-                rgba(255,255,255,0.07),
-                transparent
-            );
+            top: 0;
+            left: -75%;
+            width: 50%;
+            height: 100%;
+            background: linear-gradient(90deg,
+                    transparent,
+                    rgba(255, 255, 255, 0.07),
+                    transparent);
             transition: left 0.6s ease;
         }
 
@@ -252,9 +255,21 @@
         }
 
         @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            20%, 60% { transform: translateX(-6px); }
-            40%, 80% { transform: translateX(6px); }
+
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+
+            20%,
+            60% {
+                transform: translateX(-6px);
+            }
+
+            40%,
+            80% {
+                transform: translateX(6px);
+            }
         }
 
         /* ═══════════════════════════════════════════
@@ -316,32 +331,62 @@
                 opacity: 0;
                 transform: translateY(18px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
             }
         }
 
-        .login-left > * {
+        .login-left>* {
             animation: fadeInUp 0.6s ease forwards;
             opacity: 0;
         }
 
-        .login-left > :nth-child(1) { animation-delay: 0.1s; }
-        .login-left > :nth-child(2) { animation-delay: 0.2s; }
-        .login-left > :nth-child(3) { animation-delay: 0.25s; }
-        .login-left > :nth-child(4) { animation-delay: 0.3s; }
-        .login-left > :nth-child(5) { animation-delay: 0.35s; }
-        .login-left > :nth-child(6) { animation-delay: 0.4s; }
-        .login-left > :nth-child(7) { animation-delay: 0.45s; }
-        .login-left > :nth-child(8) { animation-delay: 0.5s; }
-
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to   { opacity: 1; }
+        .login-left> :nth-child(1) {
+            animation-delay: 0.1s;
         }
 
-        .login-right img {
+        .login-left> :nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .login-left> :nth-child(3) {
+            animation-delay: 0.25s;
+        }
+
+        .login-left> :nth-child(4) {
+            animation-delay: 0.3s;
+        }
+
+        .login-left> :nth-child(5) {
+            animation-delay: 0.35s;
+        }
+
+        .login-left> :nth-child(6) {
+            animation-delay: 0.4s;
+        }
+
+        .login-left> :nth-child(7) {
+            animation-delay: 0.45s;
+        }
+
+        .login-left> :nth-child(8) {
+            animation-delay: 0.5s;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        /* Initial fade-in for right panel */
+        .login-right {
             animation: fadeIn 1s ease 0.3s forwards;
             opacity: 0;
         }
@@ -355,6 +400,16 @@
 
         .password-wrapper input {
             padding-right: 44px;
+        }
+
+        /* Hide the native browser password-reveal eye icon */
+        .password-wrapper input[type="password"]::-ms-reveal,
+        .password-wrapper input[type="password"]::-ms-clear {
+            display: none;
+        }
+        .password-wrapper input[type="password"]::-webkit-contacts-auto-fill-button,
+        .password-wrapper input[type="password"]::-webkit-credentials-auto-fill-button {
+            display: none;
         }
 
         .password-toggle {
@@ -377,125 +432,187 @@
         }
     </style>
 </head>
+
 <body>
 
-<div class="login-wrapper">
+    <div class="login-wrapper">
 
-    <!-- ═══ LEFT: Logo + Form ═══ -->
-    <div class="login-left">
+        <!-- ═══ LEFT: Logo + Form ═══ -->
+        <div class="login-left">
 
-        <!-- NT Logo -->
-        <div class="nt-logo">
-            <div class="nt-logo-icon">
-                <div class="nt-logo-bar"></div>
-                <div class="nt-logo-bar"></div>
-                <div class="nt-logo-bar"></div>
-                <div class="nt-logo-bar"></div>
-                <div class="nt-logo-bar"></div>
+            <!-- NT Logo (Official Vector SVG) -->
+            <div class="nt-logo">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2160 340" role="img" aria-label="NT National Telecom Public Company Limited">
+                    <!-- NT Official Waveform Mark -->
+                    <g id="nt-yellow-mark">
+                        <!-- Center Bar (Tallest) -->
+                        <path fill="#ffd004" d="M 136.46 5.76 C 141.89 4.46 147.89 5.23 152.56 8.39 C 158.48 12.11 161.86 19.10 161.67 26.02 C 161.66 79.02 161.68 132.02 161.66 185.02 C 161.79 192.62 157.36 200.12 150.45 203.38 C 141.84 207.80 130.24 204.87 124.97 196.69 C 122.33 193.04 121.44 188.46 121.45 184.03 C 121.48 131.06 121.41 78.08 121.48 25.10 C 121.43 16.24 127.84 7.87 136.46 5.76 Z"/>
+                        <!-- Bar 1 (Left) -->
+                        <path fill="#ffd004" d="M 9.45 60.94 C 11.22 51.58 20.58 44.38 30.10 45.22 C 40.35 45.38 49.19 54.76 49.10 64.94 C 49.09 91.60 49.08 118.26 49.10 144.92 C 49.27 151.48 46.00 158.04 40.59 161.78 C 34.83 165.94 26.78 166.62 20.40 163.50 C 13.79 160.42 8.98 153.39 9.12 146.02 C 9.10 129.67 9.02 113.33 9.05 97.00 C 9.23 89.67 9.08 82.33 9.06 75.00 C 9.30 70.32 8.71 65.59 9.45 60.94 Z"/>
+                        <!-- Circle 2 (Upper Dot) -->
+                        <path fill="#ffd004" d="M 192.52 45.82 C 197.51 44.64 203.03 45.02 207.51 47.66 C 214.41 51.29 218.61 59.30 217.76 67.05 C 217.21 77.74 206.75 86.56 196.11 85.29 C 185.94 84.74 177.33 75.22 177.85 65.04 C 177.55 56.25 184.14 48.07 192.52 45.82 Z"/>
+                        <!-- Bar 3 (Right) -->
+                        <path fill="#ffd004" d="M 249.43 65.69 C 258.92 63.15 269.66 68.93 272.88 78.19 C 274.66 82.58 274.12 87.38 274.17 92.00 C 274.18 102.99 274.16 113.98 274.19 124.97 C 274.29 132.19 270.32 139.41 263.94 142.87 C 257.73 146.43 249.61 146.28 243.56 142.46 C 237.60 138.89 233.79 131.96 234.10 125.00 C 234.15 111.33 234.09 97.65 234.13 83.98 C 234.36 75.36 241.07 67.56 249.43 65.69 Z"/>
+                        <!-- Circle 1 (Lower Dot) -->
+                        <path fill="#ffd004" d="M 81.47 105.55 C 93.15 102.81 105.71 112.90 105.24 124.96 C 105.94 135.90 95.95 145.90 85.04 145.42 C 74.66 145.60 65.34 136.34 65.25 125.99 C 64.67 116.40 72.02 107.19 81.47 105.55 Z"/>
+                    </g>
+                    <!-- NT Official 'nt' Glyphs -->
+                    <g id="nt-letters">
+                        <!-- Letter 't' -->
+                        <path fill="#55595a" d="M 422.36 127.36 C 428.03 123.86 435.49 123.50 441.45 126.48 C 448.04 129.58 452.69 136.57 452.72 143.89 C 452.80 150.76 452.71 157.62 452.74 164.48 C 461.10 164.56 469.47 164.39 477.82 164.55 C 487.41 165.12 495.13 174.61 493.98 184.10 C 493.36 192.70 485.84 200.05 477.22 200.41 C 469.06 200.66 460.90 200.43 452.74 200.52 C 452.75 226.67 452.74 252.82 452.75 278.98 C 452.41 283.17 455.90 286.89 460.02 287.21 C 463.92 286.87 466.93 284.08 469.17 281.09 C 472.46 276.76 477.39 273.34 482.98 273.20 C 489.07 272.56 494.81 275.94 498.64 280.44 C 502.71 285.29 503.14 292.35 501.32 298.20 C 493.57 317.87 470.77 329.81 450.14 325.41 C 429.66 321.86 413.12 302.82 412.83 281.97 C 412.81 254.82 412.81 227.67 412.83 200.51 C 408.23 200.47 403.36 200.91 399.10 198.83 C 392.38 195.82 388.00 188.40 388.74 181.05 C 389.06 174.15 393.96 167.86 400.40 165.53 C 404.37 164.00 408.69 164.59 412.85 164.48 C 412.80 157.67 412.82 150.85 412.81 144.04 C 412.65 137.27 416.60 130.78 422.36 127.36 Z"/>
+                        <!-- Letter 'n' -->
+                        <path fill="#55595a" d="M 247.35 165.51 C 253.23 163.58 260.06 164.24 265.20 167.80 C 270.76 171.45 274.19 178.06 273.97 184.71 C 278.73 178.56 284.51 173.03 291.65 169.76 C 304.67 163.77 319.77 163.10 333.62 166.27 C 347.30 169.48 358.92 179.13 365.64 191.32 C 371.06 200.92 373.46 212.05 373.33 223.02 C 373.31 250.00 373.33 276.98 373.33 303.96 C 373.40 309.81 371.01 315.70 366.56 319.56 C 360.70 325.03 351.44 326.21 344.31 322.63 C 337.68 319.49 333.18 312.37 333.20 305.03 C 333.19 280.02 333.18 255.00 333.20 229.98 C 333.17 223.96 331.44 217.90 327.99 212.93 C 322.38 204.53 312.17 199.40 302.05 200.14 C 287.49 200.44 274.48 213.36 274.19 227.94 C 274.15 252.95 274.17 277.96 274.18 302.97 C 274.21 307.65 273.12 312.47 270.33 316.31 C 265.89 322.66 257.55 325.92 249.98 324.27 C 243.06 322.97 237.10 317.64 234.99 310.94 C 233.45 306.46 233.86 301.66 233.82 297.02 C 233.82 261.67 233.83 226.33 233.82 190.99 C 233.82 186.69 233.55 182.25 234.98 178.12 C 236.84 172.29 241.58 167.52 247.35 165.51 Z"/>
+                    </g>
+                    <!-- Company Text -->
+                    <text x="590" y="190"
+                          font-family="'Prompt', 'Sarabun', sans-serif"
+                          font-size="80"
+                          font-weight="800"
+                          fill="#363a42">บริษัท โทรคมนาคมแห่งชาติ จำกัด (มหาชน)</text>
+                    <text x="590" y="280"
+                          font-family="'Inter', 'Arial', sans-serif"
+                          font-size="64"
+                          font-weight="700"
+                          fill="#4d515a">National Telecom Public Company Limited</text>
+                </svg>
             </div>
-            <div class="nt-logo-text">
-                <span class="nt-main">nt</span>
-                <span class="nt-sub">National Telecom</span>
-            </div>
-        </div>
 
-        <!-- Heading -->
-        <h1 class="login-heading">Welcome back</h1>
-        <p class="login-subheading">Sign in to CLYLAR Network Scanner</p>
+            <!-- Heading -->
+            <h1 class="login-heading">Welcome back</h1>
+            <p class="login-subheading">Sign in to CLYLAR Network Scanner</p>
 
-        <!-- Flash messages -->
-        {% with messages = get_flashed_messages() %}
+            <!-- Flash messages -->
+            {% with messages = get_flashed_messages() %}
             {% if messages %}
-                <div class="alert-error">{{ messages[0] }}</div>
+            <div class="alert-error">{{ messages[0] }}</div>
             {% endif %}
-        {% endwith %}
+            {% endwith %}
 
-        <!-- Login form -->
-        <form method="POST" autocomplete="on">
+            <!-- Login form -->
+            <form method="POST" autocomplete="on">
 
-            <div class="form-group">
-                <label for="login-username">Username</label>
-                <input type="text"
-                       id="login-username"
-                       name="username"
-                       placeholder="Enter your username"
-                       autocomplete="username"
-                       required
-                       autofocus>
-            </div>
-
-            <div class="form-group">
-                <label for="login-password">Password</label>
-                <div class="password-wrapper">
-                    <input type="password"
-                           id="login-password"
-                           name="password"
-                           placeholder="Enter your password"
-                           autocomplete="current-password"
-                           required>
-                    <button type="button"
-                            class="password-toggle"
-                            onclick="togglePassword()"
-                            aria-label="Toggle password visibility"
-                            tabindex="-1">
-                        <!-- Eye-off (closed) — default when password is hidden -->
-                        <svg id="icon-eye-off" width="20" height="20" viewBox="0 0 24 24" fill="none"
-                             stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
-                            <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
-                            <path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/>
-                            <line x1="1" y1="1" x2="23" y2="23"/>
-                        </svg>
-                        <!-- Eye-open — shown when password is visible -->
-                        <svg id="icon-eye-open" width="20" height="20" viewBox="0 0 24 24" fill="none"
-                             stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
-                             style="display:none;">
-                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                            <circle cx="12" cy="12" r="3"/>
-                        </svg>
-                    </button>
+                <div class="form-group">
+                    <label for="login-username">Username</label>
+                    <input type="text" id="login-username" name="username" placeholder="Enter your username"
+                        autocomplete="username" required autofocus>
                 </div>
+
+                <div class="form-group">
+                    <label for="login-password">Password</label>
+                    <div class="password-wrapper">
+                        <input type="password" id="login-password" name="password" placeholder="Enter your password"
+                            autocomplete="current-password" required>
+                        <button type="button" class="password-toggle" onclick="togglePassword()"
+                            aria-label="Toggle password visibility" tabindex="-1">
+                            <!-- Eye-off (closed) — default when password is hidden -->
+                            <svg id="icon-eye-off" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                <path
+                                    d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
+                                <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
+                                <path d="M14.12 14.12a3 3 0 1 1-4.24-4.24" />
+                                <line x1="1" y1="1" x2="23" y2="23" />
+                            </svg>
+                            <!-- Eye-open — shown when password is visible -->
+                            <svg id="icon-eye-open" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
+                                style="display:none;">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                                <circle cx="12" cy="12" r="3" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <button type="submit" class="login-btn" id="login-submit-btn">
+                    Sign In
+                </button>
+
+            </form>
+
+            <!-- Footer -->
+            <div class="login-footer">
+                <span>CLYLAR</span> · Network Security Platform<br>
+                © 2025 National Telecom Public Company Limited
             </div>
 
-            <button type="submit" class="login-btn" id="login-submit-btn">
-                Sign In
-            </button>
+        </div>
 
-        </form>
+        <!-- ═══ RIGHT: Slideshow ═══ -->
+        <div class="login-right" id="login-slideshow">
+            <img class="bg-slide" src="{{ url_for('static', filename='images/office-team.jpg') }}?v=2"
+                alt="National Telecom team collaborating" loading="eager">
+            <img class="bg-slide" src="{{ url_for('static', filename='images/nt-building.jpg') }}?v=2"
+                alt="National Telecom headquarters building" loading="eager">
+            <img class="bg-slide" src="{{ url_for('static', filename='images/nt-city.jpg') }}?v=2"
+                alt="National Telecom city network" loading="eager">
 
-        <!-- Footer -->
-        <div class="login-footer">
-            <span>CLYLAR</span> · Network Security Platform<br>
-            © 2025 National Telecom
+            <!-- Dot indicators -->
+            <div class="slide-dots" id="slide-dots">
+                <div class="slide-dot" data-index="0" onclick="goToSlide(0)"></div>
+                <div class="slide-dot" data-index="1" onclick="goToSlide(1)"></div>
+                <div class="slide-dot" data-index="2" onclick="goToSlide(2)"></div>
+            </div>
         </div>
 
     </div>
 
-    <!-- ═══ RIGHT: Image ═══ -->
-    <div class="login-right">
-        <img src="{{ url_for('static', filename='images/office-team.jpg') }}"
-             alt="National Telecom team collaborating"
-             loading="eager">
-    </div>
-
-</div>
-
-<script>
-    function togglePassword() {
-        const input = document.getElementById('login-password');
-        const eyeOff = document.getElementById('icon-eye-off');
-        const eyeOpen = document.getElementById('icon-eye-open');
-        if (input.type === 'password') {
-            input.type = 'text';
-            eyeOff.style.display = 'none';
-            eyeOpen.style.display = 'block';
-        } else {
-            input.type = 'password';
-            eyeOff.style.display = 'block';
-            eyeOpen.style.display = 'none';
+    <script>
+        /* ─── Password toggle ─── */
+        function togglePassword() {
+            const input = document.getElementById('login-password');
+            const eyeOff = document.getElementById('icon-eye-off');
+            const eyeOpen = document.getElementById('icon-eye-open');
+            if (input.type === 'password') {
+                input.type = 'text';
+                eyeOff.style.display = 'none';
+                eyeOpen.style.display = 'block';
+            } else {
+                input.type = 'password';
+                eyeOff.style.display = 'block';
+                eyeOpen.style.display = 'none';
+            }
         }
-    }
-</script>
+
+        /* ─── Background Slideshow ─── */
+        (function () {
+            const slides = document.querySelectorAll('.bg-slide');
+            const dots = document.querySelectorAll('.slide-dot');
+            const total = slides.length;
+            let current = Math.floor(Math.random() * total); // random start
+            let timer = null;
+
+            function activate(index) {
+                // deactivate all
+                slides.forEach(function (s) { s.classList.remove('active'); });
+                dots.forEach(function (d) { d.classList.remove('active'); });
+                // activate chosen
+                slides[index].classList.add('active');
+                dots[index].classList.add('active');
+                current = index;
+            }
+
+            function nextSlide() {
+                activate((current + 1) % total);
+            }
+
+            function startTimer() {
+                clearInterval(timer);
+                timer = setInterval(nextSlide, 5000);
+            }
+
+            // Expose for dot clicks
+            window.goToSlide = function (index) {
+                activate(index);
+                startTimer(); // reset interval on manual click
+            };
+
+            // Init
+            activate(current);
+            startTimer();
+        })();
+    </script>
 
 </body>
+
 </html>

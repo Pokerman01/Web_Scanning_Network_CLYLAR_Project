@@ -22,18 +22,22 @@
 
   <!-- Total Devices -->
   <div class="col-6 col-md-3">
-    <div class="stat-card card border-0 shadow-sm h-100" id="card-devices" data-card="devices"
-      style="border-left: 4px solid #0d6efd !important; cursor:pointer; transform-origin: center center;">
-      <div class="card-body">
-        <div class="d-flex align-items-center justify-content-between">
+    <div class="stat-card card h-100 shadow-sm" id="card-devices" data-card="devices"
+      style="cursor:pointer; transform-origin: center center;">
+      <div class="card-body d-flex flex-column justify-content-between p-3">
+        <div class="d-flex align-items-start justify-content-between">
           <div>
-            <p class="text-muted small mb-1">อุปกรณ์ทั้งหมด</p>
-            <h2 class="fw-bold mb-0 text-primary">{{ total_devices }}</h2>
+            <span class="stat-card-label">อุปกรณ์ทั้งหมด</span>
+            <div class="stat-card-value">{{ total_devices }}</div>
           </div>
-          <div style="font-size:2rem">🖥️</div>
+          <div class="stat-icon-badge" style="background:#E6F1FB;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+            </svg>
+          </div>
         </div>
-        <div class="mt-2">
-          <small class="text-muted" style="font-size:.72rem">คลิกเพื่อดูรายละเอียด →</small>
+        <div class="stat-card-footer mt-2">
+          <span>คลิกเพื่อดูรายละเอียด →</span>
         </div>
       </div>
     </div>
@@ -41,35 +45,45 @@
 
   <!-- Open Ports -->
   <div class="col-6 col-md-3">
-    <div class="stat-card card border-0 shadow-sm h-100" id="card-ports" data-card="ports"
-      style="border-left: 4px solid #198754 !important; cursor:pointer; transform-origin: center center;">
-      <div class="card-body">
-        <div class="d-flex align-items-center justify-content-between">
+    <div class="stat-card card h-100 shadow-sm" id="card-ports" data-card="ports"
+      style="cursor:pointer; transform-origin: center center;">
+      <div class="card-body d-flex flex-column justify-content-between p-3">
+        <div class="d-flex align-items-start justify-content-between">
           <div>
-            <p class="text-muted small mb-1">Open ports</p>
-            <h2 class="fw-bold mb-0 text-success">{{ total_open_ports }}</h2>
+            <span class="stat-card-label">Open Ports</span>
+            <div class="stat-card-value">{{ total_open_ports }}</div>
           </div>
-          <div style="font-size:2rem">🔌</div>
+          <div class="stat-icon-badge" style="background:#EAF3DE;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18" stroke-width="2.5"/><path d="M9 7h6M9 11h4"/>
+            </svg>
+          </div>
         </div>
-        <small class="text-muted">unique port จากทุกการสแกน (ไม่นับซ้ำ)</small>
+        <div class="stat-card-footer mt-2">
+          <span>unique port จากทุกการสแกน</span>
+        </div>
       </div>
     </div>
   </div>
 
   <!-- CVE Found -->
   <div class="col-6 col-md-3">
-    <div class="stat-card card border-0 shadow-sm h-100" id="card-cve" data-card="cve"
-      style="border-left: 4px solid #f87171 !important; cursor:pointer; transform-origin: center center;">
-      <div class="card-body">
-        <div class="d-flex align-items-center justify-content-between">
+    <div class="stat-card card h-100 shadow-sm" id="card-cve" data-card="cve"
+      style="cursor:pointer; transform-origin: center center;">
+      <div class="card-body d-flex flex-column justify-content-between p-3">
+        <div class="d-flex align-items-start justify-content-between">
           <div>
-            <p class="text-muted small mb-1">CVE Found</p>
-            <h2 class="fw-bold mb-0" style="color:#f87171">{{ total_cves_found }}</h2>
+            <span class="stat-card-label">CVE Found</span>
+            <div class="stat-card-value">{{ total_cves_found }}</div>
           </div>
-          <div style="font-size:2rem">🛡️</div>
+          <div class="stat-icon-badge" style="background:#FEE2E2;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+          </div>
         </div>
-        <div class="mt-2">
-          <small class="text-muted" style="font-size:.72rem">คลิกเพื่อดูรายละเอียด →</small>
+        <div class="stat-card-footer mt-2">
+          <span>คลิกเพื่อดูรายละเอียด →</span>
         </div>
       </div>
     </div>
@@ -77,21 +91,23 @@
 
   <!-- Total Tasks -->
   <div class="col-6 col-md-3">
-    <div class="stat-card card border-0 shadow-sm h-100" id="card-tasks" data-card="tasks"
-      style="border-left: 4px solid #0dcaf0 !important; cursor:pointer; transform-origin: center center;">
-      <div class="card-body">
-        <div class="d-flex align-items-center justify-content-between">
+    <div class="stat-card card h-100 shadow-sm" id="card-tasks" data-card="tasks"
+      style="cursor:pointer; transform-origin: center center;">
+      <div class="card-body d-flex flex-column justify-content-between p-3">
+        <div class="d-flex align-items-start justify-content-between">
           <div>
-            <p class="text-muted small mb-1">Total Task</p>
-            <h2 class="fw-bold mb-0" style="color:#0dcaf0">{{ total_tasks }}</h2>
+            <span class="stat-card-label">Total Task</span>
+            <div class="stat-card-value">{{ total_tasks }}</div>
           </div>
-          <div style="font-size:2rem">📋</div>
+          <div class="stat-icon-badge" style="background:#F3E8FF;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+            </svg>
+          </div>
         </div>
-        <small class="text-success">Complete: {{ task_completed }}</small>
-        <span class="text-muted small"> / </span>
-        <small class="text-danger">Wait: {{ task_wait }}</small>
-        <span class="text-muted small"> / </span>
-        <small class="text-warning">Running: {{ task_running }}</small>
+        <div class="stat-card-footer mt-2">
+          <span><strong style="color:#10b981;">{{ task_completed }}</strong> Done · <strong style="color:#ef4444;">{{ task_wait }}</strong> Wait · <strong style="color:#f59e0b;">{{ task_running }}</strong> Run</span>
+        </div>
       </div>
     </div>
   </div>
@@ -107,7 +123,7 @@
       <div class="card-body d-flex flex-column">
         <div class="d-flex align-items-baseline gap-2 mb-3">
           <h6 class="fw-bold mb-0">Device Status</h6>
-          <span class="text-muted" style="font-size:.72rem;" title="Port counts are aggregated from all scan jobs in history">📊 Across all scan history</span>
+          <span class="text-muted" style="font-size:.72rem;" title="Port counts are aggregated from all scan jobs in history">Across all scan history</span>
         </div>
         <div class="d-flex align-items-center flex-grow-1" style="gap:0">
           <!-- Legend flush left -->
@@ -545,12 +561,12 @@
     <!-- Header -->
     <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;">
       <div>
-        <div id="stat-modal-emoji" style="font-size:2rem;margin-bottom:4px;"></div>
-        <h5 id="stat-modal-title" style="margin:0;font-weight:700;font-size:1.15rem;"></h5>
-        <p id="stat-modal-subtitle" style="margin:0;color:#6c757d;font-size:.83rem;"></p>
+        <div id="stat-modal-icon-badge" class="stat-icon-badge mb-3" style="width:48px;height:48px;border-radius:12px;"></div>
+        <h5 id="stat-modal-title" style="margin:0;font-weight:700;font-size:1.15rem;color:#0f172a;"></h5>
+        <p id="stat-modal-subtitle" style="margin:4px 0 0;color:#64748b;font-size:.83rem;"></p>
       </div>
       <button onclick="closeStatModal()"
-        style="background:none;border:none;font-size:1.3rem;cursor:pointer;color:#aaa;padding:0;line-height:1;margin-left:16px;flex-shrink:0;"
+        style="background:none;border:none;font-size:1.3rem;cursor:pointer;color:#94a3b8;padding:0;line-height:1;margin-left:16px;flex-shrink:0;"
         aria-label="ปิด">✕</button>
     </div>
     <div id="stat-modal-body"></div>
@@ -559,14 +575,56 @@
 
 <!-- ===== STYLES ===== -->
 <style>
-  /* Stat card hover state */
+  /* Stat card styling — Single focal point, clean neutral borders */
   .stat-card {
-    transition: box-shadow 0.2s ease;
+    background: #ffffff;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 14px !important;
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
     will-change: transform;
   }
 
   .stat-card:hover {
-    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.13) !important;
+    border-color: #cbd5e1 !important;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04) !important;
+  }
+
+  .stat-card-label {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: #64748b;
+    margin-bottom: 4px;
+    display: block;
+  }
+
+  .stat-card-value {
+    font-size: 1.85rem;
+    font-weight: 700;
+    color: #0f172a;
+    line-height: 1.2;
+  }
+
+  .stat-icon-badge {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: transform 0.2s ease;
+  }
+
+  .stat-card:hover .stat-icon-badge {
+    transform: scale(1.08);
+  }
+
+  .stat-card-footer {
+    font-size: 0.73rem;
+    color: #94a3b8;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   /* Modal scrollbar */
@@ -786,15 +844,6 @@
 </div>
 
 
-<!-- History Section -->
-<div class="card border-0 shadow-sm p-4 mb-4 text-center" id="history-section">
-  <div style="font-size:2.5rem">🕒</div>
-  <h5 class="mt-2 mb-1">Scan History</h5>
-  <p class="text-muted small mb-3">ดูประวัติการสแกนทั้งหมดได้ที่หน้า Scan History</p>
-  <a href="{{ url_for('history_page') }}" class="btn btn-outline-primary btn-sm">ไปหน้า Scan History →</a>
-</div>
-
-
 <!-- ===== INTERACTIVE JAVASCRIPT ===== -->
 <script>
   // ──────────────────────────────────────────────────────
@@ -848,14 +897,15 @@
   function openStatModal(type, sourceCard) {
     const modal = document.getElementById('stat-modal');
     const backdrop = document.getElementById('stat-modal-backdrop');
-    const emoji = document.getElementById('stat-modal-emoji');
+    const iconBadge = document.getElementById('stat-modal-icon-badge');
     const title = document.getElementById('stat-modal-title');
     const subtitle = document.getElementById('stat-modal-subtitle');
     const body = document.getElementById('stat-modal-body');
 
     // Populate content
     const content = buildModalContent(type);
-    emoji.textContent = content.emoji;
+    iconBadge.innerHTML = content.iconHtml || '';
+    iconBadge.style.background = content.iconBg || '#f1f5f9';
     title.textContent = content.title;
     subtitle.textContent = content.subtitle;
     body.innerHTML = content.html;
@@ -961,7 +1011,7 @@
       const warning = d.device_port_data.filter(x => x.count >= 3 && x.count <= 6);
       const danger = d.device_port_data.filter(x => x.count > 6);
 
-      const makeGroup = (label, color, icon, items) => {
+      const makeGroup = (label, color, items) => {
         if (items.length === 0) return '';
         const rows = items.map(d =>
           `<div class="modal-item" style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#f8f9fb;border-radius:8px;border-left:3px solid ${color};font-size:.83rem;">
@@ -972,13 +1022,20 @@
         ).join('');
         return `
         <div class="modal-item" style="margin-bottom:8px;margin-top:14px;">
-          <div style="font-weight:600;font-size:.82rem;color:${color};margin-bottom:6px;">${icon} ${label} (${items.length} เครื่อง)</div>
+          <div style="font-weight:600;font-size:.82rem;color:${color};margin-bottom:6px;display:flex;align-items:center;gap:6px;">
+            <span style="width:8px;height:8px;border-radius:50%;background:${color};display:inline-block;"></span>
+            ${label} (${items.length} เครื่อง)
+          </div>
           <div style="display:flex;flex-direction:column;gap:5px;">${rows}</div>
         </div>`;
       };
 
       return {
-        emoji: '🖥️',
+        iconBg: '#E6F1FB',
+        iconHtml: `
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+          </svg>`,
         title: `อุปกรณ์ทั้งหมด — ${d.total_devices} เครื่อง`,
         subtitle: 'แบ่งตามจำนวน Open Ports',
         html: `
@@ -987,9 +1044,9 @@
           ${makePill('#ffc107', '3–6 Port', warning.length, '#212529')}
           ${makePill('#dc3545', '> 6 Port', danger.length)}
         </div>
-        ${makeGroup('ความปลอดภัยสูง (< 3 Port)', '#198754', '🟢', safe)}
-        ${makeGroup('ระมัดระวัง (3–6 Port)', '#ffc107', '🟡', warning)}
-        ${makeGroup('ความเสี่ยงสูง (> 6 Port)', '#dc3545', '🔴', danger)}
+        ${makeGroup('ความปลอดภัยสูง (< 3 Port)', '#198754', safe)}
+        ${makeGroup('ระมัดระวัง (3–6 Port)', '#ffc107', warning)}
+        ${makeGroup('ความเสี่ยงสูง (> 6 Port)', '#dc3545', danger)}
       `
       };
     }
@@ -997,16 +1054,20 @@
     if (type === 'ports') {
       const portRows = d.top_ports.length > 0
         ? d.top_ports.map(([port, count], i) =>
-          `<div class="modal-item" style="display:flex;align-items:center;gap:10px;padding:9px 14px;background:#f8f9fb;border-radius:8px;border-left:3px solid #198754;font-size:.83rem;">
-            <span style="font-weight:700;color:#198754;min-width:20px;text-align:center">#${i + 1}</span>
+          `<div class="modal-item" style="display:flex;align-items:center;gap:10px;padding:9px 14px;background:#f8f9fb;border-radius:8px;border-left:3px solid #16a34a;font-size:.83rem;">
+            <span style="font-weight:700;color:#16a34a;min-width:20px;text-align:center">#${i + 1}</span>
             <span style="font-family:monospace;font-weight:600;color:#333;flex:1">${port}</span>
-            <span style="background:#198754;color:#fff;border-radius:20px;padding:2px 10px;font-size:.75rem;font-weight:600">${count} อุปกรณ์</span>
+            <span style="background:#16a34a;color:#fff;border-radius:20px;padding:2px 10px;font-size:.75rem;font-weight:600">${count} อุปกรณ์</span>
           </div>`
         ).join('')
         : '<div class="modal-item" style="color:#aaa;font-size:.85rem">ยังไม่มีข้อมูล Port</div>';
 
       return {
-        emoji: '🔌',
+        iconBg: '#EAF3DE',
+        iconHtml: `
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18" stroke-width="2.5"/><path d="M9 7h6M9 11h4"/>
+          </svg>`,
         title: `Open Ports — ${d.total_open_ports} unique ports`,
         subtitle: 'Top ports ที่พบมากที่สุดจากทุกการสแกน',
         html: `
@@ -1020,93 +1081,113 @@
       // CVE list pre-computed from all scans (passed from backend)
       const cveList = {{ all_cves_json | safe }};
 
-  // Sort: critical first
-  const sevOrder = { critical: 0, high: 1, medium: 2, low: 3, info: 4, unknown: 5 };
-  cveList.sort((a, b) => (sevOrder[a.severity.toLowerCase()] ?? 5) - (sevOrder[b.severity.toLowerCase()] ?? 5));
+      // Sort: critical first
+      const sevOrder = { critical: 0, high: 1, medium: 2, low: 3, info: 4, unknown: 5 };
+      cveList.sort((a, b) => (sevOrder[a.severity.toLowerCase()] ?? 5) - (sevOrder[b.severity.toLowerCase()] ?? 5));
 
-  const counts = {};
-  cveList.forEach(c => {
-    const s = c.severity.toLowerCase();
-    counts[s] = (counts[s] || 0) + 1;
-  });
+      const counts = {};
+      cveList.forEach(c => {
+        const s = c.severity.toLowerCase();
+        counts[s] = (counts[s] || 0) + 1;
+      });
 
-  const sevRows = cveList.length > 0
-    ? cveList.slice(0, 20).map(c => {
-      const sev = c.severity.toLowerCase();
-      const cls = `sev-${sev}`;
-      return `<div class="modal-item" style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#f8f9fb;border-radius:8px;font-size:.8rem;">
-            <span style="font-family:monospace;font-weight:600;color:#333;flex:1">${c.id}</span>
-            ${c.port ? `<span style="color:#aaa;font-size:.72rem">Port ${c.port}</span>` : ''}
-            <span class="badge ${cls}" style="font-size:.7rem;text-transform:uppercase">${c.severity || 'unknown'}</span>
-          </div>`;
-    }).join('')
-    : '<div class="modal-item" style="color:#198754;font-size:.85rem">✅ ไม่พบ CVE ในการสแกนล่าสุด</div>';
+      const sevRows = cveList.length > 0
+        ? cveList.slice(0, 20).map(c => {
+          const sev = c.severity.toLowerCase();
+          const cls = `sev-${sev}`;
+          return `<div class="modal-item" style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#f8f9fb;border-radius:8px;font-size:.8rem;">
+                <span style="font-family:monospace;font-weight:600;color:#333;flex:1">${c.id}</span>
+                ${c.port ? `<span style="color:#aaa;font-size:.72rem">Port ${c.port}</span>` : ''}
+                <span class="badge ${cls}" style="font-size:.7rem;text-transform:uppercase">${c.severity || 'unknown'}</span>
+              </div>`;
+        }).join('')
+        : '<div class="modal-item" style="color:#16a34a;font-size:.85rem;font-weight:500;">✓ ไม่พบ CVE ในการสแกนล่าสุด</div>';
 
-  const summaryPills = Object.entries(counts).map(([sev, cnt]) =>
-    makePill(
-      sev === 'critical' ? '#7c3aed' :
-        sev === 'high' ? '#dc3545' :
-          sev === 'medium' ? '#ffc107' :
-            sev === 'low' ? '#198754' : '#6c757d',
-      sev.charAt(0).toUpperCase() + sev.slice(1),
-      cnt,
-      ['medium', 'info'].includes(sev) ? '#212529' : '#fff'
-    )
-  ).join('');
+      const summaryPills = Object.entries(counts).map(([sev, cnt]) =>
+        makePill(
+          sev === 'critical' ? '#7c3aed' :
+            sev === 'high' ? '#dc3545' :
+              sev === 'medium' ? '#ffc107' :
+                sev === 'low' ? '#198754' : '#6c757d',
+          sev.charAt(0).toUpperCase() + sev.slice(1),
+          cnt,
+          ['medium', 'info'].includes(sev) ? '#212529' : '#fff'
+        )
+      ).join('');
 
-  return {
-    emoji: '🛡️',
-    title: `CVE Found — ${d.total_cves_found} รายการ`,
-    subtitle: 'ช่องโหว่ที่ตรวจพบในการสแกนล่าสุด',
-    html: `
-        ${summaryPills ? `<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;" class="modal-item">${summaryPills}</div>` : ''}
-        <div style="display:flex;flex-direction:column;gap:5px;">${sevRows}</div>
-        ${cveList.length > 20 ? `<div style="color:#aaa;font-size:.78rem;margin-top:8px;text-align:center">แสดง 20 รายการแรก (ทั้งหมด ${cveList.length} รายการ)</div>` : ''}
-      `
-  };
-  }
+      return {
+        iconBg: '#FEE2E2',
+        iconHtml: `
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>`,
+        title: `CVE Found — ${d.total_cves_found} รายการ`,
+        subtitle: 'ช่องโหว่ที่ตรวจพบในการสแกนล่าสุด',
+        html: `
+            ${summaryPills ? `<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;" class="modal-item">${summaryPills}</div>` : ''}
+            <div style="display:flex;flex-direction:column;gap:5px;">${sevRows}</div>
+            ${cveList.length > 20 ? `<div style="color:#aaa;font-size:.78rem;margin-top:8px;text-align:center">แสดง 20 รายการแรก (ทั้งหมด ${cveList.length} รายการ)</div>` : ''}
+          `
+      };
+    }
 
-  if (type === 'tasks') {
-    const statusGroups = [
-      { label: 'Complete', labelTh: 'เสร็จสิ้น', count: d.task_completed, color: '#4caf82', icon: '✅' },
-      { label: 'Wait Schedule', labelTh: 'รอตามกำหนด', count: d.task_wait, color: '#e05c5c', icon: '⏳' },
-      { label: 'Running', labelTh: 'กำลังทำงาน', count: d.task_running, color: '#ffc107', icon: '🔄' },
-    ];
+    if (type === 'tasks') {
+      const statusGroups = [
+        { label: 'Complete', labelTh: 'เสร็จสิ้น', count: d.task_completed, color: '#16a34a' },
+        { label: 'Wait Schedule', labelTh: 'รอตามกำหนด', count: d.task_wait, color: '#dc2626' },
+        { label: 'Running', labelTh: 'กำลังทำงาน', count: d.task_running, color: '#ca8a04' },
+      ];
 
-    const bars = statusGroups.map(g => {
-      const pct = d.total_tasks > 0 ? Math.round(g.count / d.total_tasks * 100) : 0;
-      return `<div class="modal-item" style="margin-bottom:10px;">
-        <div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:.83rem;">
-          <span>${g.icon} ${g.label} <span style="color:#999;font-size:.78rem">(${g.labelTh})</span></span>
-          <span style="font-weight:600;color:${g.color}">${g.count} งาน</span>
-        </div>
-        <div style="height:8px;background:#f0f0f0;border-radius:8px;overflow:hidden;">
-          <div style="height:100%;width:0;background:${g.color};border-radius:8px;transition:width 0.5s cubic-bezier(0.34,1.2,0.64,1);will-change:width;"
-               data-target-width="${pct}%"
-               class="progress-bar-anim">
+      const bars = statusGroups.map(g => {
+        const pct = d.total_tasks > 0 ? Math.round(g.count / d.total_tasks * 100) : 0;
+        return `<div class="modal-item" style="margin-bottom:10px;">
+          <div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:.83rem;align-items:center;">
+            <span style="display:inline-flex;align-items:center;gap:6px;">
+              <span style="width:7px;height:7px;border-radius:50%;background:${g.color};display:inline-block;"></span>
+              ${g.label} <span style="color:#94a3b8;font-size:.78rem">(${g.labelTh})</span>
+            </span>
+            <span style="font-weight:600;color:${g.color}">${g.count} งาน</span>
           </div>
-        </div>
-        <div style="text-align:right;font-size:.72rem;color:#aaa;margin-top:2px">${pct}%</div>
-      </div>`;
-    }).join('');
+          <div style="height:8px;background:#f1f5f9;border-radius:8px;overflow:hidden;">
+            <div style="height:100%;width:0;background:${g.color};border-radius:8px;transition:width 0.5s cubic-bezier(0.34,1.2,0.64,1);will-change:width;"
+                 data-target-width="${pct}%"
+                 class="progress-bar-anim">
+            </div>
+          </div>
+          <div style="text-align:right;font-size:.72rem;color:#94a3b8;margin-top:2px">${pct}%</div>
+        </div>`;
+      }).join('');
+
+      return {
+        iconBg: '#F3E8FF',
+        iconHtml: `
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+          </svg>`,
+        title: `Total Task — ${d.total_tasks} งาน`,
+        subtitle: 'สรุปสถานะงานทั้งหมด',
+        html: `
+          <div style="display:flex;gap:12px;margin-bottom:16px;" class="modal-item">
+            ${makePill('#16a34a', 'Complete', d.task_completed)}
+            ${makePill('#dc3545', 'Wait', d.task_wait)}
+            ${makePill('#ca8a04', 'Running', d.task_running, '#fff')}
+          </div>
+          ${bars}
+        `
+      };
+    }
 
     return {
-      emoji: '📋',
-      title: `Total Task — ${d.total_tasks} งาน`,
-      subtitle: 'สรุปสถานะงานทั้งหมด',
-      html: `
-        <div style="display:flex;gap:12px;margin-bottom:16px;" class="modal-item">
-          ${makePill('#4caf82', 'Complete', d.task_completed)}
-          ${makePill('#e05c5c', 'Wait', d.task_wait)}
-          ${makePill('#ffc107', 'Running', d.task_running, '#212529')}
-        </div>
-        ${bars}
-      `
+      iconBg: '#f1f5f9',
+      iconHtml: `
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+        </svg>`,
+      title: 'รายละเอียด',
+      subtitle: '',
+      html: ''
     };
   }
-
-  return { emoji: '📊', title: 'รายละเอียด', subtitle: '', html: '' };
-}
 
   function makePill(bg, label, count, textColor = '#fff') {
     return `<div style="

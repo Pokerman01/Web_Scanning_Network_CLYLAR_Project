@@ -7,41 +7,122 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Prevent layout shift/flash before render
+        (function() {
+            try {
+                if (localStorage.getItem('clylar_sidebar_collapsed') === 'true') {
+                    document.documentElement.classList.add('sidebar-collapsed');
+                }
+            } catch (e) {}
+        })();
+    </script>
     <style>
+        :root {
+            --sidebar-width: 280px;
+            --sidebar-collapsed-width: 72px;
+            --sidebar-transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1), margin-left 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
         body { background-color: #f4f6f9; }
 
-        /* ===== SIDEBAR REDESIGN ===== */
+        /* ===== SIDEBAR (Gemini Style) ===== */
         .sidebar {
-            min-height: 100vh;
-            width: 280px;
+            height: 100vh;
+            width: var(--sidebar-width);
             background-color: #0f1117;
             color: white;
-            position: relative;
+            position: fixed;
+            top: 0;
+            left: 0;
             display: flex;
             flex-direction: column;
             flex-shrink: 0;
+            z-index: 1000;
+            overflow-x: hidden;
+            overflow-y: auto;
+            transition: var(--sidebar-transition);
+            white-space: nowrap;
         }
-        /* Logo area */
-        .sidebar-logo {
-            padding: 22px 20px 18px;
+        /* Custom scrollbar for sidebar */
+        .sidebar::-webkit-scrollbar { width: 4px; }
+        .sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+
+        /* Sidebar Header */
+        .sidebar-header {
+            padding: 16px 14px 16px 18px;
             border-bottom: 1px solid rgba(255,255,255,0.07);
             display: flex;
             align-items: center;
+            justify-content: space-between;
+            min-height: 72px;
+            box-sizing: border-box;
+            transition: padding 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: hidden;
+            gap: 8px;
+        }
+        .sidebar-brand {
+            display: flex;
+            align-items: center;
             gap: 12px;
+            text-decoration: none;
+            overflow: hidden;
+            flex: 1;
+            min-width: 0;
         }
         .sidebar-logo-icon {
-            width: 38px; height: 38px;
+            width: 36px; height: 36px;
             background: #1d4ed8;
             border-radius: 10px;
             display: flex; align-items: center; justify-content: center;
-            font-size: 20px; color: #fff;
+            font-size: 19px; color: #fff;
             flex-shrink: 0;
+            box-shadow: 0 4px 12px rgba(29, 78, 216, 0.35);
+            transition: transform 0.15s ease;
         }
-        .sidebar-logo-text { font-size: 18px; font-weight: 700; color: #fff; letter-spacing: 0.4px; }
-        .sidebar-logo-sub { font-size: 12px; color: rgba(255,255,255,0.35); margin-top: 2px; }
+        .sidebar-logo-details {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transition: opacity 0.2s ease;
+            white-space: nowrap;
+        }
+        .sidebar-logo-text { font-size: 17.5px; font-weight: 700; color: #fff; letter-spacing: 0.3px; line-height: 1.2; }
+        .sidebar-logo-sub { font-size: 11px; color: rgba(255,255,255,0.35); margin-top: 2px; }
+
+        /* Gemini Style Sidebar Toggle Button */
+        .sidebar-toggle-btn {
+            background: transparent;
+            border: none;
+            outline: none;
+            color: rgba(255, 255, 255, 0.7);
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: background-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+            padding: 0;
+        }
+        .sidebar-toggle-btn:hover {
+            background-color: rgba(255, 255, 255, 0.09);
+            color: #ffffff;
+        }
+        .sidebar-toggle-btn:active {
+            transform: scale(0.92);
+        }
+        .sidebar-toggle-btn svg {
+            width: 20px;
+            height: 20px;
+            stroke: currentColor;
+            stroke-width: 2;
+        }
 
         /* Nav */
-        .sidebar-nav { padding: 12px 12px; flex: 1; }
+        .sidebar-nav { padding: 12px 10px; flex: 1; overflow-y: auto; overflow-x: hidden; }
         .sidebar-section-label {
             font-size: 11px;
             color: rgba(255,255,255,0.3);
@@ -49,8 +130,10 @@
             letter-spacing: 1px;
             padding: 10px 12px 5px;
             display: block;
+            transition: opacity 0.2s ease, height 0.2s ease, margin 0.2s ease;
+            overflow: hidden;
         }
-        .sidebar a {
+        .sidebar a.nav-link {
             color: rgba(255,255,255,0.55);
             text-decoration: none;
             padding: 11px 14px;
@@ -58,14 +141,21 @@
             align-items: center;
             gap: 12px;
             border-radius: 8px;
-            margin-bottom: 2px;
+            margin-bottom: 3px;
             font-size: 15px;
-            transition: background 0.15s, color 0.15s;
+            transition: background 0.15s, color 0.15s, padding 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
         }
-        .sidebar a i { font-size: 19px; width: 22px; text-align: center; flex-shrink: 0; }
-        .sidebar a:hover { background-color: rgba(255,255,255,0.07); color: rgba(255,255,255,0.9); }
-        .sidebar .active { background-color: #1d4ed8; color: #fff; }
-        .sidebar .active:hover { background-color: #2563eb; }
+        .sidebar a.nav-link i { font-size: 20px; width: 22px; text-align: center; flex-shrink: 0; }
+        .sidebar a.nav-link:hover { background-color: rgba(255,255,255,0.07); color: rgba(255,255,255,0.9); }
+        .sidebar a.nav-link.active { background-color: #1d4ed8; color: #fff; }
+        .sidebar a.nav-link.active:hover { background-color: #2563eb; }
+        .sidebar a.nav-link .nav-label {
+            transition: opacity 0.2s ease;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
 
         /* Nav badge */
         .sidebar-badge {
@@ -81,15 +171,16 @@
 
         /* Footer user row */
         .sidebar-footer {
-            padding: 12px 12px 16px;
+            padding: 12px 10px 16px;
             border-top: 1px solid rgba(255,255,255,0.07);
         }
         .sidebar-user-row {
             display: flex;
             align-items: center;
             gap: 11px;
-            padding: 10px 12px;
+            padding: 8px 10px;
             border-radius: 8px;
+            transition: padding 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .sidebar-user-avatar {
             width: 36px; height: 36px;
@@ -99,20 +190,98 @@
             font-size: 13px; font-weight: 600; color: #fff;
             flex-shrink: 0;
         }
+        .sidebar-user-details {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transition: opacity 0.2s ease;
+        }
         .sidebar-user-name { font-size: 14px; color: rgba(255,255,255,0.8); font-weight: 500; }
         .sidebar-user-role { font-size: 11.5px; color: rgba(255,255,255,0.35); }
-        /* ===== END SIDEBAR ===== */
-        .main-wrapper { flex-grow: 1; display: flex; flex-direction: column; min-height: 100vh; }
+
+        /* ===== COLLAPSED (ICON MODE) STYLES ===== */
+        html.sidebar-collapsed .sidebar,
+        body.sidebar-collapsed .sidebar {
+            width: var(--sidebar-collapsed-width);
+        }
+        html.sidebar-collapsed .main-wrapper,
+        body.sidebar-collapsed .main-wrapper {
+            margin-left: var(--sidebar-collapsed-width);
+        }
+        html.sidebar-collapsed .sidebar-header,
+        body.sidebar-collapsed .sidebar-header {
+            padding: 16px 0;
+            justify-content: center;
+        }
+        html.sidebar-collapsed .sidebar-brand,
+        body.sidebar-collapsed .sidebar-brand {
+            justify-content: center;
+            width: 100%;
+            cursor: pointer;
+        }
+        html.sidebar-collapsed .sidebar-logo-details,
+        body.sidebar-collapsed .sidebar-logo-details {
+            opacity: 0;
+            width: 0;
+            height: 0;
+            display: none;
+        }
+        html.sidebar-collapsed .sidebar-toggle-btn,
+        body.sidebar-collapsed .sidebar-toggle-btn {
+            display: none;
+        }
+        html.sidebar-collapsed .sidebar-logo-icon:hover {
+            transform: scale(1.08);
+        }
+        html.sidebar-collapsed .sidebar-section-label,
+        body.sidebar-collapsed .sidebar-section-label {
+            opacity: 0;
+            height: 0;
+            padding: 0;
+            margin: 6px 0;
+            border-top: 1px solid rgba(255,255,255,0.08);
+        }
+        html.sidebar-collapsed .sidebar a.nav-link,
+        body.sidebar-collapsed .sidebar a.nav-link {
+            padding: 11px 0;
+            justify-content: center;
+            gap: 0;
+        }
+        html.sidebar-collapsed .sidebar a.nav-link .nav-label,
+        body.sidebar-collapsed .sidebar a.nav-link .nav-label {
+            display: none;
+        }
+        html.sidebar-collapsed .sidebar-user-row,
+        body.sidebar-collapsed .sidebar-user-row {
+            padding: 6px 0;
+            justify-content: center;
+        }
+        html.sidebar-collapsed .sidebar-user-details,
+        body.sidebar-collapsed .sidebar-user-details {
+            display: none;
+        }
+
+        /* ===== MAIN WRAPPER & TOPBAR ===== */
+        .main-wrapper {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            margin-left: var(--sidebar-width);
+            transition: var(--sidebar-transition);
+            min-width: 0;
+        }
         .topbar {
             background-color: #fff;
             border-bottom: 1px solid #e9ecef;
-            padding: 12px 30px;
+            padding: 12px 28px;
             display: flex;
             align-items: center;
             justify-content: space-between;
+            gap: 16px;
         }
         .topbar-title { font-weight: 600; color: #495057; font-size: 1rem; }
-        .topbar-user { display: flex; align-items: center; gap: 12px; }
+        .topbar-user { display: flex; align-items: center; gap: 12px; margin-left: auto; }
         .topbar-user-info { text-align: right; line-height: 1.2; }
         .topbar-user-name { font-weight: 600; font-size: 0.9rem; color: #212529; }
         .topbar-user-role { font-size: 0.75rem; color: #6c757d; }
@@ -158,23 +327,46 @@
         .profile-dropdown a.logout-link:hover { background-color: #fff5f5; }
         .topbar-user { position: relative; }
         .main-content { flex-grow: 1; padding: 30px; }
+
+        /* Dark Tooltip Styling for Mini Sidebar */
+        .sidebar-tooltip .tooltip-inner {
+            background-color: #0f1117;
+            color: #f8fafc;
+            font-size: 12.5px;
+            font-weight: 500;
+            padding: 6px 11px;
+            border-radius: 6px;
+            border: 1px solid rgba(255,255,255,0.12);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.3);
+        }
+        .sidebar-tooltip.bs-tooltip-end .tooltip-arrow::before {
+            border-right-color: #0f1117;
+        }
     </style>
 </head>
 <body>
 <div class="d-flex">
 
     {% if current_user.is_authenticated %}
-    <nav class="sidebar shadow-lg">
+    <nav class="sidebar shadow-lg" id="mainSidebar">
 
-        <!-- Logo -->
-        <div class="sidebar-logo">
-            <div class="sidebar-logo-icon">
-                <i class="ti ti-radar" aria-hidden="true"></i>
-            </div>
-            <div>
-                <div class="sidebar-logo-text">CLYLAR</div>
-                <div class="sidebar-logo-sub">Network Scanner</div>
-            </div>
+        <!-- Sidebar Header (Gemini Style) -->
+        <div class="sidebar-header">
+            <a href="/" class="sidebar-brand" id="sidebarBrand" title="CLYLAR Network Scanner">
+                <div class="sidebar-logo-icon">
+                    <i class="ti ti-radar" aria-hidden="true"></i>
+                </div>
+                <div class="sidebar-logo-details">
+                    <div class="sidebar-logo-text">CLYLAR</div>
+                    <div class="sidebar-logo-sub">Network Scanner</div>
+                </div>
+            </a>
+            <button class="sidebar-toggle-btn" id="sidebarToggleBtn" type="button" aria-label="Collapse Sidebar" title="Collapse Sidebar (Ctrl+B)">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect width="18" height="18" x="3" y="3" rx="4" />
+                    <line x1="9" y1="3" x2="9" y2="21" />
+                </svg>
+            </button>
         </div>
 
         <!-- Nav -->
@@ -182,16 +374,16 @@
             <span class="sidebar-section-label">Main</span>
             <ul class="nav flex-column">
                 <li class="nav-item">
-                    <a href="/" class="nav-link {% if request.path == '/' %}active{% endif %}">
+                    <a href="/" class="nav-link {% if request.path == '/' %}active{% endif %}" data-bs-toggle="tooltip" data-bs-placement="right" title="Dashboard">
                         <i class="ti ti-layout-dashboard" aria-hidden="true"></i>
-                        Dashboard
+                        <span class="nav-label">Dashboard</span>
                     </a>
                 </li>
                 {% if current_user.role in ('admin', 'superadmin') %}
                 <li class="nav-item">
-                    <a href="{{ url_for('tasks_page') }}" class="nav-link {% if request.path.startswith('/tasks') %}active{% endif %}">
+                    <a href="{{ url_for('tasks_page') }}" class="nav-link {% if request.path.startswith('/tasks') %}active{% endif %}" data-bs-toggle="tooltip" data-bs-placement="right" title="Tasks">
                         <i class="ti ti-list-check" aria-hidden="true"></i>
-                        Tasks
+                        <span class="nav-label">Tasks</span>
                     </a>
                 </li>
                 {% endif %}
@@ -200,23 +392,19 @@
             <span class="sidebar-section-label">Network</span>
             <ul class="nav flex-column">
                 <li class="nav-item">
-                    <a href="{{ url_for('topology_page') }}" class="nav-link {% if request.path.startswith('/topology') %}active{% endif %}">
+                    <a href="{{ url_for('topology_page') }}" class="nav-link {% if request.path.startswith('/topology') %}active{% endif %}" data-bs-toggle="tooltip" data-bs-placement="right" title="Network Topology">
                         <i class="ti ti-topology-star" aria-hidden="true"></i>
-                        Network Topology
+                        <span class="nav-label">Network Topology</span>
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="{{ url_for('history_page') }}" class="nav-link {% if request.path.startswith('/history') %}active{% endif %}">
+                    <a href="{{ url_for('history_page') }}" class="nav-link {% if request.path.startswith('/history') %}active{% endif %}" data-bs-toggle="tooltip" data-bs-placement="right" title="Scan History">
                         <i class="ti ti-history" aria-hidden="true"></i>
-                        Scan History
+                        <span class="nav-label">Scan History</span>
                     </a>
                 </li>
             </ul>
-
-
         </div>
-
-
 
     </nav>
     {% endif %}
@@ -224,7 +412,9 @@
     <div class="main-wrapper">
         {% if current_user.is_authenticated %}
         <div class="topbar">
-            <span class="topbar-title"></span>
+            <div class="topbar-left">
+                <span class="topbar-title"></span>
+            </div>
             <div class="topbar-user">
                 <div class="topbar-user-info">
                     <div class="topbar-user-name">{{ current_user.username | title }}</div>
@@ -641,6 +831,100 @@ function sendQuick(text) {
         const dropdown = document.getElementById('profileDropdown');
         if (avatar && dropdown && !avatar.contains(e.target)) {
             dropdown.classList.remove('show');
+        }
+    });
+
+    // ===== SIDEBAR TOGGLE & SHORTCUT (shadcn/ui style) =====
+    let sidebarTooltips = [];
+
+    function initSidebarTooltips() {
+        if (typeof bootstrap === 'undefined' || !bootstrap.Tooltip) return;
+        const tooltipTriggerList = [].slice.call(document.querySelectorAll('#mainSidebar [data-bs-toggle="tooltip"]'));
+        sidebarTooltips = tooltipTriggerList.map(function (el) {
+            return new bootstrap.Tooltip(el, {
+                customClass: 'sidebar-tooltip',
+                trigger: 'hover',
+                boundary: 'window'
+            });
+        });
+        const isCollapsed = document.documentElement.classList.contains('sidebar-collapsed');
+        updateTooltipState(isCollapsed);
+    }
+
+    function updateTooltipState(isCollapsed) {
+        sidebarTooltips.forEach(t => {
+            if (isCollapsed) {
+                t.enable();
+            } else {
+                t.hide();
+                t.disable();
+            }
+        });
+    }
+
+    function updateSidebarToggleIcon(isCollapsed) {
+        const toggleBtn = document.getElementById('sidebarToggleBtn');
+        if (toggleBtn) {
+            toggleBtn.title = isCollapsed ? 'Expand Sidebar (Ctrl+B)' : 'Collapse Sidebar (Ctrl+B)';
+        }
+    }
+
+    function toggleSidebar() {
+        const isCurrentlyCollapsed = document.documentElement.classList.contains('sidebar-collapsed');
+        const newState = !isCurrentlyCollapsed;
+
+        if (newState) {
+            document.documentElement.classList.add('sidebar-collapsed');
+            document.body.classList.add('sidebar-collapsed');
+            try { localStorage.setItem('clylar_sidebar_collapsed', 'true'); } catch (e) {}
+        } else {
+            document.documentElement.classList.remove('sidebar-collapsed');
+            document.body.classList.remove('sidebar-collapsed');
+            try { localStorage.setItem('clylar_sidebar_collapsed', 'false'); } catch (e) {}
+        }
+
+        updateSidebarToggleIcon(newState);
+        updateTooltipState(newState);
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const isCollapsed = document.documentElement.classList.contains('sidebar-collapsed');
+        if (isCollapsed) {
+            document.body.classList.add('sidebar-collapsed');
+        }
+        updateSidebarToggleIcon(isCollapsed);
+
+        const toggleBtn = document.getElementById('sidebarToggleBtn');
+        if (toggleBtn) {
+            toggleBtn.addEventListener('click', toggleSidebar);
+        }
+
+        const sidebarBrand = document.getElementById('sidebarBrand');
+        if (sidebarBrand) {
+            sidebarBrand.addEventListener('click', function(e) {
+                if (document.documentElement.classList.contains('sidebar-collapsed')) {
+                    e.preventDefault();
+                    toggleSidebar();
+                }
+            });
+        }
+
+        initSidebarTooltips();
+    });
+
+    // Keyboard shortcut Ctrl+B or Cmd+B to toggle sidebar (like shadcn/ui)
+    document.addEventListener('keydown', function(e) {
+        if ((e.ctrlKey || e.metaKey) && (e.key === 'b' || e.key === 'B')) {
+            const activeEl = document.activeElement;
+            const isTyping = activeEl && (
+                activeEl.tagName === 'INPUT' || 
+                activeEl.tagName === 'TEXTAREA' || 
+                activeEl.isContentEditable
+            );
+            if (!isTyping) {
+                e.preventDefault();
+                toggleSidebar();
+            }
         }
     });
 </script>

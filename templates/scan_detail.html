@@ -5,29 +5,33 @@
 <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
 
 {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-        {% for category, message in messages %}
-        <div class="alert alert-{{ 'success' if category == 'success' else 'danger' }} alert-dismissible fade show" role="alert">
-            {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-        {% endfor %}
-    {% endif %}
+{% if messages %}
+{% for category, message in messages %}
+<div class="alert alert-{{ 'success' if category == 'success' else 'danger' }} alert-dismissible fade show"
+    role="alert">
+    {{ message }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+{% endfor %}
+{% endif %}
 {% endwith %}
 
 <div class="mb-4 d-flex gap-2 align-items-center flex-wrap">
-    <a href="{{ url_for('dashboard') }}"
-       class="btn btn-outline-secondary btn-sm">
-        &larr; Back to Dashboard
+    <a href="{{ url_for('tasks_page') }}" class="btn btn-outline-secondary btn-sm">
+        &larr; Back to Tasks
     </a>
 
     <!-- Export Dropdown Button -->
     <div class="ms-auto">
         <div class="dropdown">
-            <button class="btn btn-sm btn-export-main dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" class="me-1" viewBox="0 0 16 16">
-                    <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5"/>
-                    <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708z"/>
+            <button class="btn btn-sm btn-export-main dropdown-toggle" type="button" data-bs-toggle="dropdown"
+                aria-expanded="false">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" class="me-1"
+                    viewBox="0 0 16 16">
+                    <path
+                        d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5" />
+                    <path
+                        d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708z" />
                 </svg>
                 Export
             </button>
@@ -35,8 +39,10 @@
                 <li>
                     <button class="dropdown-item export-option rounded-2 px-3 py-2" onclick="openExportModal('csv')">
                         <span class="export-icon csv-icon">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" viewBox="0 0 16 16">
-                                <path d="M14 4.5V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.5zm-3 0A1.5 1.5 0 0 1 9.5 3V1L14 5.5zM8.5 8.5a.5.5 0 0 0-.5.5v1.793l-.646-.647a.5.5 0 0 0-.708.708l1.5 1.5a.5.5 0 0 0 .708 0l1.5-1.5a.5.5 0 0 0-.708-.708L9 10.793V9a.5.5 0 0 0-.5-.5"/>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor"
+                                viewBox="0 0 16 16">
+                                <path
+                                    d="M14 4.5V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.5zm-3 0A1.5 1.5 0 0 1 9.5 3V1L14 5.5zM8.5 8.5a.5.5 0 0 0-.5.5v1.793l-.646-.647a.5.5 0 0 0-.708.708l1.5 1.5a.5.5 0 0 0 .708 0l1.5-1.5a.5.5 0 0 0-.708-.708L9 10.793V9a.5.5 0 0 0-.5-.5" />
                             </svg>
                         </span>
                         <span class="export-label">
@@ -45,13 +51,18 @@
                         </span>
                     </button>
                 </li>
-                <li><hr class="dropdown-divider my-1"></li>
+                <li>
+                    <hr class="dropdown-divider my-1">
+                </li>
                 <li>
                     <button class="dropdown-item export-option rounded-2 px-3 py-2" onclick="openExportModal('pdf')">
                         <span class="export-icon pdf-icon">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" viewBox="0 0 16 16">
-                                <path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2M9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5z"/>
-                                <path d="M4.603 14.087a.81.81 0 0 1-.438-.42c-.195-.388-.13-.776.08-1.102.198-.307.526-.568.897-.787a7.68 7.68 0 0 1 1.482-.645 19.697 19.697 0 0 0 1.062-2.227 7.269 7.269 0 0 1-.43-1.295c-.086-.4-.119-.796-.046-1.136.075-.354.274-.672.65-.823.192-.077.4-.12.602-.077a.7.7 0 0 1 .477.365c.088.164.12.356.127.538.007.188-.012.396-.047.614-.084.51-.27 1.134-.52 1.794a10.954 10.954 0 0 0 .98 1.686 5.753 5.753 0 0 1 1.334.05c.364.066.734.195.96.465.12.144.193.32.2.518.007.192-.047.382-.138.563a1.04 1.04 0 0 1-.354.416.856.856 0 0 1-.51.138c-.331-.014-.654-.196-.933-.417a5.712 5.712 0 0 1-.911-.95 11.651 11.651 0 0 0-1.997.406 11.307 11.307 0 0 1-1.02 1.51c-.292.35-.609.656-.927.787a.793.793 0 0 1-.58.029zm1.379-1.901c-.166.076-.32.156-.459.238-.328.194-.541.383-.647.547-.094.145-.096.25-.04.361.01.022.02.036.026.044a.266.266 0 0 0 .035-.012c.137-.056.355-.235.635-.572a8.18 8.18 0 0 0 .45-.606zm1.64-1.33a12.71 12.71 0 0 1 1.01-.193 11.744 11.744 0 0 1-.51-.858 20.801 20.801 0 0 1-.5 1.05zm2.446.45c.15.163.296.3.435.41.24.19.407.253.498.256a.107.107 0 0 0 .07-.015.307.307 0 0 0 .094-.125.436.436 0 0 0 .059-.2.095.095 0 0 0-.026-.063c-.052-.062-.2-.152-.518-.209a3.876 3.876 0 0 0-.612-.053zM8.078 7.8a6.7 6.7 0 0 0 .2-.828c.031-.188.043-.343.038-.465a.613.613 0 0 0-.032-.198.517.517 0 0 0-.145.04c-.087.035-.158.106-.196.283-.04.192-.03.469.046.822.024.111.054.227.09.346z"/>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor"
+                                viewBox="0 0 16 16">
+                                <path
+                                    d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2M9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5z" />
+                                <path
+                                    d="M4.603 14.087a.81.81 0 0 1-.438-.42c-.195-.388-.13-.776.08-1.102.198-.307.526-.568.897-.787a7.68 7.68 0 0 1 1.482-.645 19.697 19.697 0 0 0 1.062-2.227 7.269 7.269 0 0 1-.43-1.295c-.086-.4-.119-.796-.046-1.136.075-.354.274-.672.65-.823.192-.077.4-.12.602-.077a.7.7 0 0 1 .477.365c.088.164.12.356.127.538.007.188-.012.396-.047.614-.084.51-.27 1.134-.52 1.794a10.954 10.954 0 0 0 .98 1.686 5.753 5.753 0 0 1 1.334.05c.364.066.734.195.96.465.12.144.193.32.2.518.007.192-.047.382-.138.563a1.04 1.04 0 0 1-.354.416.856.856 0 0 1-.51.138c-.331-.014-.654-.196-.933-.417a5.712 5.712 0 0 1-.911-.95 11.651 11.651 0 0 0-1.997.406 11.307 11.307 0 0 1-1.02 1.51c-.292.35-.609.656-.927.787a.793.793 0 0 1-.58.029zm1.379-1.901c-.166.076-.32.156-.459.238-.328.194-.541.383-.647.547-.094.145-.096.25-.04.361.01.022.02.036.026.044a.266.266 0 0 0 .035-.012c.137-.056.355-.235.635-.572a8.18 8.18 0 0 0 .45-.606zm1.64-1.33a12.71 12.71 0 0 1 1.01-.193 11.744 11.744 0 0 1-.51-.858 20.801 20.801 0 0 1-.5 1.05zm2.446.45c.15.163.296.3.435.41.24.19.407.253.498.256a.107.107 0 0 0 .07-.015.307.307 0 0 0 .094-.125.436.436 0 0 0 .059-.2.095.095 0 0 0-.026-.063c-.052-.062-.2-.152-.518-.209a3.876 3.876 0 0 0-.612-.053zM8.078 7.8a6.7 6.7 0 0 0 .2-.828c.031-.188.043-.343.038-.465a.613.613 0 0 0-.032-.198.517.517 0 0 0-.145.04c-.087.035-.158.106-.196.283-.04.192-.03.469.046.822.024.111.054.227.09.346z" />
                             </svg>
                         </span>
                         <span class="export-label">
@@ -71,7 +82,7 @@
         <div class="modal-content border-0 shadow-lg" style="border-radius:16px;overflow:hidden">
             <div class="export-modal-header" id="exportModalHeader">
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
-                        style="position:absolute;top:16px;right:16px;opacity:0.8"></button>
+                    style="position:absolute;top:16px;right:16px;opacity:0.8"></button>
                 <div class="export-modal-icon" id="exportModalIcon"></div>
                 <h5 class="export-modal-title" id="exportModalTitle"></h5>
                 <p class="export-modal-sub" id="exportModalSub"></p>
@@ -82,7 +93,7 @@
                 </label>
                 <div class="input-group">
                     <input type="text" id="exportFilename" class="form-control export-filename-input"
-                           placeholder="กรอกชื่อไฟล์..." autocomplete="off">
+                        placeholder="กรอกชื่อไฟล์..." autocomplete="off">
                     <span class="input-group-text export-ext-badge" id="exportExtBadge"></span>
                 </div>
                 <div class="mt-1" style="font-size:.75rem;color:#94a3b8">
@@ -91,9 +102,12 @@
             </div>
             <div class="px-4 pb-4 pt-1">
                 <button class="btn w-100 export-confirm-btn" id="exportConfirmBtn" onclick="doExport()">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" class="me-1" viewBox="0 0 16 16">
-                        <path d=".5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5"/>
-                        <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708z"/>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" class="me-1"
+                        viewBox="0 0 16 16">
+                        <path
+                            d=".5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5" />
+                        <path
+                            d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708z" />
                     </svg>
                     ดาวน์โหลด
                 </button>
@@ -103,157 +117,254 @@
 </div>
 
 <style>
-/* ── Export Dropdown Button ── */
-.btn-export-main {
-    background: linear-gradient(135deg, #334155 0%, #1e293b 100%);
-    color: #fff;
-    border: none;
-    font-weight: 600;
-    letter-spacing: .3px;
-    box-shadow: 0 2px 6px rgba(30,41,59,0.3);
-    transition: all .2s;
-    padding: 6px 14px;
-}
-.btn-export-main:hover, .btn-export-main:focus, .btn-export-main.show {
-    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-    color: #fff;
-    box-shadow: 0 4px 12px rgba(30,41,59,0.4);
-    transform: translateY(-1px);
-}
-.btn-export-main::after { margin-left: 6px; }
+    /* ── Export Dropdown Button ── */
+    .btn-export-main {
+        background: linear-gradient(135deg, #334155 0%, #1e293b 100%);
+        color: #fff;
+        border: none;
+        font-weight: 600;
+        letter-spacing: .3px;
+        box-shadow: 0 2px 6px rgba(30, 41, 59, 0.3);
+        transition: all .2s;
+        padding: 6px 14px;
+    }
 
-/* ── Dropdown Menu ── */
-.export-dropdown {
-    min-width: 220px;
-    border-radius: 12px !important;
-    padding: 8px !important;
-}
-.export-option {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    transition: background .15s;
-    cursor: pointer;
-    border: none;
-    background: transparent;
-    width: 100%;
-    text-align: left;
-}
-.export-option:hover { background: #f1f5f9 !important; }
-.export-option:active { background: #e2e8f0 !important; }
-.export-icon {
-    width: 36px; height: 36px;
-    border-radius: 8px;
-    display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0;
-}
-.csv-icon { background: #dcfce7; color: #166534; }
-.pdf-icon { background: #fee2e2; color: #991b1b; }
-.export-label { display: flex; flex-direction: column; line-height: 1.3; }
-.export-name { font-size: .875rem; font-weight: 600; color: #1e293b; }
-.export-desc { font-size: .72rem; color: #94a3b8; margin-top: 1px; }
+    .btn-export-main:hover,
+    .btn-export-main:focus,
+    .btn-export-main.show {
+        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+        color: #fff;
+        box-shadow: 0 4px 12px rgba(30, 41, 59, 0.4);
+        transform: translateY(-1px);
+    }
 
-/* ── Export Modal ── */
-.export-modal-header {
-    padding: 24px 24px 18px;
-    position: relative;
-}
-.export-modal-icon {
-    width: 48px; height: 48px;
-    border-radius: 12px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 22px;
-    margin-bottom: 10px;
-    background: rgba(255,255,255,0.2);
-}
-.export-modal-title { font-size: 1.05rem; font-weight: 700; color: #fff; margin: 0 0 2px; }
-.export-modal-sub { font-size: .78rem; color: rgba(255,255,255,0.75); margin: 0; }
+    .btn-export-main::after {
+        margin-left: 6px;
+    }
 
-.export-filename-input {
-    border-right: 0;
-    border-radius: 8px 0 0 8px !important;
-    font-size: .9rem;
-    padding: 9px 12px;
-}
-.export-filename-input:focus { box-shadow: none; border-color: #cbd5e1; }
-.export-ext-badge {
-    background: #f1f5f9;
-    border-left: 0;
-    border-radius: 0 8px 8px 0 !important;
-    font-size: .8rem;
-    font-weight: 700;
-    color: #475569;
-    letter-spacing: .05em;
-    padding: 0 14px;
-}
-.export-confirm-btn {
-    font-weight: 600;
-    font-size: .9rem;
-    padding: 10px;
-    border-radius: 10px;
-    border: none;
-    color: #fff;
-    transition: all .15s;
-}
-.export-confirm-btn:hover { opacity: .9; color: #fff; transform: translateY(-1px); }
+    /* ── Dropdown Menu ── */
+    .export-dropdown {
+        min-width: 220px;
+        border-radius: 12px !important;
+        padding: 8px !important;
+    }
+
+    .export-option {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        transition: background .15s;
+        cursor: pointer;
+        border: none;
+        background: transparent;
+        width: 100%;
+        text-align: left;
+    }
+
+    .export-option:hover {
+        background: #f1f5f9 !important;
+    }
+
+    .export-option:active {
+        background: #e2e8f0 !important;
+    }
+
+    .export-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .csv-icon {
+        background: #dcfce7;
+        color: #166534;
+    }
+
+    .pdf-icon {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+
+    .export-label {
+        display: flex;
+        flex-direction: column;
+        line-height: 1.3;
+    }
+
+    .export-name {
+        font-size: .875rem;
+        font-weight: 600;
+        color: #1e293b;
+    }
+
+    .export-desc {
+        font-size: .72rem;
+        color: #94a3b8;
+        margin-top: 1px;
+    }
+
+    /* ── Export Modal ── */
+    .export-modal-header {
+        padding: 24px 24px 18px;
+        position: relative;
+    }
+
+    .export-modal-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 22px;
+        margin-bottom: 10px;
+        background: rgba(255, 255, 255, 0.2);
+    }
+
+    .export-modal-title {
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: #fff;
+        margin: 0 0 2px;
+    }
+
+    .export-modal-sub {
+        font-size: .78rem;
+        color: rgba(255, 255, 255, 0.75);
+        margin: 0;
+    }
+
+    .export-filename-input {
+        border-right: 0;
+        border-radius: 8px 0 0 8px !important;
+        font-size: .9rem;
+        padding: 9px 12px;
+    }
+
+    .export-filename-input:focus {
+        box-shadow: none;
+        border-color: #cbd5e1;
+    }
+
+    .export-ext-badge {
+        background: #f1f5f9;
+        border-left: 0;
+        border-radius: 0 8px 8px 0 !important;
+        font-size: .8rem;
+        font-weight: 700;
+        color: #475569;
+        letter-spacing: .05em;
+        padding: 0 14px;
+    }
+
+    .export-confirm-btn {
+        font-weight: 600;
+        font-size: .9rem;
+        padding: 10px;
+        border-radius: 10px;
+        border: none;
+        color: #fff;
+        transition: all .15s;
+    }
+
+    .export-confirm-btn:hover {
+        opacity: .9;
+        color: #fff;
+        transform: translateY(-1px);
+    }
+
+    /* ── Network Diagram Zoom Controls ── */
+    .network-zoom-controls {
+        position: absolute;
+        top: 14px;
+        right: 14px;
+        z-index: 5;
+    }
+
+    .network-zoom-btn {
+        background: rgba(255, 255, 255, 0.95);
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        padding: 5px 11px;
+        font-size: 0.78rem;
+        cursor: pointer;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        color: #495057;
+        font-weight: 500;
+        transition: all 0.15s ease;
+    }
+
+    .network-zoom-btn:hover {
+        background: #ffffff;
+        color: #0d6efd;
+        border-color: #cbd5e1;
+        box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12);
+    }
 </style>
 
 <script>
-let _exportType = 'csv';
-let _exportModal = null;
-const _csvUrl = "{{ url_for('export_csv', scan_id=job.id) }}";
-const _pdfUrl = "{{ url_for('export_pdf', scan_id=job.id) }}";
-const _defaultName = "scan_{{ job.id }}_{{ job.target | replace('.', '_') | replace('/', '_') }}";
+    let _exportType = 'csv';
+    let _exportModal = null;
+    const _csvUrl = "{{ url_for('export_csv', scan_id=job.id) }}";
+    const _pdfUrl = "{{ url_for('export_pdf', scan_id=job.id) }}";
+    const _defaultName = "scan_{{ job.id }}_{{ job.target | replace('.', '_') | replace('/', '_') }}";
 
-function openExportModal(type) {
-    _exportType = type;
-    const isCsv = type === 'csv';
+    function openExportModal(type) {
+        _exportType = type;
+        const isCsv = type === 'csv';
 
-    const header = document.getElementById('exportModalHeader');
-    const icon   = document.getElementById('exportModalIcon');
-    header.style.background = isCsv
-        ? 'linear-gradient(135deg,#166534,#16a34a)'
-        : 'linear-gradient(135deg,#991b1b,#dc2626)';
-    icon.textContent = isCsv ? '📊' : '📄';
-    document.getElementById('exportModalTitle').textContent = isCsv ? 'Export as CSV' : 'Export as PDF';
-    document.getElementById('exportModalSub').textContent   = isCsv
-        ? 'ข้อมูลตาราง เปิดด้วย Excel หรือ Google Sheets'
-        : ' ';
+        const header = document.getElementById('exportModalHeader');
+        const icon = document.getElementById('exportModalIcon');
+        header.style.background = isCsv
+            ? 'linear-gradient(135deg,#166534,#16a34a)'
+            : 'linear-gradient(135deg,#991b1b,#dc2626)';
+        icon.textContent = isCsv ? '📊' : '📄';
+        document.getElementById('exportModalTitle').textContent = isCsv ? 'Export as CSV' : 'Export as PDF';
+        document.getElementById('exportModalSub').textContent = isCsv
+            ? 'ข้อมูลตาราง เปิดด้วย Excel หรือ Google Sheets'
+            : ' ';
 
-    document.getElementById('exportExtBadge').textContent = isCsv ? '.csv' : '.pdf';
-    const btn = document.getElementById('exportConfirmBtn');
-    btn.style.background = isCsv
-        ? 'linear-gradient(135deg,#166534,#16a34a)'
-        : 'linear-gradient(135deg,#991b1b,#dc2626)';
+        document.getElementById('exportExtBadge').textContent = isCsv ? '.csv' : '.pdf';
+        const btn = document.getElementById('exportConfirmBtn');
+        btn.style.background = isCsv
+            ? 'linear-gradient(135deg,#166534,#16a34a)'
+            : 'linear-gradient(135deg,#991b1b,#dc2626)';
 
-    const input = document.getElementById('exportFilename');
-    input.value = _defaultName;
-    updatePreview();
+        const input = document.getElementById('exportFilename');
+        input.value = _defaultName;
+        updatePreview();
 
-    if (!_exportModal) _exportModal = new bootstrap.Modal(document.getElementById('exportModal'));
-    _exportModal.show();
-    setTimeout(() => input.select(), 300);
-}
+        if (!_exportModal) _exportModal = new bootstrap.Modal(document.getElementById('exportModal'));
+        _exportModal.show();
+        setTimeout(() => input.select(), 300);
+    }
 
-function updatePreview() {
-    const name = document.getElementById('exportFilename').value.trim() || 'export';
-    const ext  = _exportType === 'csv' ? '.csv' : '.pdf';
-    document.getElementById('exportFilenamePreview').textContent = name + ext;
-}
+    function updatePreview() {
+        const name = document.getElementById('exportFilename').value.trim() || 'export';
+        const ext = _exportType === 'csv' ? '.csv' : '.pdf';
+        document.getElementById('exportFilenamePreview').textContent = name + ext;
+    }
 
-function doExport() {
-    const name = document.getElementById('exportFilename').value.trim() || _defaultName;
-    const url  = (_exportType === 'csv' ? _csvUrl : _pdfUrl) + '?filename=' + encodeURIComponent(name);
-    window.location.href = url;
-    _exportModal.hide();
-}
+    function doExport() {
+        const name = document.getElementById('exportFilename').value.trim() || _defaultName;
+        const url = (_exportType === 'csv' ? _csvUrl : _pdfUrl) + '?filename=' + encodeURIComponent(name);
+        window.location.href = url;
+        _exportModal.hide();
+    }
 
-document.addEventListener('DOMContentLoaded', function() {
-    document.getElementById('exportFilename').addEventListener('input', updatePreview);
-    document.getElementById('exportFilename').addEventListener('keydown', function(e) {
-        if (e.key === 'Enter') doExport();
+    document.addEventListener('DOMContentLoaded', function () {
+        document.getElementById('exportFilename').addEventListener('input', updatePreview);
+        document.getElementById('exportFilename').addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') doExport();
+        });
     });
-});
 </script>
 
 
@@ -267,7 +378,10 @@ document.addEventListener('DOMContentLoaded', function() {
             <div class="col-md-4">
                 <strong>Target:</strong> {{ job.target }}
                 {% if target_scan_count > 1 %}
-                <span class="badge ms-1" style="font-size:.7rem;background:#EAF3DE;color:#3B6D11;border:0.5px solid #C0DD97;" title="สแกนครั้งที่ {{ scan_seq }} จากทั้งหมด {{ target_scan_count }} ครั้ง">count: {{ scan_seq }}/{{ target_scan_count }}</span>
+                <span class="badge ms-1"
+                    style="font-size:.7rem;background:#EAF3DE;color:#3B6D11;border:0.5px solid #C0DD97;"
+                    title="สแกนครั้งที่ {{ scan_seq }} จากทั้งหมด {{ target_scan_count }} ครั้ง">count: {{ scan_seq
+                    }}/{{ target_scan_count }}</span>
                 {% endif %}
             </div>
             <div class="col-md-4">
@@ -288,16 +402,25 @@ document.addEventListener('DOMContentLoaded', function() {
     <div class="card-header bg-dark text-white d-flex align-items-center justify-content-between">
         <h6 class="mb-0">Network Diagram</h6>
         <div id="network-legend" class="d-flex gap-2 align-items-center flex-wrap">
-            <span style="display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:20px;padding:3px 10px 3px 7px;">
-                <svg width="10" height="10"><circle cx="5" cy="5" r="5" fill="#2ecc71"/></svg>
+            <span
+                style="display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:20px;padding:3px 10px 3px 7px;">
+                <svg width="10" height="10">
+                    <circle cx="5" cy="5" r="5" fill="#2ecc71" />
+                </svg>
                 <span style="font-size:.75rem;color:#e2e8f0;font-weight:500;">&lt; 3 Port</span>
             </span>
-            <span style="display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:20px;padding:3px 10px 3px 7px;">
-                <svg width="10" height="10"><circle cx="5" cy="5" r="5" fill="#f1c40f"/></svg>
+            <span
+                style="display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:20px;padding:3px 10px 3px 7px;">
+                <svg width="10" height="10">
+                    <circle cx="5" cy="5" r="5" fill="#f1c40f" />
+                </svg>
                 <span style="font-size:.75rem;color:#e2e8f0;font-weight:500;">3–6 Port</span>
             </span>
-            <span style="display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:20px;padding:3px 10px 3px 7px;">
-                <svg width="10" height="10"><circle cx="5" cy="5" r="5" fill="#e74c3c"/></svg>
+            <span
+                style="display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:20px;padding:3px 10px 3px 7px;">
+                <svg width="10" height="10">
+                    <circle cx="5" cy="5" r="5" fill="#e74c3c" />
+                </svg>
                 <span style="font-size:.75rem;color:#e2e8f0;font-weight:500;">&gt; 6 Port</span>
             </span>
         </div>
@@ -305,11 +428,24 @@ document.addEventListener('DOMContentLoaded', function() {
 
     <!-- Canvas + floating popup wrapper -->
     <div style="position:relative;">
+        <!-- Zoom Controls -->
+        <div class="network-zoom-controls">
+            <button type="button" class="network-zoom-btn" onclick="resetZoom()" title="Reset Zoom">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M15 3h6v6"></path>
+                    <path d="M9 21H3v-6"></path>
+                    <path d="M21 3l-7 7"></path>
+                    <path d="M3 21l7-7"></path>
+                </svg>
+                Reset Zoom
+            </button>
+        </div>
+
         <div id="network-canvas" style="width:100%;height:440px;background:#ffffff;cursor:default;"></div>
 
         <!-- hint overlay (แสดงตอนยังไม่ได้คลิก) -->
-        <div id="diagram-hint"
-             style="position:absolute;bottom:12px;left:50%;transform:translateX(-50%);
+        <div id="diagram-hint" style="position:absolute;bottom:12px;left:50%;transform:translateX(-50%);
                     background:rgba(0,0,0,0.55);color:#adb5bd;
                     padding:5px 14px;border-radius:20px;font-size:.75rem;
                     pointer-events:none;white-space:nowrap;">
@@ -317,8 +453,7 @@ document.addEventListener('DOMContentLoaded', function() {
         </div>
 
         <!-- floating popup ตอนคลิก node — card style with tabs -->
-        <div id="node-popup"
-             style="display:none;position:absolute;z-index:10;
+        <div id="node-popup" style="display:none;position:absolute;z-index:10;
                     background:#fff;
                     border-radius:14px;
                     min-width:300px;max-width:380px;
@@ -326,14 +461,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     font-size:.82rem;overflow:hidden;">
 
             <!-- Header -->
-            <div id="popup-header"
-                 style="background:#1e2a3a;padding:12px 14px 10px;
+            <div id="popup-header" style="background:#1e2a3a;padding:12px 14px 10px;
                         display:flex;align-items:center;gap:10px;
                         border-bottom:1px solid #2d3f55;">
-                <div style="background:#2d4a6b;border-radius:8px;padding:6px 8px;font-size:1.3rem;line-height:1;">🖥️</div>
-                <span id="popup-ip" style="font-weight:700;font-size:.95rem;font-family:monospace;color:#ffffff;"></span>
-                <button onclick="closePopup()"
-                        style="margin-left:auto;background:#e74c3c;border:none;
+                <div style="background:#2d4a6b;border-radius:8px;padding:6px 8px;font-size:1.3rem;line-height:1;">🖥️
+                </div>
+                <span id="popup-ip"
+                    style="font-weight:700;font-size:.95rem;font-family:monospace;color:#ffffff;"></span>
+                <button onclick="closePopup()" style="margin-left:auto;background:#e74c3c;border:none;
                                width:28px;height:28px;border-radius:8px;
                                color:#fff;font-size:1rem;cursor:pointer;
                                display:flex;align-items:center;justify-content:center;line-height:1;">✕</button>
@@ -341,14 +476,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
             <!-- Tabs -->
             <div style="display:flex;border-bottom:1px solid #e0e0e0;">
-                <button id="tab-detail" onclick="switchTab('detail')"
-                        style="flex:1;padding:9px 0;border:none;background:#e8e8e8;
+                <button id="tab-detail" onclick="switchTab('detail')" style="flex:1;padding:9px 0;border:none;background:#e8e8e8;
                                font-weight:600;font-size:.82rem;cursor:pointer;
                                border-right:1px solid #e0e0e0;">
                     Detail
                 </button>
-                <button id="tab-port" onclick="switchTab('port')"
-                        style="flex:1;padding:9px 0;border:none;background:#fff;
+                <button id="tab-port" onclick="switchTab('port')" style="flex:1;padding:9px 0;border:none;background:#fff;
                                font-weight:600;font-size:.82rem;cursor:pointer;">
                     Port
                 </button>
@@ -360,11 +493,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     <tbody id="detail-tbody"></tbody>
                 </table>
                 {% if current_user.is_any_admin %}
-                <div id="popup-drilldown-area" style="padding:8px 0 2px;border-top:1px solid #eee;margin-top:8px;display:none;">
-                    <button id="popup-drilldown-btn" class="btn btn-sm w-100 fw-semibold"
-                            style="background:linear-gradient(135deg,#0f3460,#1a5276);color:#fff;border:none;border-radius:8px;padding:8px;font-size:.82rem;"
-                            onclick="openDrilldownFromPopup()">
-                        🔍 Scan This Host
+                <div id="popup-drilldown-area"
+                    style="padding:10px 0 2px;border-top:1px solid #f1f5f9;margin-top:10px;display:none;">
+                    <button id="popup-drilldown-btn" class="btn btn-drilldown-popup w-100"
+                        onclick="openDrilldownFromPopup()">
+                        <i class="ti ti-scan"></i>
+                        <span>Scan This Host</span>
                     </button>
                 </div>
                 {% endif %}
@@ -396,8 +530,11 @@ document.addEventListener('DOMContentLoaded', function() {
     <div class="col-6">
         <div class="stat-card-v2">
             <div class="stat-icon-v2" style="background:#E6F1FB;">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#185FA5" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#185FA5" stroke-width="1.8"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="2" y="3" width="20" height="14" rx="2" />
+                    <line x1="8" y1="21" x2="16" y2="21" />
+                    <line x1="12" y1="17" x2="12" y2="21" />
                 </svg>
             </div>
             <div>
@@ -409,8 +546,11 @@ document.addEventListener('DOMContentLoaded', function() {
     <div class="col-6">
         <div class="stat-card-v2">
             <div class="stat-icon-v2" style="background:#EAF3DE;">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3B6D11" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18" stroke-width="2.5"/><path d="M9 7h6M9 11h4"/>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3B6D11" stroke-width="1.8"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="5" y="2" width="14" height="20" rx="2" />
+                    <line x1="12" y1="18" x2="12.01" y2="18" stroke-width="2.5" />
+                    <path d="M9 7h6M9 11h4" />
                 </svg>
             </div>
             <div>
@@ -423,35 +563,41 @@ document.addEventListener('DOMContentLoaded', function() {
 {% endif %}
 
 <style>
-.stat-card-v2 {
-    background: #fff;
-    border: 1px solid #e2e8f0;
-    border-radius: 12px;
-    padding: 20px 24px;
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    height: 100%;
-}
-.stat-icon-v2 {
-    width: 48px; height: 48px;
-    border-radius: 10px;
-    display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0;
-}
-.stat-label-v2 {
-    font-size: .78rem;
-    color: #94a3b8;
-    margin: 0 0 2px;
-    font-weight: 500;
-}
-.stat-value-v2 {
-    font-size: 1.75rem;
-    font-weight: 700;
-    color: #0f172a;
-    margin: 0;
-    line-height: 1;
-}
+    .stat-card-v2 {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 20px 24px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        height: 100%;
+    }
+
+    .stat-icon-v2 {
+        width: 48px;
+        height: 48px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .stat-label-v2 {
+        font-size: .78rem;
+        color: #94a3b8;
+        margin: 0 0 2px;
+        font-weight: 500;
+    }
+
+    .stat-value-v2 {
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: #0f172a;
+        margin: 0;
+        line-height: 1;
+    }
 </style>
 
 
@@ -476,67 +622,69 @@ document.addEventListener('DOMContentLoaded', function() {
         </thead>
         <tbody>
             {% for item in scan_data %}
-                {% if item.ports %}
-                    {% for port in item.ports %}
-                    <tr>
-                        {% if loop.first %}
-                        <td class="fw-bold" rowspan="{{ item.ports | length }}">{{ item.ip }}</td>
-                        <td rowspan="{{ item.ports | length }}">
-                            {% if item.mac and item.mac != 'Unknown' %}
-                                {{ item.mac }}
-                                {% if item.mac_vendor %}<br><small class="text-muted">{{ item.mac_vendor }}</small>{% endif %}
-                            {% else %}
-                                <span class="text-muted">—</span>
-                            {% endif %}
-                        </td>
-                        <td rowspan="{{ item.ports | length }}">{{ item.status if item.status else item.os }}</td>
-                        {% endif %}
-                        <td>{{ port.port }}</td>
-                        <td>{{ port.protocol | lower if port.protocol else 'tcp' }}</td>
-                        <td>open</td>
-                        <td>{% if port.name %}{{ port.name }}{% else %}—{% endif %}</td>
-                        <td class="text-secondary">
-                            {% if port.version_info and port.version_info != 'Unknown Version' %}
-                                {{ port.version_info }}
-                            {% else %}
-                                <i class="text-muted">Version unknown</i>
-                            {% endif %}
-                        </td>
-                        {% if current_user.is_any_admin and loop.first %}
-                        <td rowspan="{{ item.ports | length }}" class="text-center">
-                            <button class="btn btn-sm btn-drilldown"
-                                    onclick="openDrilldownModal('{{ item.ip }}')"
-                                    title="Scan this host deeper">
-                                🔍 Scan
-                            </button>
-                        </td>
-                        {% endif %}
-                    </tr>
-                    {% endfor %}
-                {% else %}
-                <tr>
-                    <td class="fw-bold">{{ item.ip }}</td>
-                    <td>
-                        {% if item.mac and item.mac != 'Unknown' %}{{ item.mac }}
-                        {% else %}<span class="text-muted">—</span>{% endif %}
-                    </td>
-                    <td>{{ item.status if item.status else item.os }}</td>
-                    <td colspan="{% if current_user.is_any_admin %}5{% else %}5{% endif %}"><span class="text-muted small">No ports open</span></td>
-                    {% if current_user.is_any_admin %}
-                    <td class="text-center">
-                        <button class="btn btn-sm btn-drilldown"
-                                onclick="openDrilldownModal('{{ item.ip }}')"
-                                title="Scan this host deeper">
-                            🔍 Scan
-                        </button>
-                    </td>
+            {% if item.ports %}
+            {% for port in item.ports %}
+            <tr>
+                {% if loop.first %}
+                <td class="fw-bold" rowspan="{{ item.ports | length }}">{{ item.ip }}</td>
+                <td rowspan="{{ item.ports | length }}">
+                    {% if item.mac and item.mac != 'Unknown' %}
+                    {{ item.mac }}
+                    {% if item.mac_vendor %}<br><small class="text-muted">{{ item.mac_vendor }}</small>{% endif %}
+                    {% else %}
+                    <span class="text-muted">—</span>
                     {% endif %}
-                </tr>
+                </td>
+                <td rowspan="{{ item.ports | length }}">{{ item.status if item.status else item.os }}</td>
                 {% endif %}
+                <td>{{ port.port }}</td>
+                <td>{{ port.protocol | lower if port.protocol else 'tcp' }}</td>
+                <td>open</td>
+                <td>{% if port.name %}{{ port.name }}{% else %}—{% endif %}</td>
+                <td class="text-secondary">
+                    {% if port.version_info and port.version_info != 'Unknown Version' %}
+                    {{ port.version_info }}
+                    {% else %}
+                    <i class="text-muted">Version unknown</i>
+                    {% endif %}
+                </td>
+                {% if current_user.is_any_admin and loop.first %}
+                <td rowspan="{{ item.ports | length }}" class="text-center">
+                    <button type="button" class="btn btn-drilldown" onclick="openDrilldownModal('{{ item.ip }}')"
+                        title="Targeted scan on {{ item.ip }}">
+                        <i class="ti ti-scan"></i>
+                        <span>Scan</span>
+                    </button>
+                </td>
+                {% endif %}
+            </tr>
+            {% endfor %}
+            {% else %}
+            <tr>
+                <td class="fw-bold">{{ item.ip }}</td>
+                <td>
+                    {% if item.mac and item.mac != 'Unknown' %}{{ item.mac }}
+                    {% else %}<span class="text-muted">—</span>{% endif %}
+                </td>
+                <td>{{ item.status if item.status else item.os }}</td>
+                <td colspan="{% if current_user.is_any_admin %}5{% else %}5{% endif %}"><span
+                        class="text-muted small">No ports open</span></td>
+                {% if current_user.is_any_admin %}
+                <td class="text-center">
+                    <button type="button" class="btn btn-drilldown" onclick="openDrilldownModal('{{ item.ip }}')"
+                        title="Targeted scan on {{ item.ip }}">
+                        <i class="ti ti-scan"></i>
+                        <span>Scan</span>
+                    </button>
+                </td>
+                {% endif %}
+            </tr>
+            {% endif %}
             {% endfor %}
             {% if not scan_data %}
             <tr>
-                <td colspan="{% if current_user.is_any_admin %}9{% else %}8{% endif %}" class="text-center text-muted p-4">No data found or scan failed.</td>
+                <td colspan="{% if current_user.is_any_admin %}9{% else %}8{% endif %}"
+                    class="text-center text-muted p-4">No data found or scan failed.</td>
             </tr>
             {% endif %}
 
@@ -546,42 +694,88 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 <style>
-.port-chip {
-    display: inline-flex;
-    flex-direction: column;
-    background: #f8f9fa;
-    border-radius: 6px;
-    padding: 5px 9px;
-    font-size: .72rem;
-    border: 1px solid #dee2e6;
-    margin: 3px;
-    font-family: monospace;
-    min-width: 72px;
-}
-.port-chip.critical { border-color:#ff2d55; background:#fff5f7; }
-.port-chip.critical .pnum { color:#ff2d55; font-weight:700; }
-.port-chip.high { border-color:#fd7e14; background:#fff8f0; }
-.port-chip.high .pnum { color:#fd7e14; font-weight:700; }
-.port-chip.medium { border-color:#ffc107; background:#fffdf0; }
-.port-chip.medium .pnum { color:#856404; font-weight:700; }
-.port-chip.low { border-color:#198754; background:#f0fff4; }
-.port-chip.low .pnum { color:#198754; font-weight:700; }
-.pnum { font-size:.82rem; }
-.psvc { color:#6c757d; }
-.pver { color:#adb5bd; font-size:.63rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:160px; }
+    .port-chip {
+        display: inline-flex;
+        flex-direction: column;
+        background: #f8f9fa;
+        border-radius: 6px;
+        padding: 5px 9px;
+        font-size: .72rem;
+        border: 1px solid #dee2e6;
+        margin: 3px;
+        font-family: monospace;
+        min-width: 72px;
+    }
+
+    .port-chip.critical {
+        border-color: #ff2d55;
+        background: #fff5f7;
+    }
+
+    .port-chip.critical .pnum {
+        color: #ff2d55;
+        font-weight: 700;
+    }
+
+    .port-chip.high {
+        border-color: #fd7e14;
+        background: #fff8f0;
+    }
+
+    .port-chip.high .pnum {
+        color: #fd7e14;
+        font-weight: 700;
+    }
+
+    .port-chip.medium {
+        border-color: #ffc107;
+        background: #fffdf0;
+    }
+
+    .port-chip.medium .pnum {
+        color: #856404;
+        font-weight: 700;
+    }
+
+    .port-chip.low {
+        border-color: #198754;
+        background: #f0fff4;
+    }
+
+    .port-chip.low .pnum {
+        color: #198754;
+        font-weight: 700;
+    }
+
+    .pnum {
+        font-size: .82rem;
+    }
+
+    .psvc {
+        color: #6c757d;
+    }
+
+    .pver {
+        color: #adb5bd;
+        font-size: .63rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 160px;
+    }
 </style>
 
 <script>
-{% if scan_data %}
-const SCAN_DATA = {{ scan_data | tojson }};
+    {% if scan_data %}
+    const SCAN_DATA = {{ scan_data | tojson }};
 
-// ═══════════════════════════════════════════════════════════════════════════
-// Cisco-style SVG icons (outline, สีฟ้า #4a9fd4)  — returns data URI string
-// ═══════════════════════════════════════════════════════════════════════════
-const CISCO_ICONS = {
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Cisco-style SVG icons (outline, สีฟ้า #4a9fd4)  — returns data URI string
+    // ═══════════════════════════════════════════════════════════════════════════
+    const CISCO_ICONS = {
 
-  // ── Generic PC / Workstation ──────────────────────────────────────────────
-  pc: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 70" width="80" height="70">
+        // ── Generic PC / Workstation ──────────────────────────────────────────────
+        pc: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 70" width="80" height="70">
     <g fill="none" stroke="#4a9fd4" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
       <!-- monitor body -->
       <rect x="8" y="4" width="48" height="34" rx="3"/>
@@ -601,8 +795,8 @@ const CISCO_ICONS = {
     </g>
   </svg>`,
 
-  // ── Windows ───────────────────────────────────────────────────────────────
-  windows: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 70" width="80" height="70">
+        // ── Windows ───────────────────────────────────────────────────────────────
+        windows: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 70" width="80" height="70">
     <g fill="none" stroke="#4a9fd4" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
       <rect x="8" y="4" width="48" height="34" rx="3"/>
       <rect x="13" y="9" width="38" height="24" rx="1.5" fill="#d6ecf8" stroke="#4a9fd4" stroke-width="1.4"/>
@@ -617,8 +811,8 @@ const CISCO_ICONS = {
     </g>
   </svg>`,
 
-  // ── Linux / Tux Penguin ───────────────────────────────────────────────────
-  linux: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 70" width="80" height="70">
+        // ── Linux / Tux Penguin ───────────────────────────────────────────────────
+        linux: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 70" width="80" height="70">
     <g transform="translate(40,38) scale(0.72)" fill="none" stroke="#4a9fd4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <ellipse cx="0" cy="18" rx="28" ry="36" fill="#d6ecf8" stroke="#4a9fd4"/>
       <ellipse cx="0" cy="22" rx="17" ry="26" fill="#ffffff" stroke="#4a9fd4" stroke-width="1.3"/>
@@ -637,8 +831,8 @@ const CISCO_ICONS = {
     </g>
   </svg>`,
 
-  // ── macOS ─────────────────────────────────────────────────────────────────
-  mac: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 70" width="80" height="70">
+        // ── macOS ─────────────────────────────────────────────────────────────────
+        mac: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 70" width="80" height="70">
     <g fill="none" stroke="#4a9fd4" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
       <!-- iMac thin display -->
       <rect x="6" y="4" width="52" height="38" rx="4"/>
@@ -653,8 +847,8 @@ const CISCO_ICONS = {
     </g>
   </svg>`,
 
-  // ── Router / Cisco / Gateway ──────────────────────────────────────────────
-  router: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 70" width="80" height="70">
+        // ── Router / Cisco / Gateway ──────────────────────────────────────────────
+        router: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 70" width="80" height="70">
     <g fill="none" stroke="#4a9fd4" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
       <!-- cylinder body (router) -->
       <ellipse cx="32" cy="18" rx="22" ry="7"/>
@@ -673,8 +867,8 @@ const CISCO_ICONS = {
     </g>
   </svg>`,
 
-  // ── Switch ────────────────────────────────────────────────────────────────
-  switch: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 70" width="80" height="70">
+        // ── Switch ────────────────────────────────────────────────────────────────
+        switch: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 70" width="80" height="70">
     <g fill="none" stroke="#4a9fd4" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
       <!-- switch box -->
       <rect x="6" y="22" width="52" height="22" rx="3"/>
@@ -693,8 +887,8 @@ const CISCO_ICONS = {
     </g>
   </svg>`,
 
-  // ── Android / Mobile ──────────────────────────────────────────────────────
-  mobile: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 70" width="80" height="70">
+        // ── Android / Mobile ──────────────────────────────────────────────────────
+        mobile: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 70" width="80" height="70">
     <g fill="none" stroke="#4a9fd4" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
       <rect x="18" y="4" width="28" height="52" rx="5"/>
       <rect x="22" y="10" width="20" height="34" rx="1.5" fill="#d6ecf8" stroke="#4a9fd4" stroke-width="1.4"/>
@@ -705,8 +899,8 @@ const CISCO_ICONS = {
     </g>
   </svg>`,
 
-  // ── Printer ───────────────────────────────────────────────────────────────
-  printer: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 70" width="80" height="70">
+        // ── Printer ───────────────────────────────────────────────────────────────
+        printer: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 70" width="80" height="70">
     <g fill="none" stroke="#4a9fd4" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
       <rect x="8" y="24" width="48" height="26" rx="3"/>
       <rect x="14" y="10" width="36" height="16" rx="2"/>
@@ -720,8 +914,8 @@ const CISCO_ICONS = {
     </g>
   </svg>`,
 
-  // ── Camera / IoT ──────────────────────────────────────────────────────────
-  camera: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 70" width="80" height="70">
+        // ── Camera / IoT ──────────────────────────────────────────────────────────
+        camera: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 70" width="80" height="70">
     <g fill="none" stroke="#4a9fd4" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M8 20 L20 14 L20 54 L8 48 Z"/>
       <rect x="20" y="10" width="40" height="48" rx="4"/>
@@ -731,8 +925,8 @@ const CISCO_ICONS = {
     </g>
   </svg>`,
 
-  // ── Unknown device ────────────────────────────────────────────────────────
-  unknown: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 70" width="80" height="70">
+        // ── Unknown device ────────────────────────────────────────────────────────
+        unknown: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 70" width="80" height="70">
     <g fill="none" stroke="#4a9fd4" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
       <rect x="4" y="4" width="52" height="38" rx="4" fill="#d6ecf8" stroke="#4a9fd4"/>
       <rect x="10" y="10" width="40" height="26" rx="2" fill="#ffffff" stroke="#4a9fd4" stroke-width="1.4"/>
@@ -745,8 +939,8 @@ const CISCO_ICONS = {
     </g>
   </svg>`,
 
-  // ── Gateway (cloud-like) ──────────────────────────────────────────────────
-  gateway: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 70" width="80" height="70">
+        // ── Gateway (cloud-like) ──────────────────────────────────────────────────
+        gateway: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 70" width="80" height="70">
     <g fill="none" stroke="#4a9fd4" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M14 44 Q10 44 10 38 Q10 30 18 30 Q18 22 26 20 Q34 14 44 20 Q52 18 56 26 Q64 26 64 36 Q64 44 56 44 Z" fill="#d6ecf8" stroke="#4a9fd4" stroke-width="2"/>
       <!-- wifi-like lines -->
@@ -754,315 +948,411 @@ const CISCO_ICONS = {
       <path d="M32 62 Q36 58 40 58 Q44 58 48 62" stroke-width="2"/>
     </g>
   </svg>`
-};
+    };
 
-// Convert SVG string → base64 data URI
-function svgToDataUri(svgStr) {
-    return 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgStr)));
-}
-
-// Pre-render all icons
-const ICON_URI = {};
-for (const [k, v] of Object.entries(CISCO_ICONS)) {
-    ICON_URI[k] = svgToDataUri(v);
-}
-
-// Pick the right icon key per OS string
-function osIconKey(osStr) {
-    if (!osStr) return 'pc';
-    const s = osStr.toLowerCase();
-    if (s.includes('windows'))  return 'windows';
-    if (s.includes('linux')||s.includes('ubuntu')||s.includes('debian')||s.includes('centos')||s.includes('fedora')||s.includes('kali')) return 'linux';
-    if (s.includes('mac')||s.includes('darwin')||s.includes('macos')||s.includes('osx')) return 'mac';
-    if (s.includes('switch'))   return 'switch';
-    if (s.includes('cisco')||s.includes('router')) return 'router';
-    if (s.includes('android')||s.includes('ios')||s.includes('iphone')||s.includes('ipad')||s.includes('mobile')) return 'mobile';
-    if (s.includes('printer'))  return 'printer';
-    if (s.includes('camera'))   return 'camera';
-    return 'unknown';
-}
-
-// Emoji fallback for popup header icon
-function osEmoji(osStr) {
-    if (!osStr) return '🖥️';
-    const s = osStr.toLowerCase();
-    if (s.includes('windows')) return '🪟';
-    if (s.includes('linux')||s.includes('ubuntu')||s.includes('debian')||s.includes('centos')||s.includes('fedora')||s.includes('kali')) return '🐧';
-    if (s.includes('mac')||s.includes('darwin')) return '🍎';
-    if (s.includes('cisco')||s.includes('router')||s.includes('switch')) return '📡';
-    if (s.includes('android')) return '🤖';
-    if (s.includes('ios')||s.includes('iphone')) return '📱';
-    if (s.includes('printer')) return '🖨️';
-    if (s.includes('camera')) return '📷';
-    return '🖥️';
-}
-
-// Popup header colour per OS
-function osHeaderColor(osStr) {
-    if (!osStr) return { bg:'#2c3e50', fg:'#ecf0f1' };
-    const s = osStr.toLowerCase();
-    if (s.includes('windows')) return { bg:'#0078d7', fg:'#ffffff' };
-    if (s.includes('linux')||s.includes('ubuntu')||s.includes('debian')||s.includes('centos')||s.includes('fedora')||s.includes('kali')) return { bg:'#e67e22', fg:'#ffffff' };
-    if (s.includes('mac')||s.includes('darwin')) return { bg:'#555555', fg:'#ffffff' };
-    if (s.includes('cisco')||s.includes('router')||s.includes('switch')) return { bg:'#007ecc', fg:'#ffffff' };
-    if (s.includes('android')) return { bg:'#3ddc84', fg:'#000000' };
-    return { bg:'#2c3e50', fg:'#ecf0f1' };
-}
-
-// ── Dot colour by open-port count (for label badge) ───────────────────────
-function portDotColor(portCount) {
-    if (portCount <= 2)   return '#2ecc71';   // green — < 3 ports / unknown
-    if (portCount <= 6)   return '#f1c40f';   // yellow — 3–6 ports
-    return '#e74c3c';                          // red   — > 6 ports
-}
-
-// ── Build graph data ───────────────────────────────────────────────────────
-const nodesData = [], edgesData = [];
-
-// Gateway node
-nodesData.push({
-    id: 0,
-    label: 'Gateway',
-    image: ICON_URI['gateway'],
-    shape: 'image',
-    size: 38,
-    font: { color:'#1a6db5', size:12, face:'monospace', bold:true, vadjust: 6 },
-    title: 'Gateway / Router',
-    shadow: { enabled:true, color:'rgba(31,111,235,0.3)', size:14 },
-    fixed: true, x:0, y:0,
-    _device: null, _portCnt: 0
-});
-
-SCAN_DATA.forEach((device, i) => {
-    const iconKey = osIconKey(device.os || device.status);
-    const portCnt  = (device.ports && device.ports.length) ? device.ports.length : 0;
-    const hasPorts = portCnt > 0;
-    const dotColor = portDotColor(portCnt);
-
-    // Sort ports ascending for label badge reference
-    const sortedPorts = hasPorts
-        ? [...device.ports].sort((a, b) => a.port - b.port)
-        : [];
-
-    nodesData.push({
-        id: i + 1,
-        label: `<b>●</b> ${device.ip}`,
-        image: ICON_URI[iconKey],
-        shape: 'image',
-        size: 34,
-        font: {
-            color: '#1a3a5c',
-            size: 12,
-            face: 'monospace',
-            vadjust: 6,
-            multi: 'html',
-            bold: {
-                color: dotColor,
-                size: 13,
-                face: 'monospace',
-                mod: 'bold'
-            }
-        },
-        title: `คลิกเพื่อดูรายละเอียด: ${device.ip}`,
-        shadow: { enabled:true, color:'#00000018', size:8 },
-        _device: device,
-        _portCnt: portCnt,
-        _sortedPorts: sortedPorts
-    });
-
-    edgesData.push({
-        from: 0, to: i + 1,
-        color: { color:'#90a4ae', highlight:'#607d8b', hover:'#607d8b' },
-        width: 1.6,
-        dashes: portCnt === 0,
-        smooth: false
-    });
-});
-
-// (legend colours set directly in HTML)
-
-const container = document.getElementById('network-canvas');
-const network = new vis.Network(
-    container,
-    { nodes: new vis.DataSet(nodesData), edges: new vis.DataSet(edgesData) },
-    {
-        physics: {
-            solver: 'forceAtlas2Based',
-            forceAtlas2Based: { gravitationalConstant:-130, springLength:170, springConstant:0.04, damping:0.5 },
-            stabilization: { iterations:200 }
-        },
-        interaction: { hover:true, zoomView:true, tooltipDelay:300 },
-        layout: { improvedLayout:true }
+    // Convert SVG string → base64 data URI
+    function svgToDataUri(svgStr) {
+        return 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgStr)));
     }
-);
 
-network.on('hoverNode', () => { container.style.cursor = 'pointer'; });
-network.on('blurNode',  () => { container.style.cursor = 'default'; });
+    // Pre-render all icons
+    const ICON_URI = {};
+    for (const [k, v] of Object.entries(CISCO_ICONS)) {
+        ICON_URI[k] = svgToDataUri(v);
+    }
 
-const popup = document.getElementById('node-popup');
-const hint  = document.getElementById('diagram-hint');
+    // Pick the right icon key per OS string
+    function osIconKey(osStr) {
+        if (!osStr) return 'pc';
+        const s = osStr.toLowerCase();
+        if (s.includes('windows')) return 'windows';
+        if (s.includes('linux') || s.includes('ubuntu') || s.includes('debian') || s.includes('centos') || s.includes('fedora') || s.includes('kali')) return 'linux';
+        if (s.includes('mac') || s.includes('darwin') || s.includes('macos') || s.includes('osx')) return 'mac';
+        if (s.includes('switch')) return 'switch';
+        if (s.includes('cisco') || s.includes('router')) return 'router';
+        if (s.includes('android') || s.includes('ios') || s.includes('iphone') || s.includes('ipad') || s.includes('mobile')) return 'mobile';
+        if (s.includes('printer')) return 'printer';
+        if (s.includes('camera')) return 'camera';
+        return 'unknown';
+    }
 
-function closePopup() {
-    popup.style.display = 'none';
-    network.unselectAll();
-}
+    // Emoji fallback for popup header icon
+    function osEmoji(osStr) {
+        if (!osStr) return '🖥️';
+        const s = osStr.toLowerCase();
+        if (s.includes('windows')) return '🪟';
+        if (s.includes('linux') || s.includes('ubuntu') || s.includes('debian') || s.includes('centos') || s.includes('fedora') || s.includes('kali')) return '🐧';
+        if (s.includes('mac') || s.includes('darwin')) return '🍎';
+        if (s.includes('cisco') || s.includes('router') || s.includes('switch')) return '📡';
+        if (s.includes('android')) return '🤖';
+        if (s.includes('ios') || s.includes('iphone')) return '📱';
+        if (s.includes('printer')) return '🖨️';
+        if (s.includes('camera')) return '📷';
+        return '🖥️';
+    }
 
-function switchTab(tab) {
-    const isDetail = tab === 'detail';
-    document.getElementById('panel-detail').style.display = isDetail ? 'block' : 'none';
-    document.getElementById('panel-port').style.display   = isDetail ? 'none'  : 'block';
-    document.getElementById('tab-detail').style.background = isDetail ? '#e8e8e8' : '#fff';
-    document.getElementById('tab-port').style.background   = isDetail ? '#fff' : '#e8e8e8';
-}
+    // Popup header colour per OS
+    function osHeaderColor(osStr) {
+        if (!osStr) return { bg: '#2c3e50', fg: '#ecf0f1' };
+        const s = osStr.toLowerCase();
+        if (s.includes('windows')) return { bg: '#0078d7', fg: '#ffffff' };
+        if (s.includes('linux') || s.includes('ubuntu') || s.includes('debian') || s.includes('centos') || s.includes('fedora') || s.includes('kali')) return { bg: '#e67e22', fg: '#ffffff' };
+        if (s.includes('mac') || s.includes('darwin')) return { bg: '#555555', fg: '#ffffff' };
+        if (s.includes('cisco') || s.includes('router') || s.includes('switch')) return { bg: '#007ecc', fg: '#ffffff' };
+        if (s.includes('android')) return { bg: '#3ddc84', fg: '#000000' };
+        return { bg: '#2c3e50', fg: '#ecf0f1' };
+    }
 
-network.on('click', function(params) {
-    if (!params.nodes.length || params.nodes[0] === 0) { closePopup(); return; }
+    // ── Dot colour by open-port count (for label badge) ───────────────────────
+    function portDotColor(portCount) {
+        if (portCount <= 2) return '#2ecc71';   // green — < 3 ports / unknown
+        if (portCount <= 6) return '#f1c40f';   // yellow — 3–6 ports
+        return '#e74c3c';                          // red   — > 6 ports
+    }
 
-    const nodeId = params.nodes[0];
-    const node   = nodesData[nodeId];
-    const dev    = node._device;
-    const osStr  = dev.os || dev.status || '';
-    const icon   = osEmoji(osStr);
-    const hc     = osHeaderColor(osStr);
+    // ── Build graph data ───────────────────────────────────────────────────────
+    const nodesData = [], edgesData = [];
 
-    // ── Popup header: OS-specific colour + icon ──
-    const header = document.getElementById('popup-header');
-    header.style.background   = hc.bg;
-    header.style.borderBottom = '1px solid ' + hc.bg;
-    header.querySelector('div').textContent = icon;
-    header.querySelector('div').style.background = 'rgba(255,255,255,0.18)';
-    document.getElementById('popup-ip').style.color = hc.fg;
-    document.getElementById('popup-ip').textContent = dev.ip;
-    header.querySelector('button').style.background = 'rgba(0,0,0,0.25)';
-    header.querySelector('button').style.color = hc.fg;
+    // Gateway node — derive gateway IP from the most common /24 subnet
+    let gwIp = '';
+    if (SCAN_DATA.length > 0) {
+        const prefixCount = {};
+        SCAN_DATA.forEach(h => {
+            const parts = (h.ip || '').split('.');
+            if (parts.length === 4) {
+                const prefix = parts.slice(0, 3).join('.');
+                prefixCount[prefix] = (prefixCount[prefix] || 0) + 1;
+            }
+        });
+        const topPrefix = Object.keys(prefixCount).sort((a, b) => prefixCount[b] - prefixCount[a])[0];
+        if (topPrefix) gwIp = topPrefix + '.1';
+    }
+    const gwLabel = gwIp ? `Gateway\n${gwIp}` : 'Gateway';
+    nodesData.push({
+        id: 0,
+        label: gwLabel,
+        image: ICON_URI['gateway'],
+        shape: 'image',
+        size: 38,
+        font: { color: '#1a6db5', size: 12, face: 'monospace', bold: true, vadjust: 6, multi: 'html' },
+        title: gwIp ? `Gateway / Router\n${gwIp}` : 'Gateway / Router',
+        shadow: { enabled: true, color: 'rgba(31,111,235,0.3)', size: 14 },
+        fixed: true, x: 0, y: 0,
+        _device: null, _portCnt: 0
+    });
 
-    // ── Detail tab ──
-    const detailRows = [
-        ['Name:',   dev.hostname || dev.ip],
-        ['IPv4:',   dev.ip],
-        ['IPv6:',   dev.ipv6 || 'Not Available'],
-        ['MAC:',    (dev.mac && dev.mac !== 'Unknown') ? dev.mac : 'Unknown'],
-        ['OS:',     osStr || 'Unknown'],
-        ['Ports:',  node._portCnt + ' open'],
-    ];
-    document.getElementById('detail-tbody').innerHTML = detailRows.map(([label, value]) => `
+    SCAN_DATA.forEach((device, i) => {
+        const iconKey = osIconKey(device.os || device.status);
+        const portCnt = (device.ports && device.ports.length) ? device.ports.length : 0;
+        const hasPorts = portCnt > 0;
+        const dotColor = portDotColor(portCnt);
+
+        // Sort ports ascending for label badge reference
+        const sortedPorts = hasPorts
+            ? [...device.ports].sort((a, b) => a.port - b.port)
+            : [];
+
+        nodesData.push({
+            id: i + 1,
+            label: `<b>●</b> ${device.ip}`,
+            image: ICON_URI[iconKey],
+            shape: 'image',
+            size: 34,
+            font: {
+                color: '#1a3a5c',
+                size: 12,
+                face: 'monospace',
+                vadjust: 6,
+                multi: 'html',
+                bold: {
+                    color: dotColor,
+                    size: 13,
+                    face: 'monospace',
+                    mod: 'bold'
+                }
+            },
+            title: `คลิกเพื่อดูรายละเอียด: ${device.ip}`,
+            shadow: { enabled: true, color: '#00000018', size: 8 },
+            _device: device,
+            _portCnt: portCnt,
+            _sortedPorts: sortedPorts
+        });
+
+        edgesData.push({
+            from: 0, to: i + 1,
+            color: { color: '#90a4ae', highlight: '#607d8b', hover: '#607d8b' },
+            width: 1.6,
+            dashes: portCnt === 0,
+            smooth: false
+        });
+    });
+
+    // (legend colours set directly in HTML)
+
+    const container = document.getElementById('network-canvas');
+    const network = new vis.Network(
+        container,
+        { nodes: new vis.DataSet(nodesData), edges: new vis.DataSet(edgesData) },
+        {
+            physics: {
+                solver: 'forceAtlas2Based',
+                forceAtlas2Based: { gravitationalConstant: -130, springLength: 170, springConstant: 0.04, damping: 0.5 },
+                stabilization: { iterations: 200 }
+            },
+            interaction: { hover: true, zoomView: true, tooltipDelay: 300 },
+            layout: { improvedLayout: true }
+        }
+    );
+
+    network.on('hoverNode', () => { container.style.cursor = 'pointer'; });
+    network.on('blurNode', () => { container.style.cursor = 'default'; });
+
+    network.on('zoom', function () {
+        const minScale = 0.2;
+        const maxScale = 2.5;
+        const currentScale = network.getScale();
+        if (currentScale < minScale) {
+            network.moveTo({ scale: minScale });
+        } else if (currentScale > maxScale) {
+            network.moveTo({ scale: maxScale });
+        }
+    });
+
+    function resetZoom() {
+        if (typeof network !== 'undefined' && network) {
+            network.fit({ animation: { duration: 500, easingFunction: 'easeInOutQuad' } });
+        }
+    }
+
+    const popup = document.getElementById('node-popup');
+    const hint = document.getElementById('diagram-hint');
+
+    function closePopup() {
+        popup.style.display = 'none';
+        network.unselectAll();
+    }
+
+    function switchTab(tab) {
+        const isDetail = tab === 'detail';
+        document.getElementById('panel-detail').style.display = isDetail ? 'block' : 'none';
+        document.getElementById('panel-port').style.display = isDetail ? 'none' : 'block';
+        document.getElementById('tab-detail').style.background = isDetail ? '#e8e8e8' : '#fff';
+        document.getElementById('tab-port').style.background = isDetail ? '#fff' : '#e8e8e8';
+    }
+
+    network.on('click', function (params) {
+        if (!params.nodes.length || params.nodes[0] === 0) { closePopup(); return; }
+
+        const nodeId = params.nodes[0];
+        const node = nodesData[nodeId];
+        const dev = node._device;
+        const osStr = dev.os || dev.status || '';
+        const icon = osEmoji(osStr);
+        const hc = osHeaderColor(osStr);
+
+        // ── Popup header: OS-specific colour + icon ──
+        const header = document.getElementById('popup-header');
+        header.style.background = hc.bg;
+        header.style.borderBottom = '1px solid ' + hc.bg;
+        header.querySelector('div').textContent = icon;
+        header.querySelector('div').style.background = 'rgba(255,255,255,0.18)';
+        document.getElementById('popup-ip').style.color = hc.fg;
+        document.getElementById('popup-ip').textContent = dev.ip;
+        header.querySelector('button').style.background = 'rgba(0,0,0,0.25)';
+        header.querySelector('button').style.color = hc.fg;
+
+        // ── Detail tab ──
+        const detailRows = [
+            ['Name:', dev.hostname || dev.ip],
+            ['IPv4:', dev.ip],
+            ['IPv6:', dev.ipv6 || 'Not Available'],
+            ['MAC:', (dev.mac && dev.mac !== 'Unknown') ? dev.mac : 'Unknown'],
+            ['OS:', osStr || 'Unknown'],
+            ['Ports:', node._portCnt + ' open'],
+        ];
+        document.getElementById('detail-tbody').innerHTML = detailRows.map(([label, value]) => `
         <tr>
             <td style="padding:5px 0;color:#777;white-space:nowrap;width:40%;">${label}</td>
             <td style="padding:5px 0;font-family:monospace;word-break:break-all;">${value}</td>
         </tr>`).join('');
 
-    // Show drill-down button in popup (if admin)
-    const ddArea = document.getElementById('popup-drilldown-area');
-    if (ddArea) ddArea.style.display = 'block';
+        // Show drill-down button in popup (if admin)
+        const ddArea = document.getElementById('popup-drilldown-area');
+        if (ddArea) ddArea.style.display = 'block';
 
-    // ── Port tab ──
-    const portTbody = document.getElementById('port-tbody');
-    if (dev.ports && dev.ports.length) {
-        const sortedPorts = [...dev.ports].sort((a, b) => a.port - b.port);
-        portTbody.innerHTML = sortedPorts.map(p => {
-            const proto = p.protocol ? p.protocol.toLowerCase() : 'tcp';
-            const ver   = (p.version_info && p.version_info !== 'Unknown Version') ? p.version_info : '—';
-            return `<tr style="border-bottom:1px solid #f0f0f0;">
+        // ── Port tab ──
+        const portTbody = document.getElementById('port-tbody');
+        if (dev.ports && dev.ports.length) {
+            const sortedPorts = [...dev.ports].sort((a, b) => a.port - b.port);
+            portTbody.innerHTML = sortedPorts.map(p => {
+                const proto = p.protocol ? p.protocol.toLowerCase() : 'tcp';
+                const ver = (p.version_info && p.version_info !== 'Unknown Version') ? p.version_info : '—';
+                return `<tr style="border-bottom:1px solid #f0f0f0;">
                 <td style="padding:6px 12px;font-family:monospace;font-weight:600;">${p.port}/${proto}</td>
                 <td style="padding:6px 8px;"><span style="color:#198754;font-weight:600;">open</span></td>
                 <td style="padding:6px 8px;">${p.name || '?'}</td>
                 <td style="padding:6px 8px;color:#555;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${ver}">${ver}</td>
             </tr>`;
-        }).join('');
-    } else {
-        portTbody.innerHTML = `<tr><td colspan="4" style="padding:12px;text-align:center;color:#aaa;">ไม่พบ open ports</td></tr>`;
-    }
+            }).join('');
+        } else {
+            portTbody.innerHTML = `<tr><td colspan="4" style="padding:12px;text-align:center;color:#aaa;">ไม่พบ open ports</td></tr>`;
+        }
 
-    switchTab('detail');
+        switchTab('detail');
 
-    // ── Position popup ──
-    const domPos = params.pointer.DOM;
-    let left = domPos.x + 16;
-    let top  = domPos.y - 10;
-    if (left + 390 > container.offsetWidth)  left = domPos.x - 390;
-    if (left < 4) left = 4;
-    if (top < 4)  top  = 4;
-    if (top + 340 > container.offsetHeight)  top = container.offsetHeight - 350;
+        // ── Position popup ──
+        const domPos = params.pointer.DOM;
+        let left = domPos.x + 16;
+        let top = domPos.y - 10;
+        if (left + 390 > container.offsetWidth) left = domPos.x - 390;
+        if (left < 4) left = 4;
+        if (top < 4) top = 4;
+        if (top + 340 > container.offsetHeight) top = container.offsetHeight - 350;
 
-    popup.style.left    = left + 'px';
-    popup.style.top     = top  + 'px';
-    popup.style.display = 'block';
-    hint.style.display  = 'none';
-});
+        popup.style.left = left + 'px';
+        popup.style.top = top + 'px';
+        popup.style.display = 'block';
+        hint.style.display = 'none';
+    });
 
-network.on('deselectNode', closePopup);
-{% endif %}
+    network.on('deselectNode', closePopup);
+    {% endif %}
 </script>
 
 
 {% if current_user.is_any_admin %}
 <!-- ========== DRILLDOWN SCAN MODAL ========== -->
-<div class="modal fade" id="drilldownModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" style="max-width:440px">
-        <div class="modal-content border-0 shadow-lg" style="border-radius:16px;overflow:hidden">
-            <!-- Header -->
-            <div style="background:linear-gradient(135deg,#0f3460,#1a5276);padding:22px 24px 16px;position:relative;">
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
-                        style="position:absolute;top:14px;right:14px;opacity:0.8"></button>
-                <div style="width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;background:rgba(255,255,255,0.15);margin-bottom:8px;">🔍</div>
-                <h5 style="font-size:1.05rem;font-weight:700;color:#fff;margin:0 0 4px;">Drill-down Scan</h5>
-                <p style="font-size:.8rem;color:rgba(255,255,255,0.7);margin:0;">
-                    Target: <code id="drilldownTargetDisplay" style="color:#93c5fd;background:rgba(0,0,0,0.2);padding:1px 6px;border-radius:4px;"></code>
-                </p>
+<div class="modal fade" id="drilldownModal" tabindex="-1" aria-labelledby="drilldownModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 490px;">
+        <div class="modal-content drilldown-modal border-0 shadow-lg">
+            <!-- Modal Header -->
+            <div class="drilldown-modal-header">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="drilldown-header-icon">
+                        <i class="ti ti-radar"></i>
+                    </div>
+                    <div>
+                        <h5 class="drilldown-title" id="drilldownModalLabel">Targeted Drill-down Scan</h5>
+                        <div class="drilldown-target-info">
+                            <span>Target Host:</span>
+                            <code id="drilldownTargetDisplay" class="drilldown-target-ip"></code>
+                        </div>
+                    </div>
+                </div>
+                <button type="button" class="btn-close drilldown-close-btn" data-bs-dismiss="modal"
+                    aria-label="Close"></button>
             </div>
-            <!-- Body -->
-            <div class="p-4">
+
+            <!-- Modal Body -->
+            <div class="drilldown-modal-body">
                 <form method="POST" id="drilldownForm">
                     <input type="hidden" name="host_ip" id="drilldownHostIp">
 
-                    <label class="form-label fw-semibold" style="font-size:.85rem;color:#475569;">Scan Profile</label>
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <label class="drilldown-field-label">Scan Profile</label>
+                        <span class="drilldown-field-sub">Choose scan depth &amp; duration</span>
+                    </div>
+
                     <div class="drilldown-options mb-3">
+                        <!-- Fast Scan -->
                         <label class="drilldown-option">
                             <input type="radio" name="scan_type" value="fast_scan" checked>
                             <div class="drilldown-option-card">
-                                <span class="drilldown-option-icon" style="background:#E6F1FB;color:#185FA5;">⚡</span>
-                                <div>
-                                    <div class="fw-semibold" style="font-size:.88rem;">Fast Scan</div>
-                                    <div style="font-size:.72rem;color:#94a3b8;">Quick port scan + service detection</div>
+                                <div class="drilldown-option-icon icon-fast">
+                                    <i class="ti ti-bolt"></i>
                                 </div>
+                                <div class="drilldown-option-content">
+                                    <div class="drilldown-option-head">
+                                        <span class="drilldown-option-name">Fast Scan</span>
+                                        <span class="drilldown-badge badge-standard">Standard</span>
+                                        <span class="drilldown-time-badge"><i class="ti ti-clock"></i> ~15–30s</span>
+                                    </div>
+                                    <div class="drilldown-option-desc">Top 100 ports &amp; quick service detection</div>
+                                </div>
+                                <div class="drilldown-check-indicator"></div>
                             </div>
                         </label>
+
+                        <!-- Intense Scan -->
                         <label class="drilldown-option">
                             <input type="radio" name="scan_type" value="intense">
                             <div class="drilldown-option-card">
-                                <span class="drilldown-option-icon" style="background:#FEF3C7;color:#92400E;">🔥</span>
-                                <div>
-                                    <div class="fw-semibold" style="font-size:.88rem;">Intense Scan</div>
-                                    <div style="font-size:.72rem;color:#94a3b8;">Full scan: OS, scripts, traceroute</div>
+                                <div class="drilldown-option-icon icon-intense">
+                                    <i class="ti ti-flame"></i>
                                 </div>
+                                <div class="drilldown-option-content">
+                                    <div class="drilldown-option-head">
+                                        <span class="drilldown-option-name">Intense Scan</span>
+                                        <span class="drilldown-badge badge-deep">Deep</span>
+                                        <span class="drilldown-time-badge"><i class="ti ti-clock"></i> ~1–3 min</span>
+                                    </div>
+                                    <div class="drilldown-option-desc">OS fingerprinting, scripts &amp; traceroute</div>
+                                </div>
+                                <div class="drilldown-check-indicator"></div>
                             </div>
                         </label>
+
+                        <!-- Vulnerability Scan -->
                         <label class="drilldown-option">
                             <input type="radio" name="scan_type" value="vuln_scan">
                             <div class="drilldown-option-card">
-                                <span class="drilldown-option-icon" style="background:#FEE2E2;color:#991B1B;">🛡️</span>
-                                <div>
-                                    <div class="fw-semibold" style="font-size:.88rem;">Vulnerability Scan</div>
-                                    <div style="font-size:.72rem;color:#94a3b8;">Detect CVEs via NVD API</div>
+                                <div class="drilldown-option-icon icon-vuln">
+                                    <i class="ti ti-shield-search"></i>
                                 </div>
+                                <div class="drilldown-option-content">
+                                    <div class="drilldown-option-head">
+                                        <span class="drilldown-option-name">Vulnerability Scan</span>
+                                        <span class="drilldown-badge badge-security">CVE Audit</span>
+                                        <span class="drilldown-time-badge"><i class="ti ti-clock"></i> ~2–5 min</span>
+                                    </div>
+                                    <div class="drilldown-option-desc">Known vulnerability detection via NVD API</div>
+                                </div>
+                                <div class="drilldown-check-indicator"></div>
                             </div>
                         </label>
+
+                        <!-- Discovery -->
                         <label class="drilldown-option">
                             <input type="radio" name="scan_type" value="discovery">
                             <div class="drilldown-option-card">
-                                <span class="drilldown-option-icon" style="background:#DCFCE7;color:#166534;">📡</span>
-                                <div>
-                                    <div class="fw-semibold" style="font-size:.88rem;">Discovery</div>
-                                    <div style="font-size:.72rem;color:#94a3b8;">Ping sweep — check if online</div>
+                                <div class="drilldown-option-icon icon-discovery">
+                                    <i class="ti ti-broadcast"></i>
                                 </div>
+                                <div class="drilldown-option-content">
+                                    <div class="drilldown-option-head">
+                                        <span class="drilldown-option-name">Discovery</span>
+                                        <span class="drilldown-badge badge-ping">Ping Sweep</span>
+                                        <span class="drilldown-time-badge"><i class="ti ti-clock"></i> ~1–5s</span>
+                                    </div>
+                                    <div class="drilldown-option-desc">ICMP echo reachability &amp; online status</div>
+                                </div>
+                                <div class="drilldown-check-indicator"></div>
                             </div>
                         </label>
                     </div>
 
-                    <button type="submit" class="btn w-100 fw-semibold"
-                            style="background:linear-gradient(135deg,#0f3460,#1a5276);color:#fff;border:none;border-radius:10px;padding:10px;font-size:.9rem;">
-                        🔍 Start Drill-down Scan
-                    </button>
+                    <!-- Scan Profile Time Estimate Summary Box -->
+                    <div class="drilldown-estimate-box mb-4">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="ti ti-hourglass-empty text-primary"></i>
+                                <span class="estimate-label">Est. Duration:</span>
+                            </div>
+                            <span class="estimate-value" id="drilldownEstTimeDisplay">~15–30 seconds</span>
+                        </div>
+                        <div class="estimate-hint" id="drilldownEstTimeHint">
+                            Quick scan checking top 100 ports &amp; service signatures on this host.
+                        </div>
+                    </div>
+
+                    <!-- Footer actions -->
+                    <div class="drilldown-modal-actions">
+                        <button type="button" class="btn btn-drilldown-cancel" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-drilldown-submit">
+                            <i class="ti ti-player-play-filled"></i>
+                            <span>Start Scan</span>
+                        </button>
+                    </div>
                 </form>
             </div>
         </div>
@@ -1070,104 +1360,520 @@ network.on('deselectNode', closePopup);
 </div>
 
 <style>
-/* ── Drill-down Button ── */
-.btn-drilldown {
-    background: linear-gradient(135deg, #0f3460, #1a5276);
-    color: #fff;
-    border: none;
-    font-weight: 600;
-    font-size: .75rem;
-    padding: 5px 12px;
-    border-radius: 6px;
-    letter-spacing: .02em;
-    transition: all .18s;
-    white-space: nowrap;
-}
-.btn-drilldown:hover {
-    background: linear-gradient(135deg, #1a5276, #2980b9);
-    color: #fff;
-    transform: translateY(-1px);
-    box-shadow: 0 3px 8px rgba(15,52,96,0.35);
-}
+    /* ── Drill-down Button in Table ── */
+    .btn-drilldown {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        background-color: #0f172a;
+        color: #ffffff;
+        border: 1px solid #0f172a;
+        font-weight: 500;
+        font-size: 0.75rem;
+        padding: 4px 10px;
+        border-radius: 6px;
+        line-height: 1.2;
+        transition: all 0.15s ease-in-out;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+        white-space: nowrap;
+    }
 
-/* ── Drill-down Modal Options ── */
-.drilldown-options {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-.drilldown-option {
-    cursor: pointer;
-    margin: 0;
-}
-.drilldown-option input[type="radio"] {
-    display: none;
-}
-.drilldown-option-card {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 12px 14px;
-    border: 2px solid #e2e8f0;
-    border-radius: 10px;
-    transition: all .15s;
-    background: #fff;
-}
-.drilldown-option input:checked + .drilldown-option-card {
-    border-color: #0f3460;
-    background: #f0f6ff;
-    box-shadow: 0 0 0 1px #0f3460;
-}
-.drilldown-option:hover .drilldown-option-card {
-    border-color: #94a3b8;
-    background: #f8fafc;
-}
-.drilldown-option-icon {
-    width: 38px;
-    height: 38px;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 18px;
-    flex-shrink: 0;
-}
+    .btn-drilldown:hover {
+        background-color: #1e293b;
+        border-color: #1e293b;
+        color: #ffffff;
+        transform: translateY(-1px);
+        box-shadow: 0 3px 6px rgba(15, 23, 42, 0.12);
+    }
+
+    .btn-drilldown:active {
+        transform: translateY(0);
+    }
+
+    .btn-drilldown i {
+        font-size: 0.85rem;
+    }
+
+    /* ── Popup Drilldown Button ── */
+    .btn-drilldown-popup {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        background-color: #0f172a;
+        color: #ffffff;
+        border: 1px solid #0f172a;
+        font-weight: 500;
+        font-size: 0.8rem;
+        padding: 7px 12px;
+        border-radius: 8px;
+        transition: all 0.15s ease-in-out;
+    }
+
+    .btn-drilldown-popup:hover {
+        background-color: #1e293b;
+        color: #ffffff;
+    }
+
+    /* ── Drilldown Modal Styling ── */
+    .drilldown-modal {
+        border-radius: 14px;
+        overflow: hidden;
+        background: #ffffff;
+    }
+
+    .drilldown-modal-header {
+        background: #ffffff;
+        padding: 20px 24px 16px;
+        border-bottom: 1px solid #f1f5f9;
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+    }
+
+    .drilldown-header-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        background-color: #f8fafc;
+        color: #0f172a;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        flex-shrink: 0;
+        border: 1px solid #e2e8f0;
+    }
+
+    .drilldown-title {
+        font-size: 1.02rem;
+        font-weight: 600;
+        color: #0f172a;
+        margin: 0 0 3px 0;
+        letter-spacing: -0.01em;
+    }
+
+    .drilldown-target-info {
+        font-size: 0.78rem;
+        color: #64748b;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .drilldown-target-ip {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #0f172a;
+        background: #f1f5f9;
+        padding: 2px 7px;
+        border-radius: 4px;
+        border: 1px solid #e2e8f0;
+    }
+
+    .drilldown-close-btn {
+        opacity: 0.5;
+        padding: 8px;
+        font-size: 0.75rem;
+        transition: opacity 0.15s;
+    }
+
+    .drilldown-close-btn:hover {
+        opacity: 1;
+    }
+
+    .drilldown-modal-body {
+        padding: 20px 24px 24px;
+    }
+
+    .drilldown-field-label {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: #334155;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        margin: 0;
+    }
+
+    .drilldown-field-sub {
+        font-size: 0.75rem;
+        color: #94a3b8;
+    }
+
+    /* ── Options list ── */
+    .drilldown-options {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .drilldown-option {
+        cursor: pointer;
+        margin: 0;
+        display: block;
+        user-select: none;
+    }
+
+    .drilldown-option input[type="radio"] {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .drilldown-option-card {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 11px 14px;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        background: #ffffff;
+        transition: all 0.18s ease-in-out;
+        position: relative;
+    }
+
+    .drilldown-option:hover .drilldown-option-card {
+        border-color: #cbd5e1;
+        background: #f8fafc;
+    }
+
+    .drilldown-option input:checked+.drilldown-option-card {
+        border-color: #2563eb;
+        background: #f8faff;
+        box-shadow: 0 0 0 1px #2563eb;
+    }
+
+    /* Option Icon Badges */
+    .drilldown-option-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.15rem;
+        flex-shrink: 0;
+    }
+
+    .icon-fast {
+        background-color: #eff6ff;
+        color: #2563eb;
+        border: 1px solid #dbeafe;
+    }
+
+    .icon-intense {
+        background-color: #fffbeb;
+        color: #d97706;
+        border: 1px solid #fef3c7;
+    }
+
+    .icon-vuln {
+        background-color: #fff1f2;
+        color: #e11d48;
+        border: 1px solid #ffe4e6;
+    }
+
+    .icon-discovery {
+        background-color: #f0fdf4;
+        color: #16a34a;
+        border: 1px solid #dcfce7;
+    }
+
+    .drilldown-option-content {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .drilldown-option-head {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        line-height: 1.2;
+    }
+
+    .drilldown-option-name {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #1e293b;
+    }
+
+    .drilldown-option input:checked+.drilldown-option-card .drilldown-option-name {
+        color: #0f172a;
+    }
+
+    .drilldown-option-desc {
+        font-size: 0.72rem;
+        color: #64748b;
+        margin-top: 2px;
+        line-height: 1.3;
+    }
+
+    /* Badges */
+    .drilldown-badge {
+        font-size: 0.65rem;
+        font-weight: 600;
+        padding: 2px 6px;
+        border-radius: 4px;
+        line-height: 1;
+        letter-spacing: 0.02em;
+    }
+
+    .badge-standard {
+        background-color: #f1f5f9;
+        color: #475569;
+    }
+
+    .badge-deep {
+        background-color: #fef3c7;
+        color: #92400e;
+    }
+
+    .badge-security {
+        background-color: #fee2e2;
+        color: #991b1b;
+    }
+
+    .badge-ping {
+        background-color: #dcfce7;
+        color: #166534;
+    }
+
+    /* Time Badge on Option Cards */
+    .drilldown-time-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        font-size: 0.68rem;
+        font-weight: 600;
+        color: #64748b;
+        background: #f1f5f9;
+        border: 1px solid #e2e8f0;
+        padding: 2px 7px;
+        border-radius: 4px;
+        margin-left: auto;
+        letter-spacing: -0.01em;
+        line-height: 1.2;
+        transition: all 0.18s ease;
+    }
+
+    .drilldown-time-badge i {
+        font-size: 0.72rem;
+        color: #94a3b8;
+    }
+
+    .drilldown-option:hover .drilldown-time-badge {
+        background: #e2e8f0;
+        color: #334155;
+    }
+
+    .drilldown-option input:checked+.drilldown-option-card .drilldown-time-badge {
+        background: #eff6ff;
+        border-color: #bfdbfe;
+        color: #1d4ed8;
+    }
+
+    .drilldown-option input:checked+.drilldown-option-card .drilldown-time-badge i {
+        color: #2563eb;
+    }
+
+    /* Estimate Callout Box */
+    .drilldown-estimate-box {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 10px 14px;
+        transition: all 0.2s ease;
+    }
+
+    .drilldown-estimate-box .estimate-label {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #475569;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+
+    .drilldown-estimate-box .estimate-value {
+        font-size: 0.82rem;
+        font-weight: 700;
+        color: #0f172a;
+    }
+
+    .drilldown-estimate-box .estimate-hint {
+        font-size: 0.73rem;
+        color: #64748b;
+        margin-top: 4px;
+        line-height: 1.35;
+    }
+
+    /* Radio Indicator */
+    .drilldown-check-indicator {
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        border: 2px solid #cbd5e1;
+        flex-shrink: 0;
+        position: relative;
+        transition: all 0.15s ease-in-out;
+    }
+
+    .drilldown-option input:checked+.drilldown-option-card .drilldown-check-indicator {
+        border-color: #2563eb;
+        background-color: #2563eb;
+    }
+
+    .drilldown-option input:checked+.drilldown-option-card .drilldown-check-indicator::after {
+        content: '';
+        position: absolute;
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background-color: #ffffff;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+    }
+
+    /* Actions */
+    .drilldown-modal-actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 8px;
+        padding-top: 16px;
+        border-top: 1px solid #f1f5f9;
+    }
+
+    .btn-drilldown-cancel {
+        background: transparent;
+        border: 1px solid #e2e8f0;
+        color: #475569;
+        font-size: 0.82rem;
+        font-weight: 500;
+        padding: 7px 14px;
+        border-radius: 8px;
+        transition: all 0.15s;
+    }
+
+    .btn-drilldown-cancel:hover {
+        background: #f8fafc;
+        border-color: #cbd5e1;
+        color: #1e293b;
+    }
+
+    .btn-drilldown-submit {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        background-color: #0f172a;
+        color: #ffffff;
+        border: 1px solid #0f172a;
+        font-size: 0.82rem;
+        font-weight: 600;
+        padding: 7px 16px;
+        border-radius: 8px;
+        transition: all 0.15s ease-in-out;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+    }
+
+    .btn-drilldown-submit:hover {
+        background-color: #1e293b;
+        border-color: #1e293b;
+        color: #ffffff;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(15, 23, 42, 0.15);
+    }
+
+    .btn-drilldown-submit:active {
+        transform: translateY(0);
+    }
+
+    .btn-drilldown-submit i {
+        font-size: 0.85rem;
+    }
 </style>
 
 <script>
-let _drilldownModal = null;
-let _drilldownIp = '';
+    let _drilldownModal = null;
+    let _drilldownIp = '';
 
-function openDrilldownModal(ip) {
-    _drilldownIp = ip;
-    document.getElementById('drilldownHostIp').value = ip;
-    document.getElementById('drilldownTargetDisplay').textContent = ip;
-    document.getElementById('drilldownForm').action = '/scan/{{ job.id }}/drilldown';
+    const _drilldownScanEstimates = {
+        'fast_scan': {
+            time: '~15–30 seconds',
+            hint: 'Quick scan checking top 100 ports & service signatures on this host.',
+            btnText: 'Starting Fast Scan… (est. ~15–30s)'
+        },
+        'intense': {
+            time: '~1–3 minutes',
+            hint: 'Comprehensive scan testing 1,000 ports, OS fingerprinting, scripts & traceroute.',
+            btnText: 'Starting Intense Scan… (est. ~1–3 min)'
+        },
+        'vuln_scan': {
+            time: '~2–5 minutes',
+            hint: 'Deep service inspection & automated live CVE lookups via NVD database.',
+            btnText: 'Starting Vuln Scan… (est. ~2–5 min)'
+        },
+        'discovery': {
+            time: '~1–5 seconds',
+            hint: 'Fast ICMP echo ping to verify target host reachability and status.',
+            btnText: 'Starting Ping Sweep… (est. ~1–5s)'
+        }
+    };
 
-    // Reset to Fast Scan
-    const radios = document.querySelectorAll('#drilldownForm input[name="scan_type"]');
-    radios.forEach(r => r.checked = r.value === 'fast_scan');
-
-    if (!_drilldownModal) _drilldownModal = new bootstrap.Modal(document.getElementById('drilldownModal'));
-    _drilldownModal.show();
-}
-
-{% if scan_data %}
-function openDrilldownFromPopup() {
-    const ip = document.getElementById('popup-ip').textContent;
-    if (ip) {
-        closePopup();
-        openDrilldownModal(ip);
+    function updateDrilldownEstimate(scanType) {
+        const est = _drilldownScanEstimates[scanType] || _drilldownScanEstimates['fast_scan'];
+        const timeDisplay = document.getElementById('drilldownEstTimeDisplay');
+        const hintDisplay = document.getElementById('drilldownEstTimeHint');
+        if (timeDisplay) timeDisplay.textContent = est.time;
+        if (hintDisplay) hintDisplay.textContent = est.hint;
     }
-}
-{% endif %}
 
-// Loading state on form submit
-document.getElementById('drilldownForm')?.addEventListener('submit', function() {
-    const btn = this.querySelector('button[type="submit"]');
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Scanning…';
-});
+    // Attach change event listeners to radio options
+    document.querySelectorAll('#drilldownForm input[name="scan_type"]').forEach(radio => {
+        radio.addEventListener('change', function () {
+            if (this.checked) {
+                updateDrilldownEstimate(this.value);
+            }
+        });
+    });
+
+    function openDrilldownModal(ip) {
+        _drilldownIp = ip;
+        document.getElementById('drilldownHostIp').value = ip;
+        document.getElementById('drilldownTargetDisplay').textContent = ip;
+        document.getElementById('drilldownForm').action = '/scan/{{ job.id }}/drilldown';
+
+        // Reset to Fast Scan
+        const radios = document.querySelectorAll('#drilldownForm input[name="scan_type"]');
+        radios.forEach(r => r.checked = r.value === 'fast_scan');
+        updateDrilldownEstimate('fast_scan');
+
+        if (!_drilldownModal) _drilldownModal = new bootstrap.Modal(document.getElementById('drilldownModal'));
+        _drilldownModal.show();
+    }
+
+    {% if scan_data %}
+    function openDrilldownFromPopup() {
+        const ip = document.getElementById('popup-ip').textContent;
+        if (ip) {
+            closePopup();
+            openDrilldownModal(ip);
+        }
+    }
+    {% endif %}
+
+    // Loading state on form submit with estimated duration
+    document.getElementById('drilldownForm')?.addEventListener('submit', function () {
+        const checkedRadio = this.querySelector('input[name="scan_type"]:checked');
+        const scanType = checkedRadio ? checkedRadio.value : 'fast_scan';
+        const est = _drilldownScanEstimates[scanType] || _drilldownScanEstimates['fast_scan'];
+        const btn = this.querySelector('button[type="submit"]');
+        btn.disabled = true;
+        btn.innerHTML = `<span class="spinner-border spinner-border-sm me-2"></span>${est.btnText}`;
+    });
 </script>
 {% endif %}
 
