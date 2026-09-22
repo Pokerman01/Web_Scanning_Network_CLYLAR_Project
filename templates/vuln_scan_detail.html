@@ -1237,7 +1237,48 @@ function portDotColor(portCount) {
 // ── Build graph data ───────────────────────────────────────────────────────
 const nodesData = [], edgesData = [];
 
+// Intelligent Gateway detection
+const gwInfo = detectGateway(SCAN_DATA, typeof SYSTEM_GATEWAY !== 'undefined' ? SYSTEM_GATEWAY : null);
+const gwIp = gwInfo.ip;
+const isGwEstimated = gwInfo.isEstimated;
+const gwMatchedHostIndex = gwInfo.hostIndex;
+
+let gwLabel = 'Gateway';
+if (gwIp) {
+    gwLabel = `Gateway\n${gwIp}${isGwEstimated ? ' (est)' : ''}`;
+}
+const gwTitle = gwIp
+    ? `Default Gateway / Router\nIP: ${gwIp}\nDetection: ${gwInfo.reason}`
+    : 'Gateway / Router';
+
+const gwDevice = gwMatchedHostIndex !== -1 ? SCAN_DATA[gwMatchedHostIndex] : null;
+const gwPortCnt = (gwDevice && gwDevice.ports) ? gwDevice.ports.length : 0;
+
+nodesData.push({
+    id: 0,
+    label: gwLabel,
+    image: ICON_URI['gateway'],
+    shape: 'image',
+    size: 40,
+    font: { color: '#1a6db5', size: 12, face: 'monospace', bold: true, vadjust: 6, multi: 'html' },
+    title: gwTitle,
+    shadow: { enabled: true, color: 'rgba(31,111,235,0.3)', size: 14 },
+    fixed: true, x: 0, y: 0,
+    _device: gwDevice,
+    _portCnt: gwPortCnt,
+    _isGateway: true,
+    _gwIp: gwIp,
+    _gwReason: gwInfo.reason
+});
+
+const gwSubnetPrefix = (gwIp || '').split('.').slice(0, 3).join('.');
+
 SCAN_DATA.forEach((device, i) => {
+    if (i === gwMatchedHostIndex) {
+        return;
+    }
+
+    const nodeId = i + 1;
     const iconKey = osIconKey(device.os || device.status);
     const portCnt  = (device.ports && device.ports.length) ? device.ports.length : 0;
     const hasPorts = portCnt > 0;
