@@ -1,4 +1,11 @@
-﻿# Byte-compiled / optimized / DLL files
+# Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *.class
+
+# Environment & secrets
+.env
+
+# Database
+instance/*.db
+
