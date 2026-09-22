@@ -1558,7 +1558,9 @@ def _call_gemini(system_prompt, messages, max_tokens=800):
     """Helper: เรียก Gemini API และคืน reply string หรือ raise Exception"""
     import os, time
     import requests as req_lib
+    from dotenv import load_dotenv
 
+    load_dotenv(override=True)
     api_key = os.environ.get('GOOGLE_API_KEY', '').strip()
     if not api_key:
         raise ValueError('NO_API_KEY')
@@ -1588,7 +1590,16 @@ def _call_gemini(system_prompt, messages, max_tokens=800):
 
     if last_status == 429:
         raise Exception('QUOTA_429')
-    resp.raise_for_status()
+    if resp is not None and not resp.ok:
+        try:
+            err_data = resp.json().get('error', {})
+            msg = err_data.get('message', '')
+            raise Exception(f"HTTP_{resp.status_code}: {msg}")
+        except Exception as json_err:
+            if 'HTTP_' in str(json_err):
+                raise json_err
+            resp.raise_for_status()
+
     return resp.json()['candidates'][0]['content']['parts'][0]['text']
 
 
@@ -1789,6 +1800,8 @@ def api_chat():
             return jsonify({'reply': '⚠️ AI ถูกใช้งานเยอะเกินไป กรุณารอสักครู่ 🙏'}), 200
         if '400' in err:
             return jsonify({'reply': '⚠️ GOOGLE_API_KEY ไม่ถูกต้องหรือ model ไม่รองรับ'}), 200
+        if 'leaked' in err.lower():
+            return jsonify({'reply': '⚠️ คีย์นี้ถูก Google ระงับเนื่องจากเคยหลุดไปใน GitHub กรุณาสร้าง API Key ใหม่ที่ https://aistudio.google.com/app/apikey แล้วนำมาใส่ในไฟล์ .env'}), 200
         if '403' in err:
             return jsonify({'reply': '⚠️ GOOGLE_API_KEY ไม่มีสิทธิ์เข้าถึง Gemini API'}), 200
         return jsonify({'reply': f'เกิดข้อผิดพลาด: {err}'}), 200
