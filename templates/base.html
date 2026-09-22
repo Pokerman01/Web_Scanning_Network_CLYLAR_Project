@@ -721,37 +721,41 @@ window.CLYLAR_PAGE_CONTEXT = {% block page_context %}"หน้า: ไม่ท
     border-radius: 12px;
     box-shadow: 0 1px 4px rgba(0,0,0,0.07);
     overflow: hidden;
+    flex-shrink: 0;
+    border: 1px solid #e9ecef;
   }
   .cb-hist-header {
-    padding: 9px 12px;
+    padding: 10px 12px;
     display: flex; align-items: center; gap: 8px;
     cursor: pointer;
     border-bottom: 1px solid transparent;
     transition: background 0.15s;
+    background: #fff;
   }
-  .cb-hist-header:hover { background: #f1f3f5; }
+  .cb-hist-header:hover { background: #f8f9fa; }
   .cb-hist-header.expanded { border-bottom-color: #e9ecef; }
   .cb-hist-date { font-size: 0.72rem; color: #6c757d; flex-shrink: 0; }
   .cb-hist-preview { font-size: 0.8rem; color: #212529; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .cb-hist-count { font-size: 0.7rem; background: #e9ecef; border-radius: 10px; padding: 1px 7px; color: #6c757d; flex-shrink: 0; }
   .cb-hist-chevron { font-size: 0.7rem; color: #adb5bd; transition: transform 0.2s; flex-shrink: 0; }
   .cb-hist-header.expanded .cb-hist-chevron { transform: rotate(180deg); }
-  .cb-hist-body { display: none; padding: 8px 10px; border-top: 1px solid #f1f3f5; }
+  .cb-hist-body { display: none; padding: 10px 12px 12px; border-top: 1px solid #f1f3f5; }
   .cb-hist-body.show { display: block; }
-  .cb-hist-msg { font-size: 0.775rem; padding: 4px 0; border-bottom: 1px solid #f8f9fa; }
+  .cb-hist-msg { font-size: 0.775rem; padding: 5px 0; border-bottom: 1px solid #f8f9fa; line-height: 1.4; }
   .cb-hist-msg:last-child { border-bottom: none; }
   .cb-hist-msg .role-label { font-weight: 600; font-size: 0.7rem; margin-right: 4px; }
   .cb-hist-msg .role-label.user { color: #0d6efd; }
   .cb-hist-msg .role-label.bot { color: #198754; }
   .cb-hist-msg .msg-text { color: #495057; }
-  .cb-hist-actions { display: flex; gap: 6px; margin-top: 8px; }
+  .cb-hist-actions { display: flex; gap: 8px; margin-top: 10px; padding-top: 6px; border-top: 1px dashed #f1f3f5; }
   .cb-hist-btn {
-    flex: 1; padding: 5px 0; border-radius: 8px; border: none; font-size: 0.75rem;
-    cursor: pointer; transition: opacity 0.15s;
+    flex: 1; padding: 7px 0; border-radius: 8px; border: none; font-size: 0.78rem;
+    font-weight: 500; cursor: pointer; transition: all 0.15s;
+    display: flex; align-items: center; justify-content: center; gap: 4px;
   }
-  .cb-hist-btn:hover { opacity: 0.85; }
+  .cb-hist-btn:hover { opacity: 0.88; }
   .cb-hist-btn.resume { background: #0d6efd; color: #fff; }
-  .cb-hist-btn.del { background: #f8d7da; color: #dc3545; }
+  .cb-hist-btn.del { background: #fee2e2; color: #dc2626; }
   .cb-hist-footer {
     padding: 8px 10px;
     border-top: 1px solid #e9ecef;
