@@ -1,3 +1,6 @@
+from dotenv import load_dotenv
+load_dotenv()  # โหลด .env อัตโนมัติ (GOOGLE_API_KEY, GEMINI_MODEL)
+
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, abort
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -603,8 +606,6 @@ def delete_scans_bulk():
     flash(f'ลบ Scan ทั้งหมด {count} รายการเรียบร้อยแล้ว', 'success')
     return redirect(url_for('history_page'))
 
-
-
 # ─────────────────────────────────────────
 #  TASKS
 # ─────────────────────────────────────────
@@ -1021,6 +1022,36 @@ def delete_user(user_id):
     return redirect(url_for('user_management'))
 
 
+@app.route('/users/<int:user_id>/reassign', methods=['POST'])
+@login_required
+@superadmin_required
+def reassign_user(user_id):
+    """ย้าย User ไปสังกัด Admin คนอื่น — เฉพาะ Superadmin เท่านั้นที่ทำได้
+    (Admin ปกติไม่มีสิทธิ์เข้าถึง route นี้ เพราะโดน @superadmin_required บล็อกไว้)"""
+    user = User.query.get_or_404(user_id)
+
+    # โยกได้เฉพาะ user ธรรมดาเท่านั้น ไม่ใช่ admin/superadmin
+    if user.role != 'user':
+        flash('ย้ายสังกัดได้เฉพาะ User เท่านั้น', 'danger')
+        return redirect(url_for('user_management'))
+
+    new_admin_id = request.form.get('new_admin_id', '').strip()
+    if not new_admin_id:
+        flash('กรุณาเลือก Admin ปลายทาง', 'danger')
+        return redirect(url_for('user_management'))
+
+    new_admin = User.query.get(int(new_admin_id))
+    if not new_admin or new_admin.role not in ('admin', 'superadmin'):
+        flash('ไม่พบ Admin ปลายทางที่เลือก', 'danger')
+        return redirect(url_for('user_management'))
+
+    old_admin_name = user.creator.username if user.creator else '—'
+    user.created_by = new_admin.id
+    db.session.commit()
+    flash(f'ย้าย User "{user.username}" จาก "{old_admin_name}" ไปสังกัด "{new_admin.username}" สำเร็จ', 'success')
+    return redirect(url_for('user_management'))
+
+
 @app.route('/users/<int:user_id>/reset_password', methods=['POST'])
 @login_required
 @user_management_required
@@ -1373,6 +1404,396 @@ table.rt tbody td {{ padding: 3px 4px; vertical-align: top; border-bottom: 1px s
         return Response(html_content, mimetype='text/html',
                         headers={'Content-Disposition': f'attachment; filename="{filename}"'})
 
+
+# ─────────────────────────────────────────
+#  AI CHATBOT API  (Google AI Studio / Gemini)
+# ─────────────────────────────────────────
+
+def _build_app_context():
+    """
+    รวบรวมข้อมูลจริงของแอพ (scan history, jobs, schedules, targets)
+    สำหรับ current_user เพื่อส่งเป็น context ให้ Gemini
+    """
+    try:
+        # --- Scan History (ล่าสุด 20 รายการ) ---
+        scans = visible_scans_query().order_by(ScanJob.timestamp.desc()).limit(20).all()
+        scan_summaries = []
+        all_ips = {}   # ip → set of "port/service"
+        all_ports_global = set()
+        vuln_summary = []
+
+        for job in scans:
+            entry = {
+                'id': job.id,
+                'name': job.scan_name or f'Scan #{job.id}',
+                'target': job.target,
+                'type': job.scan_type,
+                'status': job.status,
+                'timestamp': job.timestamp.strftime('%Y-%m-%d %H:%M') if job.timestamp else '-',
+                'triggered_by': job.triggered_by,
+            }
+            if job.result_data:
+                try:
+                    hosts = json.loads(job.result_data)
+                    host_count = len(hosts)
+                    entry['host_count'] = host_count
+
+                    # รวบรวม IP / port
+                    for h in hosts:
+                        ip = h.get('ip', '')
+                        if ip:
+                            if ip not in all_ips:
+                                all_ips[ip] = set()
+                            for p in h.get('ports', []):
+                                label = f"{p.get('port')}/{p.get('name','?')}"
+                                all_ips[ip].add(label)
+                                all_ports_global.add(str(p.get('port', '')))
+
+                        # CVE / Vuln
+                        for vuln in h.get('vulns', []):
+                            cve_id = vuln.get('id') or vuln.get('cve', '')
+                            if cve_id:
+                                vuln_summary.append({
+                                    'ip': ip,
+                                    'cve': cve_id,
+                                    'severity': vuln.get('severity', ''),
+                                    'description': (vuln.get('description', '') or '')[:120],
+                                })
+                except Exception:
+                    entry['host_count'] = 0
+            scan_summaries.append(entry)
+
+        # --- Schedules ---
+        schedules = visible_schedules_query().all()
+        sched_summaries = []
+        for s in schedules:
+            sched_summaries.append({
+                'id': s.id,
+                'name': s.name,
+                'target': s.target,
+                'type': s.scan_type,
+                'repeat': s.repeat,
+                'active': s.is_active,
+                'last_run': s.last_run.strftime('%Y-%m-%d %H:%M') if s.last_run else 'ยังไม่เคย',
+                'next_run': s.next_run.strftime('%Y-%m-%d %H:%M') if s.next_run else '-',
+            })
+
+        # --- Saved Targets ---
+        saved_targets = SavedTarget.query.order_by(SavedTarget.created_at.desc()).limit(30).all()
+        targets_list = [{'target': t.target, 'label': t.label or ''} for t in saved_targets]
+
+        # --- สถิติรวม ---
+        all_jobs = visible_scans_query().all()
+        stats = {
+            'total_scans': len(all_jobs),
+            'completed': sum(1 for j in all_jobs if j.status == 'Completed'),
+            'failed': sum(1 for j in all_jobs if j.status == 'Failed'),
+            'running': sum(1 for j in all_jobs if j.status == 'Running'),
+            'total_unique_ips': len(all_ips),
+            'total_open_ports': len(all_ports_global),
+            'total_schedules': len(schedules),
+            'active_schedules': sum(1 for s in schedules if s.is_active),
+            'total_vulns_found': len(vuln_summary),
+        }
+
+        # --- สร้าง context string ---
+        ctx_lines = [
+            f"=== ข้อมูลระบบ CLYLAR ณ ปัจจุบัน (ผู้ใช้: {current_user.username}, role: {current_user.role}) ===",
+            "",
+            f"📊 สถิติภาพรวม:",
+            f"  - Scan ทั้งหมด: {stats['total_scans']} (สำเร็จ {stats['completed']}, ล้มเหลว {stats['failed']}, กำลังทำ {stats['running']})",
+            f"  - IP ที่พบทั้งหมด: {stats['total_unique_ips']} เครื่อง",
+            f"  - Port ที่เปิดอยู่ (unique): {stats['total_open_ports']} port",
+            f"  - Scheduled Scan: {stats['total_schedules']} รายการ (active {stats['active_schedules']})",
+            f"  - ช่องโหว่ CVE ที่พบ: {stats['total_vulns_found']} รายการ",
+            "",
+        ]
+
+        if scan_summaries:
+            ctx_lines.append("📋 ประวัติ Scan ล่าสุด (20 รายการ):")
+            for s in scan_summaries:
+                ctx_lines.append(
+                    f"  [{s['id']}] {s['name']} | target={s['target']} | type={s['type']} "
+                    f"| status={s['status']} | hosts={s.get('host_count','?')} | {s['timestamp']}"
+                )
+            ctx_lines.append("")
+
+        if all_ips:
+            ctx_lines.append(f"🖥️ IP ที่ค้นพบ ({len(all_ips)} เครื่อง):")
+            for ip, ports in sorted(all_ips.items())[:40]:  # จำกัด 40 IP
+                ports_str = ', '.join(sorted(ports)[:10]) if ports else 'ไม่พบ port'
+                ctx_lines.append(f"  {ip}: {ports_str}")
+            ctx_lines.append("")
+
+        if vuln_summary:
+            ctx_lines.append(f"⚠️ ช่องโหว่ CVE ที่พบ (สูงสุด 20 รายการ):")
+            for v in vuln_summary[:20]:
+                ctx_lines.append(f"  {v['ip']} | {v['cve']} | severity={v['severity']} | {v['description']}")
+            ctx_lines.append("")
+
+        if sched_summaries:
+            ctx_lines.append(f"⏰ Scheduled Scans ({len(sched_summaries)} รายการ):")
+            for s in sched_summaries:
+                status_icon = '✅' if s['active'] else '⏸️'
+                ctx_lines.append(
+                    f"  {status_icon} [{s['id']}] {s['name']} | target={s['target']} "
+                    f"| {s['repeat']} | last={s['last_run']} | next={s['next_run']}"
+                )
+            ctx_lines.append("")
+
+        if targets_list:
+            ctx_lines.append(f"🎯 Saved Targets ({len(targets_list)} รายการ):")
+            for t in targets_list:
+                label = f" ({t['label']})" if t['label'] else ''
+                ctx_lines.append(f"  {t['target']}{label}")
+            ctx_lines.append("")
+
+        return '\n'.join(ctx_lines)
+
+    except Exception as ex:
+        return f"[ไม่สามารถโหลดข้อมูลระบบได้: {ex}]"
+
+
+def _call_gemini(system_prompt, messages, max_tokens=800):
+    """Helper: เรียก Gemini API และคืน reply string หรือ raise Exception"""
+    import os, time
+    import requests as req_lib
+
+    api_key = os.environ.get('GOOGLE_API_KEY', '').strip()
+    if not api_key:
+        raise ValueError('NO_API_KEY')
+
+    model = os.environ.get('GEMINI_MODEL', 'gemini-1.5-flash').strip()
+    gemini_contents = []
+    for msg in messages:
+        role = 'user' if msg['role'] == 'user' else 'model'
+        gemini_contents.append({'role': role, 'parts': [{'text': msg['content']}]})
+
+    payload = {
+        'system_instruction': {'parts': [{'text': system_prompt}]},
+        'contents': gemini_contents,
+        'generationConfig': {'maxOutputTokens': max_tokens}
+    }
+    url = f'https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}'
+
+    resp = None
+    last_status = None
+    for attempt in range(4):
+        resp = req_lib.post(url, json=payload, timeout=30)
+        last_status = resp.status_code
+        if resp.status_code == 429:
+            time.sleep(3 * (attempt + 1))
+            continue
+        break
+
+    if last_status == 429:
+        raise Exception('QUOTA_429')
+    resp.raise_for_status()
+    return resp.json()['candidates'][0]['content']['parts'][0]['text']
+
+
+# ─────────────────────────────────────────
+#  API: สั่ง Scan ผ่าน Chatbot
+# ─────────────────────────────────────────
+
+VALID_SCAN_TYPES = ['fast_scan', 'discovery', 'intense', 'vuln_scan']
+
+@app.route('/api/chat/scan', methods=['POST'])
+@login_required
+def api_chat_scan():
+    """รับ target + scan_type แล้วรัน scan จริง — เรียกจาก chatbot"""
+    if not current_user.is_any_admin:
+        return jsonify({'error': 'permission_denied', 'message': '⛔ เฉพาะ Admin เท่านั้นที่สั่ง Scan ได้'}), 403
+
+    data = request.get_json()
+    target    = (data.get('target') or '').strip()
+    scan_type = (data.get('scan_type') or 'fast_scan').strip()
+    scan_name = (data.get('scan_name') or '').strip() or None
+
+    if not target:
+        return jsonify({'error': 'no_target', 'message': '❌ กรุณาระบุ Target (IP หรือ hostname)'}), 400
+    if scan_type not in VALID_SCAN_TYPES:
+        scan_type = 'fast_scan'
+
+    try:
+        new_job = ScanJob(
+            target=target, scan_type=scan_type, scan_name=scan_name,
+            status='Running', triggered_by='chatbot',
+            owner_id=current_user.id
+        )
+        db.session.add(new_job)
+        if not SavedTarget.query.filter_by(target=target).first():
+            db.session.add(SavedTarget(target=target))
+        db.session.commit()
+
+        results = run_vuln_scan(target) if scan_type == 'vuln_scan' else run_network_scan(target, scan_type)
+        results_data = json.loads(results)
+        has_error = results_data and results_data[0].get('error')
+        new_job.status = 'Failed' if has_error else 'Completed'
+        new_job.result_data = results
+        db.session.commit()
+
+        if has_error:
+            return jsonify({'status': 'failed', 'job_id': new_job.id,
+                            'message': f'❌ Scan ล้มเหลว: {results_data[0]["error"]}'}), 200
+
+        # สรุปผลสั้นๆ
+        host_count  = len(results_data)
+        online      = sum(1 for h in results_data if h.get('ports') or h.get('status','').lower() == 'up')
+        all_ports   = []
+        for h in results_data:
+            for p in h.get('ports', []):
+                all_ports.append(f"{p.get('port')}/{p.get('name','?')}")
+
+        summary = (f"✅ Scan เสร็จแล้ว! (Job #{new_job.id})\n"
+                   f"🎯 Target: {target}  |  ประเภท: {scan_type}\n"
+                   f"🖥️ พบ {host_count} host ({online} online)\n"
+                   f"🔓 Open ports: {', '.join(all_ports[:12]) if all_ports else 'ไม่พบ'}"
+                   f"{'...' if len(all_ports) > 12 else ''}\n"
+                   f"🔗 ดูรายละเอียด: /scan/{new_job.id}")
+
+        return jsonify({'status': 'completed', 'job_id': new_job.id,
+                        'host_count': host_count, 'message': summary}), 200
+
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': f'❌ เกิดข้อผิดพลาด: {str(e)}'}), 200
+
+
+@app.route('/api/chat', methods=['POST'])
+@admin_required
+def api_chat():
+    """AI Chatbot — with live app data, page context, and scan command support
+    เฉพาะ admin/superadmin เท่านั้น (ผู้ใช้ role 'user' ไม่มีสิทธิ์ใช้งาน)"""
+    data = request.get_json()
+    if not data or 'messages' not in data:
+        return jsonify({'error': 'Invalid request'}), 400
+
+    messages     = data.get('messages', [])
+    page_context = data.get('page_context', '')   # ส่งมาจาก JS ทุก request
+
+    # ดึงข้อมูลจริงของแอพแบบ real-time
+    app_context = _build_app_context()
+
+    SYSTEM_PROMPT = f"""คุณคือ CLYLAR Assistant ผู้ช่วย AI สำหรับระบบ CLYLAR Network Scanner
+คุณมีสิทธิ์เข้าถึงข้อมูลจริงของระบบที่อัปเดตล่าสุด และรู้ว่าผู้ใช้กำลังดูหน้าไหน
+
+=== ข้อมูลหน้าที่ผู้ใช้กำลังดูอยู่ ===
+{page_context if page_context else '(ไม่ทราบหน้าปัจจุบัน)'}
+
+=== ข้อมูลระบบ ===
+{app_context}
+
+=== ความสามารถพิเศษ: สั่ง Scan ===
+คุณสามารถสั่ง Scan Network ได้โดยตรงผ่าน chatbot
+เมื่อผู้ใช้ต้องการ scan ให้ตอบกลับด้วย JSON format พิเศษดังนี้ (ต้องเป็น JSON บรรทัดแรกสุด):
+##SCAN_CMD##
+{{"action":"scan","target":"<IP_OR_HOST>","scan_type":"<TYPE>","scan_name":"<NAME_OPTIONAL>"}}
+
+ประเภท scan ที่รองรับ:
+- fast_scan     → Fast Scan (เร็ว แนะนำสำหรับสแกนทั่วไป)
+- discovery     → Discovery (ค้นหา host ในเครือข่าย)
+- intense       → Intense Scan (ละเอียด ใช้เวลานาน)
+- vuln_scan     → Vulnerability Scan CVE (ตรวจช่องโหว่)
+
+ตัวอย่าง: ถ้าผู้ใช้พูดว่า "scan 192.168.1.1" หรือ "สแกน 10.0.0.1 แบบ intense"
+ให้ตอบ:
+##SCAN_CMD##
+{{"action":"scan","target":"192.168.1.1","scan_type":"fast_scan"}}
+แล้วตามด้วยข้อความอธิบาย
+
+ถ้าผู้ใช้ไม่ได้ระบุ scan_type ให้ใช้ fast_scan เป็นค่าเริ่มต้น
+ถ้าผู้ใช้ไม่ได้ระบุ target ให้ถามก่อน อย่าเดา
+
+=== แนวทางตอบ ===
+- ใช้ข้อมูลจริงจากระบบและหน้าปัจจุบันในการตอบ
+- ตอบเป็นภาษาไทยเป็นหลัก ถ้าผู้ใช้ถามภาษาอังกฤษก็ตอบภาษาอังกฤษได้
+- ตอบสั้นกระชับ ชัดเจน ใช้ emoji ได้บ้าง
+- ถ้าถามเรื่องที่ไม่มีข้อมูลในระบบ ให้บอกตรงๆ ว่าไม่พบข้อมูล"""
+
+    try:
+        reply = _call_gemini(SYSTEM_PROMPT, messages, max_tokens=900)
+
+        # ตรวจว่า Gemini ต้องการสั่ง scan หรือไม่
+        scan_result = None
+        clean_reply = reply
+        if '##SCAN_CMD##' in reply:
+            try:
+                parts = reply.split('##SCAN_CMD##', 1)
+                json_and_rest = parts[1].strip()
+                # หา JSON block (บรรทัดแรก)
+                first_line_end = json_and_rest.find('\n')
+                json_str = json_and_rest if first_line_end < 0 else json_and_rest[:first_line_end]
+                json_str = json_str.strip()
+                cmd = json.loads(json_str)
+
+                if cmd.get('action') == 'scan' and current_user.is_any_admin:
+                    target    = cmd.get('target', '').strip()
+                    scan_type = cmd.get('scan_type', 'fast_scan').strip()
+                    scan_name = cmd.get('scan_name', '').strip() or None
+                    if scan_type not in VALID_SCAN_TYPES:
+                        scan_type = 'fast_scan'
+
+                    if target:
+                        # รัน scan จริง
+                        new_job = ScanJob(
+                            target=target, scan_type=scan_type, scan_name=scan_name,
+                            status='Running', triggered_by='chatbot',
+                            owner_id=current_user.id
+                        )
+                        db.session.add(new_job)
+                        if not SavedTarget.query.filter_by(target=target).first():
+                            db.session.add(SavedTarget(target=target))
+                        db.session.commit()
+
+                        results = run_vuln_scan(target) if scan_type == 'vuln_scan' else run_network_scan(target, scan_type)
+                        results_data = json.loads(results)
+                        has_error = results_data and results_data[0].get('error')
+                        new_job.status = 'Failed' if has_error else 'Completed'
+                        new_job.result_data = results
+                        db.session.commit()
+
+                        if has_error:
+                            scan_result = {'status': 'failed', 'job_id': new_job.id,
+                                           'error': results_data[0].get('error', '')}
+                        else:
+                            host_count = len(results_data)
+                            online = sum(1 for h in results_data if h.get('ports') or h.get('status','').lower() == 'up')
+                            all_ports = []
+                            for h in results_data:
+                                for p in h.get('ports', []):
+                                    all_ports.append(f"{p.get('port')}/{p.get('name','?')}")
+                            scan_result = {
+                                'status': 'completed', 'job_id': new_job.id,
+                                'target': target, 'scan_type': scan_type,
+                                'host_count': host_count, 'online': online,
+                                'ports': all_ports[:15]
+                            }
+
+                # ตัด ##SCAN_CMD## + JSON ออกจาก reply ที่แสดง
+                rest_text = json_and_rest[first_line_end:].strip() if first_line_end >= 0 else ''
+                pre_text  = parts[0].strip()
+                clean_reply = (pre_text + '\n' + rest_text).strip()
+            except Exception:
+                pass  # ถ้า parse ไม่ได้ ใช้ reply ปกติ
+
+        return jsonify({'reply': clean_reply, 'scan_result': scan_result})
+
+    except ValueError as e:
+        if 'NO_API_KEY' in str(e):
+            return jsonify({'reply': '⚠️ ยังไม่ได้ตั้งค่า GOOGLE_API_KEY'}), 200
+    except Exception as e:
+        err = str(e)
+        if 'QUOTA_429' in err:
+            return jsonify({'reply': '⚠️ Gemini API เต็ม quota ชั่วคราว กรุณารอสักครู่ 🙏'}), 200
+        if '429' in err:
+            return jsonify({'reply': '⚠️ AI ถูกใช้งานเยอะเกินไป กรุณารอสักครู่ 🙏'}), 200
+        if '400' in err:
+            return jsonify({'reply': '⚠️ GOOGLE_API_KEY ไม่ถูกต้องหรือ model ไม่รองรับ'}), 200
+        if '403' in err:
+            return jsonify({'reply': '⚠️ GOOGLE_API_KEY ไม่มีสิทธิ์เข้าถึง Gemini API'}), 200
+        return jsonify({'reply': f'เกิดข้อผิดพลาด: {err}'}), 200
+    
+    
 
 # ─────────────────────────────────────────
 #  ERROR HANDLERS

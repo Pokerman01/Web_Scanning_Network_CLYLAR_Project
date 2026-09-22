@@ -373,13 +373,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
             <!-- Tabs -->
             <div style="display:flex;border-bottom:1px solid #e0e0e0;">
-                <button id="tab-detail" onclick="switchTab('detail')"
+                <button type="button" id="tab-detail" onclick="switchVulnPopupTab('detail')"
                         style="flex:1;padding:9px 0;border:none;background:#e8e8e8;
                                font-weight:600;font-size:.82rem;cursor:pointer;
                                border-right:1px solid #e0e0e0;">
                     Detail
                 </button>
-                <button id="tab-port" onclick="switchTab('port')"
+                <button type="button" id="tab-port" onclick="switchVulnPopupTab('port')"
+                        style="flex:1;padding:9px 0;border:none;background:#fff;
+                               font-weight:600;font-size:.82rem;cursor:pointer;">
+                    Port
+                </button>
                         style="flex:1;padding:9px 0;border:none;background:#fff;
                                font-weight:600;font-size:.82rem;cursor:pointer;">
                     Port
@@ -776,6 +780,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     </td>
                     <td>
                         <span class="sev-badge" style="background:{{ sev_bg }};color:{{ sev_color }};">
+                            {% if sev == 'CRITICAL' %}🔴{% elif sev == 'HIGH' %}🟠{% elif sev == 'MEDIUM' %}🟡{% else %}🟢{% endif %}
                             {{ sev }}
                         </span>
                     </td>
@@ -986,6 +991,7 @@ function detectGateway(hosts, systemGw) {
 
     return { ip: '', reason: 'Unknown', hostIndex: -1, isEstimated: false };
 }
+
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Cisco-style SVG icons (outline, สีฟ้า #4a9fd4)  — returns data URI string
@@ -1231,53 +1237,13 @@ function portDotColor(portCount) {
 // ── Build graph data ───────────────────────────────────────────────────────
 const nodesData = [], edgesData = [];
 
-// Intelligent Gateway detection
-const gwInfo = detectGateway(SCAN_DATA, typeof SYSTEM_GATEWAY !== 'undefined' ? SYSTEM_GATEWAY : null);
-const gwIp = gwInfo.ip;
-const isGwEstimated = gwInfo.isEstimated;
-const gwMatchedHostIndex = gwInfo.hostIndex;
-
-let gwLabel = 'Gateway';
-if (gwIp) {
-    gwLabel = `Gateway\n${gwIp}${isGwEstimated ? ' (est)' : ''}`;
-}
-const gwTitle = gwIp
-    ? `Default Gateway / Router\nIP: ${gwIp}\nDetection: ${gwInfo.reason}`
-    : 'Gateway / Router';
-
-const gwDevice = gwMatchedHostIndex !== -1 ? SCAN_DATA[gwMatchedHostIndex] : null;
-const gwPortCnt = (gwDevice && gwDevice.ports) ? gwDevice.ports.length : 0;
-
-nodesData.push({
-    id: 0,
-    label: gwLabel,
-    image: ICON_URI['gateway'],
-    shape: 'image',
-    size: 40,
-    font: { color:'#1a6db5', size:12, face:'monospace', bold:true, vadjust: 6, multi:'html' },
-    title: gwTitle,
-    shadow: { enabled:true, color:'rgba(31,111,235,0.3)', size:14 },
-    fixed: true, x:0, y:0,
-    _device: gwDevice,
-    _portCnt: gwPortCnt,
-    _isGateway: true,
-    _gwIp: gwIp,
-    _gwReason: gwInfo.reason
-});
-
-const gwSubnetPrefix = (gwIp || '').split('.').slice(0, 3).join('.');
-
 SCAN_DATA.forEach((device, i) => {
-    if (i === gwMatchedHostIndex) {
-        return;
-    }
-
-    const nodeId = i + 1;
     const iconKey = osIconKey(device.os || device.status);
     const portCnt  = (device.ports && device.ports.length) ? device.ports.length : 0;
     const hasPorts = portCnt > 0;
     const dotColor = portDotColor(portCnt);
 
+    // Sort ports ascending for label badge reference
     const sortedPorts = hasPorts
         ? [...device.ports].sort((a, b) => a.port - b.port)
         : [];
@@ -1338,8 +1304,6 @@ SCAN_DATA.forEach((device, i) => {
     });
 });
 
-// (legend colours set directly in HTML)
-
 const container = document.getElementById('network-canvas');
 const network = new vis.Network(
     container,
@@ -1347,11 +1311,11 @@ const network = new vis.Network(
     {
         physics: {
             solver: 'forceAtlas2Based',
-            forceAtlas2Based: { gravitationalConstant:-130, springLength:170, springConstant:0.04, damping:0.5 },
-            stabilization: { iterations:200 }
+            forceAtlas2Based: { gravitationalConstant: -130, springLength: 170, springConstant: 0.04, damping: 0.5 },
+            stabilization: { iterations: 200 }
         },
-        interaction: { hover:true, zoomView:true, tooltipDelay:300 },
-        layout: { improvedLayout:true }
+        interaction: { hover: true, zoomView: true, tooltipDelay: 300 },
+        layout: { improvedLayout: true }
     }
 );
 
@@ -1383,7 +1347,7 @@ function closePopup() {
     network.unselectAll();
 }
 
-function switchTab(tab) {
+function switchVulnPopupTab(tab) {
     const isDetail = tab === 'detail';
     document.getElementById('panel-detail').style.display = isDetail ? 'block' : 'none';
     document.getElementById('panel-port').style.display   = isDetail ? 'none'  : 'block';
@@ -1425,7 +1389,7 @@ network.on('click', function(params) {
         const portTbody = document.getElementById('port-tbody');
         portTbody.innerHTML = '<tr><td colspan="4" style="padding:12px;text-align:center;color:#888;">No port scan directly performed on this gateway</td></tr>';
 
-        switchTab('detail');
+        switchVulnPopupTab('detail');
         const domPos = params.pointer.DOM;
         let left = domPos.x + 16;
         let top  = domPos.y - 10;
@@ -1434,7 +1398,7 @@ network.on('click', function(params) {
         if (top  < 4) top  = 4;
         if (top  + 340 > container.offsetHeight) top = container.offsetHeight - 350;
         popup.style.left    = left + 'px';
-        popup.style.top     = top + 'px';
+        popup.style.top     = top  + 'px';
         popup.style.display = 'block';
         hint.style.display  = 'none';
         return;
@@ -1491,7 +1455,7 @@ network.on('click', function(params) {
         portTbody.innerHTML = `<tr><td colspan="4" style="padding:12px;text-align:center;color:#aaa;">ไม่พบ open ports</td></tr>`;
     }
 
-    switchTab('detail');
+    switchVulnPopupTab('detail');
 
     // ── Position popup ──
     const domPos = params.pointer.DOM;

@@ -191,7 +191,6 @@ def run_network_scan(target_ip, scan_type='discovery', custom_args=None):
                                 })
                         except Exception:
                             pass
-
         elif scan_type == 'fast_scan':
             # ใช้ -sV เพื่อดึงเวอร์ชันของ Service และ -O ตรวจ OS
             nm.scan(hosts=target_ip, arguments='-F -sV --version-intensity 7 -O')
@@ -275,7 +274,6 @@ def run_network_scan(target_ip, scan_type='discovery', custom_args=None):
                 trace_hops = []
                 if 'trace' in nm[host] and 'hops' in nm[host]['trace']:
                     trace_hops = nm[host]['trace']['hops']
-
                 scan_results.append({
                     'ip': host,
                     'os': os_info,

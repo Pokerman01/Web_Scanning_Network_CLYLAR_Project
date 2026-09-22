@@ -6,3 +6,4 @@ apscheduler
 python-nmap
 requests
 xhtml2pdf
+python-dotenv

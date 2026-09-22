@@ -476,12 +476,15 @@
 
             <!-- Tabs -->
             <div style="display:flex;border-bottom:1px solid #e0e0e0;">
-                <button id="tab-detail" onclick="switchTab('detail')" style="flex:1;padding:9px 0;border:none;background:#e8e8e8;
+                <button type="button" id="tab-detail" onclick="switchScanPopupTab('detail')" style="flex:1;padding:9px 0;border:none;background:#e8e8e8;
                                font-weight:600;font-size:.82rem;cursor:pointer;
                                border-right:1px solid #e0e0e0;">
                     Detail
                 </button>
-                <button id="tab-port" onclick="switchTab('port')" style="flex:1;padding:9px 0;border:none;background:#fff;
+                <button type="button" id="tab-port" onclick="switchScanPopupTab('port')" style="flex:1;padding:9px 0;border:none;background:#fff;
+                               font-weight:600;font-size:.82rem;cursor:pointer;">
+                    Port
+                </button>
                                font-weight:600;font-size:.82rem;cursor:pointer;">
                     Port
                 </button>
@@ -969,10 +972,9 @@
                 hostIndex: -1,
                 isEstimated: true
             };
-        }
-
         return { ip: '', reason: 'Unknown', hostIndex: -1, isEstimated: false };
     }
+
 
     // ═══════════════════════════════════════════════════════════════════════════
     // Cisco-style SVG icons (outline, สีฟ้า #4a9fd4)  — returns data URI string
@@ -1375,7 +1377,7 @@
         network.unselectAll();
     }
 
-    function switchTab(tab) {
+    function switchScanPopupTab(tab) {
         const isDetail = tab === 'detail';
         document.getElementById('panel-detail').style.display = isDetail ? 'block' : 'none';
         document.getElementById('panel-port').style.display = isDetail ? 'none' : 'block';
@@ -1447,6 +1449,7 @@
         const icon = nodeId === 0 ? '🌐' : osEmoji(osStr);
         const hc = nodeId === 0 ? { bg: '#1a6db5', fg: '#ffffff' } : osHeaderColor(osStr);
 
+
         // ── Popup header: OS-specific colour + icon ──
         const header = document.getElementById('popup-header');
         header.style.background = hc.bg;
@@ -1496,7 +1499,7 @@
             portTbody.innerHTML = `<tr><td colspan="4" style="padding:12px;text-align:center;color:#aaa;">ไม่พบ open ports</td></tr>`;
         }
 
-        switchTab('detail');
+        switchScanPopupTab('detail');
 
         // ── Position popup ──
         const domPos = params.pointer.DOM;
@@ -1642,7 +1645,6 @@
                             Quick scan checking top 100 ports &amp; service signatures on this host.
                         </div>
                     </div>
-
                     <!-- Footer actions -->
                     <div class="drilldown-modal-actions">
                         <button type="button" class="btn btn-drilldown-cancel" data-bs-dismiss="modal">Cancel</button>
@@ -2005,13 +2007,13 @@
         margin-top: 4px;
         line-height: 1.35;
     }
-
     /* Radio Indicator */
     .drilldown-check-indicator {
         width: 18px;
         height: 18px;
         border-radius: 50%;
         border: 2px solid #cbd5e1;
+
         flex-shrink: 0;
         position: relative;
         transition: all 0.15s ease-in-out;
@@ -2137,7 +2139,6 @@
             }
         });
     });
-
     function openDrilldownModal(ip) {
         _drilldownIp = ip;
         document.getElementById('drilldownHostIp').value = ip;

@@ -151,6 +151,13 @@
                             data-bs-target="#resetPwModal{{ u.id }}">
                             Reset PW
                     </button>
+                    {% if current_user.role == 'superadmin' %}
+                    <button class="btn btn-sm btn-outline-warning"
+                            data-bs-toggle="modal"
+                            data-bs-target="#reassignModal{{ u.id }}">
+                        🔄 ย้าย Admin
+                    </button>
+                    {% endif %}
                     <form method="POST" action="/users/{{ u.id }}/delete" class="d-inline"
                           onsubmit="return confirm('ลบ user {{ u.username }} ?')">
                         <button class="btn btn-sm btn-outline-danger">🗑 ลบ</button>
@@ -158,6 +165,40 @@
                 </td>
             </tr>
 
+            {% if current_user.role == 'superadmin' %}
+            <!-- Reassign to another Admin Modal (superadmin only) -->
+            <div class="modal fade" id="reassignModal{{ u.id }}" tabindex="-1">
+                <div class="modal-dialog modal-sm">
+                    <div class="modal-content">
+                        <div class="modal-header border-warning">
+                            <h6 class="modal-title">🔄 ย้ายสังกัด — {{ u.username }}</h6>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <form method="POST" action="/users/{{ u.id }}/reassign">
+                            <div class="modal-body">
+                                <p class="small text-muted mb-2">
+                                    ปัจจุบันสังกัด:
+                                    <strong>{{ u.creator.username if u.creator else '—' }}</strong>
+                                </p>
+                                <label class="form-label">ย้ายไปสังกัด Admin</label>
+                                <select name="new_admin_id" class="form-select" required>
+                                    <option value="" disabled selected>-- เลือก Admin --</option>
+                                    {% for a in admins %}
+                                        {% if not u.creator or a.id != u.creator.id %}
+                                        <option value="{{ a.id }}">{{ a.username }}</option>
+                                        {% endif %}
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">ยกเลิก</button>
+                                <button type="submit" class="btn btn-warning btn-sm">ย้าย</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
             <!-- Reset Password Modal -->
             <div class="modal fade" id="resetPwModal{{ u.id }}" tabindex="-1">
                 <div class="modal-dialog modal-sm">
@@ -212,6 +253,7 @@
                 <tr><td class="text-start">สร้าง Admin</td><td>✅</td><td>❌</td><td>❌</td></tr>
                 <tr><td class="text-start">สร้าง User</td><td>✅</td><td>✅</td><td>❌</td></tr>
                 <tr><td class="text-start">ลบ / Reset PW</td><td>Admin + User ทุกคน</td><td>User ใต้สังกัด</td><td>❌</td></tr>
+                <tr><td class="text-start">ย้าย User ไปสังกัด Admin อื่น</td><td>✅</td><td>❌</td><td>❌</td></tr>
             </tbody>
         </table>
     </div>

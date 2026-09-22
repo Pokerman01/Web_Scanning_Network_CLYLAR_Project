@@ -411,6 +411,119 @@ document.getElementById('statusFilter').addEventListener('change', filterTable);
 {% endif %}
 
 <!-- Single Delete Confirmation Modal -->
+<style>
+#deleteModal .modal-content {
+    border-radius: 16px;
+    overflow: hidden;
+}
+#deleteModal .delete-modal-header {
+    background: linear-gradient(135deg, #fff5f5 0%, #ffe8e8 100%);
+    padding: 24px 24px 16px;
+    border-bottom: 1px solid #ffd0d0;
+    position: relative;
+}
+#deleteModal .delete-icon-wrap {
+    width: 56px;
+    height: 56px;
+    background: #fee2e2;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 12px;
+    font-size: 24px;
+    border: 2px solid #fca5a5;
+}
+#deleteModal .delete-modal-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #b91c1c;
+    margin: 0;
+}
+#deleteModal .delete-modal-subtitle {
+    font-size: 0.82rem;
+    color: #ef4444;
+    margin: 2px 0 0;
+    opacity: 0.8;
+}
+#deleteModal .modal-body {
+    padding: 20px 24px;
+}
+#deleteModal .scan-info-card {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 12px 16px;
+    margin-bottom: 14px;
+}
+#deleteModal .scan-info-card .label {
+    font-size: 0.72rem;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+}
+#deleteModal .scan-info-card .value {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #1e293b;
+}
+#deleteModal .delete-warning-text {
+    font-size: 0.82rem;
+    color: #64748b;
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    border-radius: 8px;
+    padding: 8px 12px;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+}
+#deleteModal .modal-footer-custom {
+    padding: 16px 24px 20px;
+    background: #f8fafc;
+    border-top: 1px solid #f1f5f9;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+#deleteModal .btn-delete-single {
+    background: #dc2626;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 16px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    width: 100%;
+    transition: background 0.15s;
+}
+#deleteModal .btn-delete-single:hover { background: #b91c1c; color: white; }
+#deleteModal .btn-delete-all {
+    background: white;
+    color: #dc2626;
+    border: 1.5px solid #fca5a5;
+    border-radius: 8px;
+    padding: 9px 16px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    width: 100%;
+    transition: all 0.15s;
+}
+#deleteModal .btn-delete-all:hover { background: #fff5f5; border-color: #dc2626; color: #b91c1c; }
+#deleteModal .btn-cancel {
+    background: transparent;
+    color: #64748b;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-size: 0.85rem;
+    width: 100%;
+    transition: background 0.15s;
+}
+#deleteModal .btn-cancel:hover { background: #e2e8f0; color: #334155; }
+</style>
+
 <div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered" style="max-width:400px">
         <div class="modal-content border-0 shadow-lg">
@@ -779,7 +892,6 @@ function confirmDelete(scanId, target, totalCount) {
         }, { once: true });
     });
 }
-
 // Initialize event listeners
 document.addEventListener('DOMContentLoaded', function() {
     const selectAllCb = document.getElementById('selectAllCheckbox');

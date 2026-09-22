@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -445,6 +445,11 @@
 
 </div>
 
+<!-- Page context for chatbot (injected per template) -->
+<script>
+window.CLYLAR_PAGE_CONTEXT = {% block page_context %}"หน้า: ไม่ทราบ"{% endblock %};
+</script>
+
 <!-- ===== CHATBOT WIDGET ===== -->
 <style>
   /* --- Floating Button --- */
@@ -465,16 +470,11 @@
     justify-content: center;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
   }
-  #chatbot-btn:hover {
-    transform: scale(1.08);
-    box-shadow: 0 6px 28px rgba(13,110,253,0.55);
-  }
+  #chatbot-btn:hover { transform: scale(1.08); box-shadow: 0 6px 28px rgba(13,110,253,0.55); }
   #chatbot-btn svg { transition: opacity 0.2s, transform 0.2s; }
   #chatbot-btn.open .icon-chat { opacity: 0; transform: rotate(90deg) scale(0.5); }
   #chatbot-btn.open .icon-close { opacity: 1; transform: rotate(0deg) scale(1); }
   #chatbot-btn .icon-close { position: absolute; opacity: 0; transform: rotate(-90deg) scale(0.5); }
-
-  /* Pulse ring */
   #chatbot-btn::before {
     content: '';
     position: absolute;
@@ -487,8 +487,6 @@
     0%   { opacity: 0.8; transform: scale(1); }
     100% { opacity: 0;   transform: scale(1.5); }
   }
-
-  /* Unread badge */
   #chatbot-badge {
     position: absolute;
     top: 2px; right: 2px;
@@ -507,8 +505,8 @@
     position: fixed;
     bottom: 100px;
     right: 28px;
-    width: 360px;
-    height: 500px;
+    width: 370px;
+    height: 540px;
     background: #fff;
     border-radius: 18px;
     box-shadow: 0 12px 48px rgba(0,0,0,0.18);
@@ -527,22 +525,38 @@
     opacity: 1;
     pointer-events: all;
   }
+  #chatbot-popup.is-dragging {
+    transition: none !important;
+    transform: scale(1) translateY(0) !important;
+    opacity: 1 !important;
+    pointer-events: all !important;
+    user-select: none;
+  }
 
   /* Header */
   .cb-header {
     background: linear-gradient(135deg, #212529 0%, #343a40 100%);
-    padding: 16px 18px;
+    padding: 12px 14px;
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
     flex-shrink: 0;
+    cursor: grab;
+    user-select: none;
+  }
+  .cb-header:active { cursor: grabbing; }
+  .cb-drag-hint {
+    font-size: 0.65rem;
+    color: #6c757d;
+    margin-left: 2px;
+    letter-spacing: 0.02em;
   }
   .cb-avatar {
-    width: 40px; height: 40px;
+    width: 36px; height: 36px;
     background: linear-gradient(135deg, #0d6efd, #0a58ca);
     border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
-    font-size: 18px;
+    font-size: 16px;
     flex-shrink: 0;
     position: relative;
   }
@@ -550,27 +564,54 @@
     content: '';
     position: absolute;
     bottom: 1px; right: 1px;
-    width: 10px; height: 10px;
+    width: 9px; height: 9px;
     background: #28a745;
     border-radius: 50%;
     border: 2px solid #212529;
   }
-  .cb-header-info h6 { margin: 0; color: #fff; font-size: 0.9rem; font-weight: 600; }
-  .cb-header-info span { color: #adb5bd; font-size: 0.75rem; }
-  .cb-close {
-    margin-left: auto;
+  .cb-header-info h6 { margin: 0; color: #fff; font-size: 0.875rem; font-weight: 600; }
+  .cb-header-info span { color: #adb5bd; font-size: 0.72rem; }
+  .cb-header-actions { margin-left: auto; display: flex; gap: 4px; align-items: center; }
+  .cb-icon-btn {
     background: none; border: none;
-    color: #adb5bd; cursor: pointer; font-size: 20px; line-height: 1;
-    padding: 4px; border-radius: 50%;
+    color: #adb5bd; cursor: pointer; font-size: 15px; line-height: 1;
+    padding: 5px 6px; border-radius: 6px;
     transition: background 0.15s, color 0.15s;
+    display: flex; align-items: center; justify-content: center;
   }
-  .cb-close:hover { background: rgba(255,255,255,0.1); color: #fff; }
+  .cb-icon-btn:hover { background: rgba(255,255,255,0.12); color: #fff; }
+  .cb-icon-btn.active { color: #0d6efd; background: rgba(13,110,253,0.15); }
+
+  /* Tab bar */
+  .cb-tabs {
+    display: flex;
+    background: #f1f3f5;
+    border-bottom: 1px solid #dee2e6;
+    flex-shrink: 0;
+  }
+  .cb-tab {
+    flex: 1;
+    padding: 8px 0;
+    border: none;
+    background: none;
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: #6c757d;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .cb-tab.active { color: #0d6efd; border-bottom-color: #0d6efd; background: #fff; }
+
+  /* Panels */
+  .cb-panel { display: none; flex: 1; flex-direction: column; overflow: hidden; }
+  .cb-panel.active { display: flex; }
 
   /* Messages */
   .cb-messages {
     flex: 1;
     overflow-y: auto;
-    padding: 16px;
+    padding: 14px;
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -581,76 +622,39 @@
   .cb-messages::-webkit-scrollbar-thumb { background: #dee2e6; border-radius: 4px; }
 
   /* Message bubbles */
-  .cb-msg {
-    display: flex;
-    align-items: flex-end;
-    gap: 8px;
-    animation: msg-in 0.22s ease;
-  }
-  @keyframes msg-in {
-    from { opacity: 0; transform: translateY(8px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
+  .cb-msg { display: flex; align-items: flex-end; gap: 8px; animation: msg-in 0.22s ease; }
+  @keyframes msg-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
   .cb-msg.user { flex-direction: row-reverse; }
   .cb-bubble {
-    max-width: 75%;
-    padding: 10px 14px;
+    max-width: 78%;
+    padding: 9px 13px;
     border-radius: 16px;
-    font-size: 0.845rem;
+    font-size: 0.835rem;
     line-height: 1.45;
   }
-  .cb-msg.bot .cb-bubble {
-    background: #fff;
-    color: #212529;
-    border-bottom-left-radius: 4px;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
-  }
-  .cb-msg.user .cb-bubble {
-    background: linear-gradient(135deg, #0d6efd, #0a58ca);
-    color: #fff;
-    border-bottom-right-radius: 4px;
-  }
-  .cb-time { font-size: 0.68rem; color: #adb5bd; margin-top: 3px; text-align: center; }
+  .cb-msg.bot .cb-bubble { background: #fff; color: #212529; border-bottom-left-radius: 4px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .cb-msg.user .cb-bubble { background: linear-gradient(135deg, #0d6efd, #0a58ca); color: #fff; border-bottom-right-radius: 4px; }
+  .cb-time { font-size: 0.67rem; color: #adb5bd; margin-top: 3px; text-align: center; }
 
   /* Typing indicator */
   .cb-typing { display: flex; gap: 4px; padding: 10px 14px; }
-  .cb-typing span {
-    width: 7px; height: 7px;
-    background: #adb5bd;
-    border-radius: 50%;
-    animation: bounce 1s infinite;
-  }
+  .cb-typing span { width: 7px; height: 7px; background: #adb5bd; border-radius: 50%; animation: bounce 1s infinite; }
   .cb-typing span:nth-child(2) { animation-delay: 0.15s; }
   .cb-typing span:nth-child(3) { animation-delay: 0.3s; }
-  @keyframes bounce {
-    0%, 60%, 100% { transform: translateY(0); }
-    30% { transform: translateY(-6px); }
-  }
+  @keyframes bounce { 0%, 60%, 100% { transform: translateY(0); } 30% { transform: translateY(-6px); } }
 
   /* Quick replies */
-  .cb-quick-replies {
-    padding: 8px 14px 4px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    background: #f8f9fa;
-  }
+  .cb-quick-replies { padding: 6px 12px 4px; display: flex; flex-wrap: wrap; gap: 5px; background: #f8f9fa; }
   .cb-qr {
-    padding: 5px 12px;
-    border: 1.5px solid #0d6efd;
-    border-radius: 20px;
-    background: none;
-    color: #0d6efd;
-    font-size: 0.775rem;
-    cursor: pointer;
-    transition: all 0.15s;
-    white-space: nowrap;
+    padding: 4px 11px; border: 1.5px solid #0d6efd; border-radius: 20px;
+    background: none; color: #0d6efd; font-size: 0.755rem; cursor: pointer;
+    transition: all 0.15s; white-space: nowrap;
   }
   .cb-qr:hover { background: #0d6efd; color: #fff; }
 
   /* Input bar */
   .cb-input-bar {
-    padding: 12px 14px;
+    padding: 10px 12px;
     background: #fff;
     border-top: 1px solid #e9ecef;
     display: flex;
@@ -659,39 +663,113 @@
     flex-shrink: 0;
   }
   .cb-input {
-    flex: 1;
-    border: 1.5px solid #dee2e6;
-    border-radius: 22px;
-    padding: 9px 16px;
-    font-size: 0.85rem;
-    outline: none;
-    transition: border-color 0.2s;
-    background: #f8f9fa;
-    resize: none;
+    flex: 1; border: 1.5px solid #dee2e6; border-radius: 22px;
+    padding: 8px 15px; font-size: 0.84rem; outline: none;
+    transition: border-color 0.2s; background: #f8f9fa; resize: none;
   }
   .cb-input:focus { border-color: #0d6efd; background: #fff; }
   .cb-send {
-    width: 38px; height: 38px;
-    border-radius: 50%;
+    width: 36px; height: 36px; border-radius: 50%;
     background: linear-gradient(135deg, #0d6efd, #0a58ca);
     border: none; cursor: pointer;
     display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0;
-    transition: transform 0.15s;
+    flex-shrink: 0; transition: transform 0.15s;
   }
   .cb-send:hover { transform: scale(1.1); }
-  .cb-send svg { width: 16px; height: 16px; }
+  .cb-send svg { width: 15px; height: 15px; }
+
+  /* ===== HISTORY PANEL ===== */
+  .cb-history-panel {
+    flex: 1; overflow-y: auto; background: #f8f9fa; padding: 10px;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .cb-history-panel::-webkit-scrollbar { width: 4px; }
+  .cb-history-panel::-webkit-scrollbar-thumb { background: #dee2e6; border-radius: 4px; }
+  .cb-hist-empty { color: #adb5bd; font-size: 0.82rem; text-align: center; margin-top: 30px; }
+  .cb-hist-session {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+    overflow: hidden;
+  }
+  .cb-hist-header {
+    padding: 9px 12px;
+    display: flex; align-items: center; gap: 8px;
+    cursor: pointer;
+    border-bottom: 1px solid transparent;
+    transition: background 0.15s;
+  }
+  .cb-hist-header:hover { background: #f1f3f5; }
+  .cb-hist-header.expanded { border-bottom-color: #e9ecef; }
+  .cb-hist-date { font-size: 0.72rem; color: #6c757d; flex-shrink: 0; }
+  .cb-hist-preview { font-size: 0.8rem; color: #212529; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cb-hist-count { font-size: 0.7rem; background: #e9ecef; border-radius: 10px; padding: 1px 7px; color: #6c757d; flex-shrink: 0; }
+  .cb-hist-chevron { font-size: 0.7rem; color: #adb5bd; transition: transform 0.2s; flex-shrink: 0; }
+  .cb-hist-header.expanded .cb-hist-chevron { transform: rotate(180deg); }
+  .cb-hist-body { display: none; padding: 8px 10px; border-top: 1px solid #f1f3f5; }
+  .cb-hist-body.show { display: block; }
+  .cb-hist-msg { font-size: 0.775rem; padding: 4px 0; border-bottom: 1px solid #f8f9fa; }
+  .cb-hist-msg:last-child { border-bottom: none; }
+  .cb-hist-msg .role-label { font-weight: 600; font-size: 0.7rem; margin-right: 4px; }
+  .cb-hist-msg .role-label.user { color: #0d6efd; }
+  .cb-hist-msg .role-label.bot { color: #198754; }
+  .cb-hist-msg .msg-text { color: #495057; }
+  .cb-hist-actions { display: flex; gap: 6px; margin-top: 8px; }
+  .cb-hist-btn {
+    flex: 1; padding: 5px 0; border-radius: 8px; border: none; font-size: 0.75rem;
+    cursor: pointer; transition: opacity 0.15s;
+  }
+  .cb-hist-btn:hover { opacity: 0.85; }
+  .cb-hist-btn.resume { background: #0d6efd; color: #fff; }
+  .cb-hist-btn.del { background: #f8d7da; color: #dc3545; }
+  .cb-hist-footer {
+    padding: 8px 10px;
+    border-top: 1px solid #e9ecef;
+    display: flex; gap: 6px;
+    flex-shrink: 0;
+    background: #fff;
+  }
+  .cb-hist-footer-btn {
+    flex: 1; padding: 7px 0; border-radius: 10px; border: 1.5px solid #dee2e6;
+    background: none; font-size: 0.78rem; cursor: pointer; color: #6c757d;
+    transition: all 0.15s;
+  }
+  .cb-hist-footer-btn:hover { border-color: #dc3545; color: #dc3545; background: #fff5f5; }
+
+  /* ===== SCAN RESULT CARD ===== */
+  .cb-scan-card {
+    max-width: 92% !important;
+    background: #f0f7ff !important;
+    border: 1.5px solid #b6d4fe;
+    border-radius: 12px !important;
+    padding: 10px 13px !important;
+    font-size: 0.82rem !important;
+  }
+  .cb-scan-card.cb-scan-fail { background: #fff5f5 !important; border-color: #f5c6cb; }
+  .cb-scan-header { font-weight: 700; font-size: 0.875rem; color: #198754; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+  .cb-scan-fail .cb-scan-header { color: #dc3545; }
+  .cb-job-id { font-size: 0.72rem; background: #d1e7dd; color: #0a3622; border-radius: 6px; padding: 1px 6px; }
+  .cb-scan-row { color: #495057; margin-bottom: 3px; line-height: 1.5; }
+  .cb-port-badge {
+    display: inline-block; background: #e2e8f0; color: #334155;
+    border-radius: 6px; padding: 1px 7px; font-size: 0.72rem;
+    margin: 2px 2px 0 0;
+  }
+  .cb-scan-link {
+    display: inline-block; margin-top: 8px;
+    color: #0d6efd; font-size: 0.8rem; font-weight: 600;
+    text-decoration: none;
+  }
+  .cb-scan-link:hover { text-decoration: underline; }
 </style>
 
-{% if current_user.is_authenticated %}
-<!-- Floating button -->
-<button id="chatbot-btn" onclick="toggleChat()" title="CLYLAR Chatbot">
+{% if current_user.is_authenticated and current_user.is_any_admin %}
+<!-- Floating button (เฉพาะ admin/superadmin เท่านั้น — user ทั่วไปไม่เห็นแชทบอท) -->
+<button id="chatbot-btn" onclick="toggleChat()" title="CLYLAR Assistant">
   <span id="chatbot-badge">1</span>
-  <!-- Chat icon -->
   <svg class="icon-chat" width="26" height="26" viewBox="0 0 24 24" fill="none">
     <path d="M20 2H4C2.9 2 2 2.9 2 4v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z" fill="white"/>
   </svg>
-  <!-- Close icon -->
   <svg class="icon-close" width="22" height="22" viewBox="0 0 24 24" fill="none">
     <path d="M18 6L6 18M6 6l12 12" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
   </svg>
@@ -699,123 +777,449 @@
 
 <!-- Chat popup -->
 <div id="chatbot-popup">
-  <!-- Header -->
-  <div class="cb-header">
+  <!-- Header (draggable) -->
+  <div class="cb-header" id="cb-drag-handle">
     <div class="cb-avatar">🤖</div>
     <div class="cb-header-info">
-      <h6>CLYLAR Chatbot</h6>
-      <span>🟢 Online — อยู่ระหว่างการพัฒนา</span>
+      <h6>CLYLAR Assistant <span class="cb-drag-hint">⠿ ลาก</span></h6>
+      <span>🟢 Online — ตอบทันที</span>
     </div>
-    <button class="cb-close" onclick="toggleChat()">✕</button>
+    <div class="cb-header-actions">
+      <button class="cb-icon-btn" onclick="clearCurrentChat()" title="ล้างแชทปัจจุบัน"></button>
+      <button class="cb-icon-btn" onclick="toggleChat()" title="ปิด">✕</button>
+    </div>
   </div>
 
-  <!-- Messages -->
-  <div class="cb-messages" id="cb-messages">
-    <div class="cb-msg bot">
-      <div>
-        <div class="cb-bubble">
-          สวัสดีครับ! ผมคือ CLYLAR Chatbot<br>
-          
+  <!-- Tabs -->
+  <div class="cb-tabs">
+    <button class="cb-tab active" id="tab-chat" onclick="switchTab('chat')">แชท</button>
+    <button class="cb-tab" id="tab-history" onclick="switchTab('history')">ประวัติ</button>
+  </div>
+
+  <!-- Panel: Chat -->
+  <div class="cb-panel active" id="panel-chat">
+    <div class="cb-messages" id="cb-messages">
+      <div class="cb-msg bot">
+        <div>
+          <div class="cb-bubble">สวัสดีครับ! ผมคือ CLYLAR Assistant<br>ช่วยตอบคำถามเกี่ยวกับ Network Scanner ได้เลยครับ</div>
+          <div class="cb-time">เพิ่งเมื่อกี้</div>
         </div>
-        <div class="cb-time">เพิ่งเมื่อกี้</div>
       </div>
     </div>
+    <div class="cb-quick-replies" id="cb-quick-replies">
+      <button class="cb-qr" onclick="sendQuick('IP ที่พบทั้งหมดมีอะไรบ้าง')"> IP ทั้งหมด</button>
+      <button class="cb-qr" onclick="sendQuick('Scan ล่าสุดผลเป็นอย่างไร')"> Scan ล่าสุด</button>
+      <button class="cb-qr" onclick="sendQuick('มีช่องโหว่ CVE อะไรบ้าง')"> ช่องโหว่</button>
+      <button class="cb-qr" onclick="promptScan()"> สั่ง Scan</button>
+    </div>
+    <div class="cb-input-bar">
+      <input class="cb-input" id="cb-input" type="text" placeholder="พิมพ์ข้อความ..." onkeydown="if(event.key==='Enter') sendMsg()">
+      <button class="cb-send" onclick="sendMsg()">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M22 2L11 13M22 2L15 22L11 13M22 2L2 9L11 13" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </div>
   </div>
 
-  <!-- Quick replies -->
-  <div class="cb-quick-replies" id="cb-quick-replies">
-    <button class="cb-qr" onclick="sendQuick('วิธี Scan Network')">วิธี Scan Network</button>
-    <button class="cb-qr" onclick="sendQuick('ดู Scan History')">ดู Scan History</button>
-    <button class="cb-qr" onclick="sendQuick('Network Topology คืออะไร')">Network Topology</button>
-  </div>
-
-  <!-- Input -->
-  <div class="cb-input-bar">
-    <input class="cb-input" id="cb-input" type="text" placeholder="พิมพ์ข้อความ..." onkeydown="if(event.key==='Enter') sendMsg()">
-    <button class="cb-send" onclick="sendMsg()">
-      <svg viewBox="0 0 24 24" fill="none">
-        <path d="M22 2L11 13M22 2L15 22L11 13M22 2L2 9L11 13" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-    </button>
+  <!-- Panel: History -->
+  <div class="cb-panel" id="panel-history">
+    <div class="cb-history-panel" id="cb-history-list"></div>
+    <div class="cb-hist-footer">
+      <button class="cb-hist-footer-btn" onclick="clearAllHistory()">ลบประวัติทั้งหมด</button>
+    </div>
   </div>
 </div>
 
 <script>
-// === Bot Knowledge ===
-const BOT_KNOWLEDGE = {
-  "scan": "การ Scan Network ทำได้จากหน้า Dashboard ครับ กด 'New Scan' แล้วใส่ IP/range ที่ต้องการ แล้วรอผลได้เลย ",
-  "history": "ดู Scan History ได้ที่เมนู 'Scan History' ด้านซ้ายครับ จะแสดงประวัติการสแกนทั้งหมด พร้อม timestamp และผลลัพธ์",
-  "topology": "Network Topology แสดง Map ของอุปกรณ์ในเครือข่ายครับ เชื่อมโยงกันแบบ Visual ช่วยให้เห็นโครงสร้างเครือข่ายได้ชัดเจน 🗺️",
-  "vuln": "ระบบสามารถตรวจหา Vulnerability ของ Port ต่างๆ ได้ครับ ดูรายละเอียดได้ในหน้า Scan Detail",
-  "port": "Port Search ช่วยค้นหาข้อมูลของ Port number ว่าใช้งาน Service อะไร และมีความเสี่ยงอะไรบ้างครับ",
-  "default": "ขอโทษครับ ยังไม่เข้าใจคำถามนี้ ลองถามเกี่ยวกับ Scan, History, Topology หรือ Vulnerability ดูนะครับ"
-};
+// ===================================================================
+//  CLYLAR Chatbot — Chat History + Draggable
+// ===================================================================
 
-function getBotReply(text) {
-  const t = text.toLowerCase();
-  if (t.includes('scan') || t.includes('สแกน')) return BOT_KNOWLEDGE.scan;
-  if (t.includes('history') || t.includes('ประวัติ')) return BOT_KNOWLEDGE.history;
-  if (t.includes('topology') || t.includes('แผนที่')) return BOT_KNOWLEDGE.topology;
-  if (t.includes('vuln') || t.includes('ช่องโหว่')) return BOT_KNOWLEDGE.vuln;
-  if (t.includes('port') || t.includes('พอร์ต')) return BOT_KNOWLEDGE.port;
-  return BOT_KNOWLEDGE.default;
+// แยกประวัติแชทของแต่ละ admin ออกจากกันด้วย user id ต่อท้าย key
+// (คนละ account = คนละ key ใน localStorage ไม่มีวันปนกัน)
+const CB_STORAGE_KEY = 'clylha_chat_sessions_uid_{{ current_user.id }}';
+const CB_MAX_SESSIONS = 30;
+
+let chatHistory = [];        // multi-turn messages ของ session ปัจจุบัน
+let currentSessionId = null; // id ของ session ที่กำลังแชทอยู่
+
+// ─── Session Storage Helpers ───────────────────────────────────────
+
+function loadSessions() {
+  try { return JSON.parse(localStorage.getItem(CB_STORAGE_KEY) || '[]'); }
+  catch { return []; }
 }
+
+function saveSessions(sessions) {
+  localStorage.setItem(CB_STORAGE_KEY, JSON.stringify(sessions));
+}
+
+function saveCurrentSession() {
+  if (!chatHistory.length) return;
+  const sessions = loadSessions();
+  const idx = sessions.findIndex(s => s.id === currentSessionId);
+  const session = {
+    id: currentSessionId,
+    messages: chatHistory,
+    updatedAt: Date.now(),
+    preview: chatHistory[0]?.content?.slice(0, 60) || ''
+  };
+  if (idx >= 0) sessions[idx] = session;
+  else sessions.unshift(session);
+  // จำกัด max sessions
+  saveSessions(sessions.slice(0, CB_MAX_SESSIONS));
+}
+
+function startNewSession() {
+  currentSessionId = 'sess_' + Date.now();
+  chatHistory = [];
+}
+
+// ─── UI Helpers ────────────────────────────────────────────────────
 
 function toggleChat() {
   const popup = document.getElementById('chatbot-popup');
-  const btn = document.getElementById('chatbot-btn');
+  const btn   = document.getElementById('chatbot-btn');
   const badge = document.getElementById('chatbot-badge');
   popup.classList.toggle('open');
   btn.classList.toggle('open');
-  badge.style.display = 'none'; // hide badge on open
+  badge.style.display = 'none';
   if (popup.classList.contains('open')) {
     document.getElementById('cb-input').focus();
   }
 }
 
-function addMsg(text, role) {
+function switchTab(tab) {
+  document.getElementById('panel-chat').classList.toggle('active', tab === 'chat');
+  document.getElementById('panel-history').classList.toggle('active', tab === 'history');
+  document.getElementById('tab-chat').classList.toggle('active', tab === 'chat');
+  document.getElementById('tab-history').classList.toggle('active', tab === 'history');
+  if (tab === 'history') renderHistory();
+}
+
+function formatMsgHtml(text) {
+  return text
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\n/g,'<br>');
+}
+
+function addMsg(text, role, skipSave) {
   const wrap = document.getElementById('cb-messages');
-  const div = document.createElement('div');
+  const div  = document.createElement('div');
   div.className = 'cb-msg ' + role;
   const now = new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
-  div.innerHTML = `<div><div class="cb-bubble">${text}</div><div class="cb-time">${now}</div></div>`;
+  div.innerHTML = `<div><div class="cb-bubble">${formatMsgHtml(text)}</div><div class="cb-time">${now}</div></div>`;
   wrap.appendChild(div);
   wrap.scrollTop = wrap.scrollHeight;
+  if (!skipSave) saveCurrentSession();
 }
 
 function showTyping() {
   const wrap = document.getElementById('cb-messages');
-  const div = document.createElement('div');
+  const div  = document.createElement('div');
   div.className = 'cb-msg bot'; div.id = 'cb-typing-indicator';
   div.innerHTML = `<div><div class="cb-bubble cb-typing"><span></span><span></span><span></span></div></div>`;
   wrap.appendChild(div);
   wrap.scrollTop = wrap.scrollHeight;
 }
+function hideTyping() { const el = document.getElementById('cb-typing-indicator'); if (el) el.remove(); }
 
-function hideTyping() {
-  const el = document.getElementById('cb-typing-indicator');
-  if (el) el.remove();
-}
+// ─── Send Message ──────────────────────────────────────────────────
 
-function sendMsg() {
+async function sendMsg() {
   const input = document.getElementById('cb-input');
-  const text = input.value.trim();
+  const text  = input.value.trim();
   if (!text) return;
   input.value = '';
-  addMsg(text, 'user');
-  // Hide quick replies after first user message
+  input.disabled = true;
+
+  // Start session on first message
+  if (!chatHistory.length) startNewSession();
+
+  addMsg(text, 'user', true);
+  chatHistory.push({ role: 'user', content: text });
   document.getElementById('cb-quick-replies').style.display = 'none';
   showTyping();
-  setTimeout(() => {
+
+  try {
+    // รวบรวม page context จากหน้าปัจจุบัน
+    const pageCtx = typeof window.CLYLAR_PAGE_CONTEXT !== 'undefined'
+      ? window.CLYLAR_PAGE_CONTEXT : '';
+
+    const resp = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages: chatHistory, page_context: pageCtx })
+    });
+    const data = await resp.json();
     hideTyping();
-    addMsg(getBotReply(text), 'bot');
-  }, 900 + Math.random() * 400);
+
+    const reply = data.reply || 'ไม่ได้รับคำตอบ';
+    addMsg(reply, 'bot', true);
+    chatHistory.push({ role: 'assistant', content: reply });
+
+    // ถ้า backend รัน scan จริงและได้ผล — แสดง scan card
+    if (data.scan_result) {
+      const sr = data.scan_result;
+      renderScanResult(sr);
+    }
+
+    saveCurrentSession();
+  } catch (err) {
+    hideTyping();
+    addMsg('❌ เชื่อมต่อ AI ไม่ได้ กรุณาลองใหม่', 'bot');
+  } finally {
+    input.disabled = false;
+    input.focus();
+  }
+}
+
+function renderScanResult(sr) {
+  const wrap = document.getElementById('cb-messages');
+  const div  = document.createElement('div');
+  div.className = 'cb-msg bot';
+  const now = new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+
+  if (sr.status === 'completed') {
+    const portsHtml = (sr.ports || []).map(p =>
+      `<span class="cb-port-badge">${p}</span>`).join('') || '<span style="color:#adb5bd">ไม่พบ</span>';
+    div.innerHTML = `<div>
+      <div class="cb-bubble cb-scan-card">
+        <div class="cb-scan-header">✅ Scan เสร็จแล้ว <span class="cb-job-id">#${sr.job_id}</span></div>
+        <div class="cb-scan-row">🎯 <b>Target:</b> ${sr.target}</div>
+        <div class="cb-scan-row">🔬 <b>ประเภท:</b> ${sr.scan_type}</div>
+        <div class="cb-scan-row">🖥️ <b>พบ:</b> ${sr.host_count} host (${sr.online} online)</div>
+        <div class="cb-scan-row">🔓 <b>Open Ports:</b><br>${portsHtml}</div>
+        <a class="cb-scan-link" href="/scan/${sr.job_id}" target="_blank">📋 ดูรายละเอียดเต็ม →</a>
+      </div>
+      <div class="cb-time">${now}</div>
+    </div>`;
+  } else {
+    div.innerHTML = `<div>
+      <div class="cb-bubble cb-scan-card cb-scan-fail">
+        ❌ Scan ล้มเหลว (Job #${sr.job_id})<br>
+        <small>${sr.error || ''}</small>
+      </div>
+      <div class="cb-time">${now}</div>
+    </div>`;
+  }
+  wrap.appendChild(div);
+  wrap.scrollTop = wrap.scrollHeight;
 }
 
 function sendQuick(text) {
   document.getElementById('cb-input').value = text;
   sendMsg();
 }
+
+function promptScan() {
+  const input = document.getElementById('cb-input');
+  input.value = 'scan ';
+  input.focus();
+  // วาง cursor ท้ายสุด
+  const len = input.value.length;
+  input.setSelectionRange(len, len);
+  // แสดงคำแนะนำ
+  addMsg('🚀 พิมพ์ target ที่ต้องการสแกน เช่น:\n"scan 192.168.1.1"\n"scan 10.0.0.0/24 แบบ intense"\n"สแกน 192.168.1.1 หาช่องโหว่"', 'bot', true);
+}
+
+// ─── Clear ─────────────────────────────────────────────────────────
+
+function clearCurrentChat() {
+  saveCurrentSession(); // บันทึก session เก่าก่อน
+  startNewSession();
+  const wrap = document.getElementById('cb-messages');
+  wrap.innerHTML = `
+    <div class="cb-msg bot">
+      <div>
+        <div class="cb-bubble">สวัสดีครับ! ผมคือ CLYLAR Assistant<br>ช่วยตอบคำถามเกี่ยวกับ Network Scanner ได้เลยครับ</div>
+        <div class="cb-time">เพิ่งเมื่อกี้</div>
+      </div>
+    </div>`;
+  document.getElementById('cb-quick-replies').style.display = '';
+}
+
+function clearAllHistory() {
+  if (!confirm('ลบประวัติแชทที่บันทึกไว้ทั้งหมดใช่ไหม?')) return;
+  localStorage.removeItem(CB_STORAGE_KEY);
+  renderHistory();
+}
+
+// ─── History Panel ─────────────────────────────────────────────────
+
+function renderHistory() {
+  const sessions = loadSessions();
+  const container = document.getElementById('cb-history-list');
+  if (!sessions.length) {
+    container.innerHTML = '<p class="cb-hist-empty">ยังไม่มีประวัติแชท<br>เริ่มแชทเพื่อบันทึกอัตโนมัติ </p>';
+    return;
+  }
+  container.innerHTML = '';
+  sessions.forEach((sess, i) => {
+    const date = new Date(sess.updatedAt);
+    const dateStr = date.toLocaleDateString('th-TH', { day: '2-digit', month: 'short' })
+      + ' ' + date.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+    const msgCount = sess.messages.length;
+    const preview = sess.preview || sess.messages[0]?.content?.slice(0, 50) || '(ว่าง)';
+
+    const el = document.createElement('div');
+    el.className = 'cb-hist-session';
+    el.innerHTML = `
+      <div class="cb-hist-header" id="hh-${i}" onclick="toggleHistSession(${i})">
+        <span class="cb-hist-date">${dateStr}</span>
+        <span class="cb-hist-preview">${preview}</span>
+        <span class="cb-hist-count">${msgCount} ข้อ</span>
+        <span class="cb-hist-chevron">▾</span>
+      </div>
+      <div class="cb-hist-body" id="hb-${i}">
+        ${sess.messages.slice(0, 6).map(m => `
+          <div class="cb-hist-msg">
+            <span class="role-label ${m.role === 'user' ? 'user' : 'bot'}">${m.role === 'user' ? '👤' : '🤖'}</span>
+            <span class="msg-text">${(m.content || '').slice(0, 120).replace(/</g,'&lt;')}${m.content?.length > 120 ? '…' : ''}</span>
+          </div>`).join('')}
+        ${sess.messages.length > 6 ? `<div class="cb-hist-msg" style="color:#adb5bd;font-size:0.72rem">...และอีก ${sess.messages.length - 6} ข้อความ</div>` : ''}
+        <div class="cb-hist-actions">
+          <button class="cb-hist-btn resume" onclick="resumeSession(${i})">↩ เปิดต่อ</button>
+          <button class="cb-hist-btn del" onclick="deleteSession(${i})"> ลบ</button>
+        </div>
+      </div>`;
+    container.appendChild(el);
+  });
+}
+
+function toggleHistSession(i) {
+  const header = document.getElementById('hh-' + i);
+  const body   = document.getElementById('hb-' + i);
+  header.classList.toggle('expanded');
+  body.classList.toggle('show');
+}
+
+function resumeSession(i) {
+  const sessions = loadSessions();
+  const sess = sessions[i];
+  if (!sess) return;
+
+  // บันทึก session ปัจจุบันก่อน
+  saveCurrentSession();
+
+  // โหลด session เก่า
+  currentSessionId = sess.id;
+  chatHistory = [...sess.messages];
+
+  // แสดงใน chat panel
+  const wrap = document.getElementById('cb-messages');
+  wrap.innerHTML = '';
+  chatHistory.forEach(m => {
+    const role = m.role === 'user' ? 'user' : 'bot';
+    const div = document.createElement('div');
+    div.className = 'cb-msg ' + role;
+    div.innerHTML = `<div><div class="cb-bubble">${formatMsgHtml(m.content)}</div></div>`;
+    wrap.appendChild(div);
+  });
+  wrap.scrollTop = wrap.scrollHeight;
+  document.getElementById('cb-quick-replies').style.display = 'none';
+  switchTab('chat');
+}
+
+function deleteSession(i) {
+  const sessions = loadSessions();
+  sessions.splice(i, 1);
+  saveSessions(sessions);
+  renderHistory();
+}
+
+// ─── Draggable ─────────────────────────────────────────────────────
+
+(function initDraggable() {
+  const popup  = document.getElementById('chatbot-popup');
+  const handle = document.getElementById('cb-drag-handle');
+  let isDragging = false, startX = 0, startY = 0, origLeft = 0, origTop = 0;
+
+  function getPopupRect() {
+    const style = window.getComputedStyle(popup);
+    const rect  = popup.getBoundingClientRect();
+    return { left: rect.left, top: rect.top, width: rect.width, height: rect.height };
+  }
+
+  handle.addEventListener('mousedown', function(e) {
+    if (e.target.classList.contains('cb-icon-btn')) return; // ไม่ลากถ้าคลิก button
+    // เปลี่ยนจาก fixed bottom/right เป็น fixed top/left
+    const rect = popup.getBoundingClientRect();
+    popup.style.bottom = 'auto';
+    popup.style.right  = 'auto';
+    popup.style.left   = rect.left + 'px';
+    popup.style.top    = rect.top  + 'px';
+    popup.style.transformOrigin = 'top left';
+
+    isDragging = true;
+    startX  = e.clientX;
+    startY  = e.clientY;
+    origLeft = rect.left;
+    origTop  = rect.top;
+    popup.classList.add('is-dragging');
+    document.body.style.userSelect = 'none';
+    e.preventDefault();
+  });
+
+  document.addEventListener('mousemove', function(e) {
+    if (!isDragging) return;
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
+    let newLeft = origLeft + dx;
+    let newTop  = origTop  + dy;
+
+    // Clamp ไม่ให้ออกนอกหน้าจอ
+    const pw = popup.offsetWidth, ph = popup.offsetHeight;
+    newLeft = Math.max(0, Math.min(window.innerWidth  - pw, newLeft));
+    newTop  = Math.max(0, Math.min(window.innerHeight - ph, newTop));
+
+    popup.style.left = newLeft + 'px';
+    popup.style.top  = newTop  + 'px';
+  });
+
+  document.addEventListener('mouseup', function() {
+    if (!isDragging) return;
+    isDragging = false;
+    popup.classList.remove('is-dragging');
+    document.body.style.userSelect = '';
+  });
+
+  // Touch support
+  handle.addEventListener('touchstart', function(e) {
+    if (e.target.classList.contains('cb-icon-btn')) return;
+    const touch = e.touches[0];
+    const rect = popup.getBoundingClientRect();
+    popup.style.bottom = 'auto'; popup.style.right = 'auto';
+    popup.style.left = rect.left + 'px'; popup.style.top = rect.top + 'px';
+    popup.style.transformOrigin = 'top left';
+    isDragging = true;
+    startX = touch.clientX; startY = touch.clientY;
+    origLeft = rect.left;   origTop  = rect.top;
+    popup.classList.add('is-dragging');
+    e.preventDefault();
+  }, { passive: false });
+
+  document.addEventListener('touchmove', function(e) {
+    if (!isDragging) return;
+    const touch = e.touches[0];
+    const dx = touch.clientX - startX, dy = touch.clientY - startY;
+    let newLeft = origLeft + dx, newTop = origTop + dy;
+    const pw = popup.offsetWidth, ph = popup.offsetHeight;
+    newLeft = Math.max(0, Math.min(window.innerWidth  - pw, newLeft));
+    newTop  = Math.max(0, Math.min(window.innerHeight - ph, newTop));
+    popup.style.left = newLeft + 'px'; popup.style.top = newTop + 'px';
+    e.preventDefault();
+  }, { passive: false });
+
+  document.addEventListener('touchend', function() {
+    if (isDragging) { isDragging = false; popup.classList.remove('is-dragging'); }
+  });
+})();
+
+// ─── Init ──────────────────────────────────────────────────────────
+startNewSession();
 </script>
 {% endif %}
 <!-- ===== END CHATBOT ===== -->

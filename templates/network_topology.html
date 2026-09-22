@@ -421,8 +421,8 @@
                     <button id="popup-close" onclick="closePopup()">✕</button>
                 </div>
                 <div class="popup-tabs">
-                    <button class="popup-tab active" id="tab-detail" onclick="switchTab('detail')">Detail</button>
-                    <button class="popup-tab" id="tab-port" onclick="switchTab('port')">Port</button>
+                    <button type="button" class="popup-tab active" id="tab-detail" onclick="switchTopologyPopupTab('detail')">Detail</button>
+                    <button type="button" class="popup-tab" id="tab-port" onclick="switchTopologyPopupTab('port')">Port</button>
                 </div>
                 <div id="panel-detail">
                     <table style="width:100%;border-collapse:collapse;">
@@ -665,6 +665,7 @@ function detectGateway(hosts, systemGw) {
 
     return { ip: '', reason: 'Unknown', hostIndex: -1, isEstimated: false };
 }
+
 
 // ─── Color palette for jobs ───
 const JOB_COLORS = [
@@ -961,49 +962,7 @@ function buildAndDraw() {
     const nodesData = [], edgesData = [];
     nodesDataArr = [];
 
-    // Intelligent Gateway detection
-    const gwInfo = detectGateway(hosts, typeof SYSTEM_GATEWAY !== 'undefined' ? SYSTEM_GATEWAY : null);
-    const gwIp = gwInfo.ip;
-    const isGwEstimated = gwInfo.isEstimated;
-    const gwMatchedHostIndex = gwInfo.hostIndex;
-
-    let gwLabel = 'Gateway';
-    if (gwIp) {
-        gwLabel = `Gateway\n${gwIp}${isGwEstimated ? ' (est)' : ''}`;
-    }
-    const gwTitle = gwIp
-        ? `Default Gateway / Router\nIP: ${gwIp}\nDetection: ${gwInfo.reason}`
-        : 'Gateway / Router';
-
-    const gwDevice = gwMatchedHostIndex !== -1 ? hosts[gwMatchedHostIndex] : null;
-    const gwPortCnt = (gwDevice && gwDevice.ports) ? gwDevice.ports.length : 0;
-
-    nodesData.push({
-        id: 0,
-        label: gwLabel,
-        image: ICON_URI['gateway'],
-        shape: 'image',
-        size: 40,
-        font: { color:'#1a6db5', size:12, face:'monospace', bold:true, vadjust:6, multi:'html' },
-        title: gwTitle,
-        shadow: { enabled:true, color:'rgba(31,111,235,0.3)', size:14 },
-        fixed: true, x:0, y:0,
-        _device: gwDevice,
-        _portCnt: gwPortCnt,
-        _isGateway: true,
-        _gwIp: gwIp,
-        _gwReason: gwInfo.reason
-    });
-    nodesDataArr.push(gwDevice);
-
-    const gwSubnetPrefix = (gwIp || '').split('.').slice(0, 3).join('.');
-
     hosts.forEach((device, i) => {
-        if (i === gwMatchedHostIndex) {
-            return;
-        }
-
-        const nodeId = i + 1;
         const iconKey  = osIconKey(device.os);
         const portCnt  = device.ports.length;
         const dotColor = portDotColor(portCnt);
@@ -1130,7 +1089,7 @@ function buildAndDraw() {
             ).join('');
 
             document.getElementById('port-tbody').innerHTML = `<tr><td colspan="4" style="text-align:center;color:#adb5bd;padding:20px;">No port scan directly performed on this gateway</td></tr>`;
-            switchTab('detail');
+            switchTopologyPopupTab('detail');
 
             const canvasRect = container.getBoundingClientRect();
             const domPos = params.pointer.DOM;
@@ -1192,7 +1151,7 @@ function buildAndDraw() {
               }).join('')
             : `<tr><td colspan="4" style="text-align:center;color:#adb5bd;padding:20px;">No open ports</td></tr>`;
 
-        switchTab('detail');
+        switchTopologyPopupTab('detail');
 
         // Position popup
         const canvasRect = container.getBoundingClientRect();
@@ -1217,7 +1176,7 @@ function closePopup() {
         document.getElementById('diagram-hint').style.display = 'block';
 }
 
-function switchTab(tab) {
+function switchTopologyPopupTab(tab) {
     const isDetail = tab === 'detail';
     document.getElementById('panel-detail').style.display = isDetail ? 'block' : 'none';
     document.getElementById('panel-port').style.display   = isDetail ? 'none' : 'block';
