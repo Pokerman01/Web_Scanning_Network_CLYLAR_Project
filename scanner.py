@@ -14,6 +14,126 @@ def is_valid_target(target):
     return True
 
 
+def get_outbound_local_ip():
+    """Find the local IP of the network interface used for active outbound routing."""
+    try:
+        import socket
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+            s.connect(('8.8.8.8', 80))
+            return s.getsockname()[0]
+    except Exception:
+        return None
+
+
+def get_system_default_gateway():
+    """
+    Detect the local system's default gateway IP address, interface, and metric.
+    Works across Windows and Linux.
+    Handles multiple adapters (Wi-Fi, Ethernet, VPN, VMware/WSL) by selecting
+    the lowest-metric route bound to the active outbound interface.
+    Returns: dict with {'ip': gateway_ip, 'interface': interface_ip, 'metric': metric, 'mac': mac, 'mac_vendor': vendor} or None
+    """
+    try:
+        import platform
+        import subprocess
+        import re
+
+        system = platform.system().lower()
+        active_local_ip = get_outbound_local_ip()
+
+        if 'windows' in system:
+            cmd = ['cmd', '/c', 'route', 'print', '0.0.0.0']
+            output = subprocess.check_output(cmd, stderr=subprocess.DEVNULL, timeout=4).decode('latin-1', errors='ignore')
+            candidates = []
+            for line in output.splitlines():
+                parts = line.strip().split()
+                # Windows route table row:
+                # Destination Netmask Gateway Interface Metric
+                # 0.0.0.0     0.0.0.0 192.168.1.1 192.168.1.41 30
+                if len(parts) >= 5 and parts[0] == '0.0.0.0' and parts[1] == '0.0.0.0':
+                    gw_ip = parts[2]
+                    iface_ip = parts[3]
+                    try:
+                        metric = int(parts[4])
+                    except (ValueError, IndexError):
+                        metric = 9999
+
+                    if re.match(r'^\d{1,3}(\.\d{1,3}){3}$', gw_ip) and gw_ip != '0.0.0.0':
+                        is_active = bool(active_local_ip and iface_ip == active_local_ip)
+                        candidates.append({
+                            'ip': gw_ip,
+                            'interface': iface_ip,
+                            'metric': metric,
+                            'is_active': is_active
+                        })
+
+            if candidates:
+                # Prioritize active outbound interface, then lowest metric
+                candidates.sort(key=lambda c: (not c['is_active'], c['metric']))
+                best = candidates[0]
+                gw_ip = best['ip']
+                iface_ip = best['interface']
+                metric = best['metric']
+
+                # Try to retrieve MAC address from system ARP table
+                gw_mac = ''
+                try:
+                    arp_out = subprocess.check_output(['arp', '-a', gw_ip], stderr=subprocess.DEVNULL, timeout=2).decode('latin-1', errors='ignore')
+                    m_mac = re.search(r'([0-9a-fA-F]{2}[-:][0-9a-fA-F]{2}[-:][0-9a-fA-F]{2}[-:][0-9a-fA-F]{2}[-:][0-9a-fA-F]{2}[-:][0-9a-fA-F]{2})', arp_out)
+                    if m_mac:
+                        gw_mac = m_mac.group(1).replace('-', ':').lower()
+                except Exception:
+                    pass
+
+                return {
+                    'ip': gw_ip,
+                    'interface': iface_ip,
+                    'metric': metric,
+                    'mac': gw_mac,
+                    'mac_vendor': ''
+                }
+
+        else:
+            # Linux: parse 'ip route show default'
+            cmd = ['ip', 'route', 'show', 'default']
+            output = subprocess.check_output(cmd, stderr=subprocess.DEVNULL, timeout=4).decode('utf-8', errors='ignore')
+            candidates = []
+            for line in output.splitlines():
+                m = re.search(r'default\s+via\s+(\d{1,3}(?:\.\d{1,3}){3})(?:\s+dev\s+(\S+))?(?:.*metric\s+(\d+))?', line)
+                if m:
+                    gw_ip = m.group(1)
+                    dev = m.group(2) or ''
+                    metric = int(m.group(3)) if m.group(3) else 100
+                    candidates.append({'ip': gw_ip, 'interface': dev, 'metric': metric})
+
+            if candidates:
+                candidates.sort(key=lambda c: c['metric'])
+                best = candidates[0]
+                gw_ip = best['ip']
+
+                gw_mac = ''
+                try:
+                    with open('/proc/net/arp', 'r') as f:
+                        for row in f:
+                            rp = row.split()
+                            if len(rp) >= 4 and rp[0] == gw_ip:
+                                gw_mac = rp[3].lower()
+                                break
+                except Exception:
+                    pass
+
+                return {
+                    'ip': gw_ip,
+                    'interface': best['interface'],
+                    'metric': best['metric'],
+                    'mac': gw_mac,
+                    'mac_vendor': ''
+                }
+    except Exception:
+        pass
+    return None
+
+
 def run_network_scan(target_ip, scan_type='discovery', custom_args=None):
     if not is_valid_target(target_ip):
         return json.dumps([{"error": "Invalid target specified."}])
@@ -27,11 +147,50 @@ def run_network_scan(target_ip, scan_type='discovery', custom_args=None):
 
             for host in nm.all_hosts():
                 if nm[host].state() == 'up':
+                    mac_address = nm[host]['addresses'].get('mac', 'Unknown')
+                    mac_vendor = nm[host].get('vendor', {}).get(mac_address, '')
                     scan_results.append({
                         'ip': host,
                         'status': 'up',
-                        'mac': nm[host]['addresses'].get('mac', 'Unknown')
+                        'mac': mac_address,
+                        'mac_vendor': mac_vendor
                     })
+
+            # Check if local default gateway was missed because it drops ICMP ping
+            sys_gw = get_system_default_gateway()
+            if sys_gw and sys_gw.get('ip'):
+                gw_ip = sys_gw['ip']
+                found_ips = {r['ip'] for r in scan_results}
+                if gw_ip not in found_ips:
+                    in_target = False
+                    try:
+                        import ipaddress
+                        if '/' in target_ip:
+                            in_target = ipaddress.ip_address(gw_ip) in ipaddress.ip_network(target_ip, strict=False)
+                        elif '-' in target_ip:
+                            base = target_ip.split('-')[0].rsplit('.', 1)[0]
+                            in_target = gw_ip.startswith(base + '.')
+                        elif target_ip == gw_ip:
+                            in_target = True
+                    except Exception:
+                        pass
+
+                    if in_target:
+                        try:
+                            gw_nm = nmap.PortScanner()
+                            gw_nm.scan(hosts=gw_ip, arguments='-Pn -p 53,80,443,8080 --open')
+                            if gw_ip in gw_nm.all_hosts() and gw_nm[gw_ip].state() == 'up':
+                                mac_addr = gw_nm[gw_ip]['addresses'].get('mac', sys_gw.get('mac') or 'Unknown')
+                                mac_vndr = gw_nm[gw_ip].get('vendor', {}).get(mac_addr, sys_gw.get('mac_vendor') or '')
+                                scan_results.append({
+                                    'ip': gw_ip,
+                                    'status': 'up',
+                                    'mac': mac_addr,
+                                    'mac_vendor': mac_vndr,
+                                    'stealth_gateway': True
+                                })
+                        except Exception:
+                            pass
 
         elif scan_type == 'fast_scan':
             # ใช้ -sV เพื่อดึงเวอร์ชันของ Service และ -O ตรวจ OS
@@ -113,12 +272,17 @@ def run_network_scan(target_ip, scan_type='discovery', custom_args=None):
                 mac_address = nm[host]['addresses'].get('mac', 'Unknown')
                 mac_vendor = nm[host].get('vendor', {}).get(mac_address, '')
 
+                trace_hops = []
+                if 'trace' in nm[host] and 'hops' in nm[host]['trace']:
+                    trace_hops = nm[host]['trace']['hops']
+
                 scan_results.append({
                     'ip': host,
                     'os': os_info,
                     'mac': mac_address,
                     'mac_vendor': mac_vendor,
-                    'ports': ports
+                    'ports': ports,
+                    'trace_hops': trace_hops
                 })
 
         elif scan_type == 'custom' and custom_args:

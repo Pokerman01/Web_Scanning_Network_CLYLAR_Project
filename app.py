@@ -4,7 +4,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 from models import db, User, ScanJob, ScheduledScan, SavedTarget
-from scanner import run_network_scan, run_vuln_scan
+from scanner import run_network_scan, run_vuln_scan, get_system_default_gateway
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 from functools import wraps
@@ -19,9 +19,13 @@ def now_th():
 
 import os
 
-app = Flask(__name__)
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+INSTANCE_DIR = os.path.join(BASE_DIR, 'instance')
+os.makedirs(INSTANCE_DIR, exist_ok=True)
+
+app = Flask(__name__, instance_path=INSTANCE_DIR)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'super-secret-key-change-me')
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///scanner.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{os.path.join(INSTANCE_DIR, 'scanner.db').replace(os.sep, '/')}"
 
 db.init_app(app)
 
@@ -474,10 +478,11 @@ def topology_page():
                     'version_info': p.get('version_info', '')
                 })
             hosts_list.append({
-                'ip':    h.get('ip', ''),
-                'mac':   h.get('mac', ''),
-                'os':    h.get('os', h.get('status', '')),
-                'ports': ports
+                'ip':         h.get('ip', ''),
+                'mac':        h.get('mac', ''),
+                'mac_vendor': h.get('mac_vendor', ''),
+                'os':         h.get('os', h.get('status', '')),
+                'ports':      ports
             })
 
         date_str = job.timestamp.strftime('%Y-%m-%d') if job.timestamp else '1970-01-01'
@@ -492,7 +497,8 @@ def topology_page():
 
     import json as _json
     scans_json = _json.dumps(scans_data)
-    return render_template('network_topology.html', scans_json=scans_json)
+    system_gw = get_system_default_gateway()
+    return render_template('network_topology.html', scans_json=scans_json, system_gateway=system_gw)
 
 
 # ─────────────────────────────────────────
@@ -709,10 +715,11 @@ def scan_detail(scan_id):
     all_owner_jobs = ScanJob.query.filter_by(owner_id=job.owner_id).order_by(ScanJob.timestamp).all()
     owner_seq = next((i+1 for i, j in enumerate(all_owner_jobs) if j.id == job.id), job.id)
 
+    system_gw = get_system_default_gateway()
     template = 'vuln_scan_detail.html' if job.scan_type == 'vuln_scan' else 'scan_detail.html'
     return render_template(template, job=job, scan_data=scan_data,
                            target_scan_count=target_scan_count, scan_seq=scan_seq,
-                           owner_seq=owner_seq)
+                           owner_seq=owner_seq, system_gateway=system_gw)
 
 
 # ─────────────────────────────────────────

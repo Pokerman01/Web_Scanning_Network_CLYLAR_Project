@@ -174,7 +174,7 @@
         top: 50%;
         left: calc(100% + 10px);
         transform: translateY(-50%);
-        width: 230px;
+        width: 250px;
         background: #ffffff;
         border: 1px solid #e2e8f0;
         border-radius: 8px;
@@ -583,8 +583,8 @@
                                     <span class="clylar-option-info-btn" role="button" aria-label="Fast Scan Info">
                                         <i class="ti ti-info-circle"></i>
                                         <div class="clylar-item-tooltip">
-                                            <div class="fw-semibold text-dark mb-1" style="font-size:0.83rem;">Fast Scan</div>
-                                            <div class="text-secondary mb-2" style="font-size:0.77rem;">Scans top 100 common ports with fast timing. Best for rapid open port detection.</div>
+                                            <div class="fw-semibold text-dark mb-1" style="font-size:0.83rem;">Fast Scan (สแกนแบบเร็ว)</div>
+                                            <div class="text-secondary mb-2" style="font-size:0.77rem;">สแกนพอร์ตยอดนิยม 100 พอร์ตแรกด้วยความเร็วสูง เหมาะสำหรับตรวจหาพอร์ตที่เปิดอยู่อย่างเร่งด่วน</div>
                                             <div class="pt-1 border-top font-monospace text-muted" style="font-size:0.72rem; border-color:#f1f5f9 !important;">nmap -F -T4</div>
                                         </div>
                                     </span>
@@ -594,8 +594,8 @@
                                     <span class="clylar-option-info-btn" role="button" aria-label="Intense Scan Info">
                                         <i class="ti ti-info-circle"></i>
                                         <div class="clylar-item-tooltip">
-                                            <div class="fw-semibold text-dark mb-1" style="font-size:0.83rem;">Intense Scan</div>
-                                            <div class="text-secondary mb-2" style="font-size:0.77rem;">Comprehensive scan with OS detection, service versioning, scripts & traceroute.</div>
+                                            <div class="fw-semibold text-dark mb-1" style="font-size:0.83rem;">Intense Scan (สแกนแบบละเอียด)</div>
+                                            <div class="text-secondary mb-2" style="font-size:0.77rem;">สแกนครบวงจรพร้อมตรวจจับระบบปฏิบัติการ (OS), เวอร์ชั่นของบริการ, รันสคริปต์ และ Traceroute</div>
                                             <div class="pt-1 border-top font-monospace text-muted" style="font-size:0.72rem; border-color:#f1f5f9 !important;">nmap -T4 -A -v</div>
                                         </div>
                                     </span>
@@ -605,8 +605,8 @@
                                     <span class="clylar-option-info-btn" role="button" aria-label="Discovery Info">
                                         <i class="ti ti-info-circle"></i>
                                         <div class="clylar-item-tooltip">
-                                            <div class="fw-semibold text-dark mb-1" style="font-size:0.83rem;">Discovery (Ping Scan)</div>
-                                            <div class="text-secondary mb-2" style="font-size:0.77rem;">Determines online hosts without active port scanning. Ideal for network mapping.</div>
+                                            <div class="fw-semibold text-dark mb-1" style="font-size:0.83rem;">Discovery (สแกนค้นหาโฮสต์)</div>
+                                            <div class="text-secondary mb-2" style="font-size:0.77rem;">ตรวจหาเครื่องที่ออนไลน์อยู่ในเครือข่ายโดยไม่สแกนพอร์ต เหมาะสำหรับการสำรวจผังเครือข่าย</div>
                                             <div class="pt-1 border-top font-monospace text-muted" style="font-size:0.72rem; border-color:#f1f5f9 !important;">nmap -sn</div>
                                         </div>
                                     </span>
@@ -616,8 +616,8 @@
                                     <span class="clylar-option-info-btn" role="button" aria-label="Custom Args Info">
                                         <i class="ti ti-info-circle"></i>
                                         <div class="clylar-item-tooltip">
-                                            <div class="fw-semibold text-dark mb-1" style="font-size:0.83rem;">Custom (nmap args)</div>
-                                            <div class="text-secondary mb-2" style="font-size:0.77rem;">Allows specifying custom Nmap parameters tailored to your target environment.</div>
+                                            <div class="fw-semibold text-dark mb-1" style="font-size:0.83rem;">Custom (กำหนดคำสั่งเอง)</div>
+                                            <div class="text-secondary mb-2" style="font-size:0.77rem;">กำหนดพารามิเตอร์และคำสั่ง Nmap เพิ่มเติมได้เองตามต้องการ เพื่อให้เหมาะกับเป้าหมาย</div>
                                             <div class="pt-1 border-top font-monospace text-muted" style="font-size:0.72rem; border-color:#f1f5f9 !important;">nmap [custom_args]</div>
                                         </div>
                                     </span>
@@ -627,8 +627,8 @@
                                     <span class="clylar-option-info-btn" role="button" aria-label="Vulnerability Scan Info">
                                         <i class="ti ti-info-circle"></i>
                                         <div class="clylar-item-tooltip">
-                                            <div class="fw-semibold text-dark mb-1" style="font-size:0.83rem;">Vulnerability Scan</div>
-                                            <div class="text-secondary mb-2" style="font-size:0.77rem;">Performs vulnerability auditing using Nmap NSE vulnerability detection scripts.</div>
+                                            <div class="fw-semibold text-dark mb-1" style="font-size:0.83rem;">Vulnerability Scan (สแกนช่องโหว่)</div>
+                                            <div class="text-secondary mb-2" style="font-size:0.77rem;">ตรวจสอบและค้นหาช่องโหว่ความปลอดภัยด้วยสคริปต์ Nmap NSE</div>
                                             <div class="pt-1 border-top font-monospace text-muted" style="font-size:0.72rem; border-color:#f1f5f9 !important;">nmap --script=vuln</div>
                                         </div>
                                     </span>
@@ -1299,8 +1299,8 @@
                                     <span class="clylar-option-info-btn" role="button" aria-label="Fast Scan Info">
                                         <i class="ti ti-info-circle"></i>
                                         <div class="clylar-item-tooltip">
-                                            <div class="fw-semibold text-dark mb-1" style="font-size:0.83rem;">Fast Scan</div>
-                                            <div class="text-secondary mb-2" style="font-size:0.77rem;">Scans top 100 common ports with fast timing. Best for rapid open port detection.</div>
+                                            <div class="fw-semibold text-dark mb-1" style="font-size:0.83rem;">Fast Scan (สแกนแบบเร็ว)</div>
+                                            <div class="text-secondary mb-2" style="font-size:0.77rem;">สแกนพอร์ตยอดนิยม 100 พอร์ตแรกด้วยความเร็วสูง เหมาะสำหรับตรวจหาพอร์ตที่เปิดอยู่อย่างเร่งด่วน</div>
                                             <div class="pt-1 border-top font-monospace text-muted" style="font-size:0.72rem; border-color:#f1f5f9 !important;">nmap -F -T4</div>
                                         </div>
                                     </span>
@@ -1310,8 +1310,8 @@
                                     <span class="clylar-option-info-btn" role="button" aria-label="Intense Scan Info">
                                         <i class="ti ti-info-circle"></i>
                                         <div class="clylar-item-tooltip">
-                                            <div class="fw-semibold text-dark mb-1" style="font-size:0.83rem;">Intense Scan</div>
-                                            <div class="text-secondary mb-2" style="font-size:0.77rem;">Comprehensive scan with OS detection, service versioning, scripts & traceroute.</div>
+                                            <div class="fw-semibold text-dark mb-1" style="font-size:0.83rem;">Intense Scan (สแกนแบบละเอียด)</div>
+                                            <div class="text-secondary mb-2" style="font-size:0.77rem;">สแกนครบวงจรพร้อมตรวจจับระบบปฏิบัติการ (OS), เวอร์ชั่นของบริการ, รันสคริปต์ และ Traceroute</div>
                                             <div class="pt-1 border-top font-monospace text-muted" style="font-size:0.72rem; border-color:#f1f5f9 !important;">nmap -T4 -A -v</div>
                                         </div>
                                     </span>
@@ -1321,8 +1321,8 @@
                                     <span class="clylar-option-info-btn" role="button" aria-label="Discovery Info">
                                         <i class="ti ti-info-circle"></i>
                                         <div class="clylar-item-tooltip">
-                                            <div class="fw-semibold text-dark mb-1" style="font-size:0.83rem;">Discovery (Ping Scan)</div>
-                                            <div class="text-secondary mb-2" style="font-size:0.77rem;">Determines online hosts without active port scanning. Ideal for network mapping.</div>
+                                            <div class="fw-semibold text-dark mb-1" style="font-size:0.83rem;">Discovery (สแกนค้นหาโฮสต์)</div>
+                                            <div class="text-secondary mb-2" style="font-size:0.77rem;">ตรวจหาเครื่องที่ออนไลน์อยู่ในเครือข่ายโดยไม่สแกนพอร์ต เหมาะสำหรับการสำรวจผังเครือข่าย</div>
                                             <div class="pt-1 border-top font-monospace text-muted" style="font-size:0.72rem; border-color:#f1f5f9 !important;">nmap -sn</div>
                                         </div>
                                     </span>
@@ -1332,8 +1332,8 @@
                                     <span class="clylar-option-info-btn" role="button" aria-label="Custom Args Info">
                                         <i class="ti ti-info-circle"></i>
                                         <div class="clylar-item-tooltip">
-                                            <div class="fw-semibold text-dark mb-1" style="font-size:0.83rem;">Custom (nmap args)</div>
-                                            <div class="text-secondary mb-2" style="font-size:0.77rem;">Allows specifying custom Nmap parameters tailored to your target environment.</div>
+                                            <div class="fw-semibold text-dark mb-1" style="font-size:0.83rem;">Custom (กำหนดคำสั่งเอง)</div>
+                                            <div class="text-secondary mb-2" style="font-size:0.77rem;">กำหนดพารามิเตอร์และคำสั่ง Nmap เพิ่มเติมได้เองตามต้องการ เพื่อให้เหมาะกับเป้าหมาย</div>
                                             <div class="pt-1 border-top font-monospace text-muted" style="font-size:0.72rem; border-color:#f1f5f9 !important;">nmap [custom_args]</div>
                                         </div>
                                     </span>
@@ -1343,8 +1343,8 @@
                                     <span class="clylar-option-info-btn" role="button" aria-label="Vulnerability Scan Info">
                                         <i class="ti ti-info-circle"></i>
                                         <div class="clylar-item-tooltip">
-                                            <div class="fw-semibold text-dark mb-1" style="font-size:0.83rem;">Vulnerability Scan</div>
-                                            <div class="text-secondary mb-2" style="font-size:0.77rem;">Performs vulnerability auditing using Nmap NSE vulnerability detection scripts.</div>
+                                            <div class="fw-semibold text-dark mb-1" style="font-size:0.83rem;">Vulnerability Scan (สแกนช่องโหว่)</div>
+                                            <div class="text-secondary mb-2" style="font-size:0.77rem;">ตรวจสอบและค้นหาช่องโหว่ความปลอดภัยด้วยสคริปต์ Nmap NSE</div>
                                             <div class="pt-1 border-top font-monospace text-muted" style="font-size:0.72rem; border-color:#f1f5f9 !important;">nmap --script=vuln</div>
                                         </div>
                                     </span>

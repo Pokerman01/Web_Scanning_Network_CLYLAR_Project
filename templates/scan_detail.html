@@ -768,6 +768,211 @@
 <script>
     {% if scan_data %}
     const SCAN_DATA = {{ scan_data | tojson }};
+    const SYSTEM_GATEWAY = {{ (system_gateway or {}) | tojson }};
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Intelligent Default Gateway Detection
+    //  1. VRRP / HSRP / GLBP Virtual Gateway MAC prefix (Senior method)
+    //  2. Local OS Default Gateway verified via routing table
+    //  3. Router Vendor OUI / mac_vendor + Router OS + Router Services
+    //  4. Active host ending in .1 or .254
+    //  5. Subnet prefix fallback (.1) marked as estimated
+    // ═══════════════════════════════════════════════════════════════════════════
+    function detectGateway(hosts, systemGw) {
+        if (!hosts || hosts.length === 0) {
+            return { ip: '', reason: '', hostIndex: -1, isEstimated: false };
+        }
+
+        const VRRP_HSRP_PREFIXES = [
+            { prefix: '00:00:5e:00:01', label: 'VRRP (IPv4) Virtual Router' },
+            { prefix: '00:00:5e:00:02', label: 'VRRP (IPv6) Virtual Router' },
+            { prefix: '00:00:0c:07:ac', label: 'Cisco HSRP v1 Virtual Gateway' },
+            { prefix: '00:00:0c:9f:f0', label: 'Cisco HSRP v2 Virtual Gateway' },
+            { prefix: '00:07:b4',       label: 'Cisco GLBP Virtual Gateway' }
+        ];
+
+        const ROUTER_VENDORS = [
+            'cisco', 'mikrotik', 'ubiquiti', 'fortinet', 'juniper', 'aruba',
+            'tp-link', 'tplink', 'netgear', 'd-link', 'dlink', 'huawei', 'zyxel',
+            'sophos', 'pfsense', 'draytek', 'linksys', 'asus', 'synology', 'checkpoint'
+        ];
+
+        // 0. Determine dominant subnet prefix of scanned hosts
+        const prefixCount = {};
+        hosts.forEach(h => {
+            const parts = (h.ip || '').split('.');
+            if (parts.length === 4 && h.ip !== '127.0.0.1') {
+                const prefix = parts.slice(0, 3).join('.');
+                prefixCount[prefix] = (prefixCount[prefix] || 0) + 1;
+            }
+        });
+        const topPrefix = Object.keys(prefixCount).sort((a, b) => prefixCount[b] - prefixCount[a])[0] || '';
+
+        // Priority 1: VRRP / HSRP MAC prefix check (Industry Standard Virtual Router MACs)
+        for (let i = 0; i < hosts.length; i++) {
+            const rawMac = (hosts[i].mac || '').toLowerCase().replace(/[:-]/g, ':');
+            for (const v of VRRP_HSRP_PREFIXES) {
+                if (rawMac.startsWith(v.prefix)) {
+                    return {
+                        ip: hosts[i].ip,
+                        reason: `${v.label} (MAC: ${hosts[i].mac})`,
+                        hostIndex: i,
+                        isEstimated: false
+                    };
+                }
+            }
+        }
+
+        // Priority 2: Verified Local System Gateway (if the scan covers the local subnet)
+        const sysGwIp = systemGw && systemGw.ip ? systemGw.ip.trim() : '';
+        const isLocalSubnetScan = topPrefix && sysGwIp && sysGwIp.startsWith(topPrefix + '.');
+
+        if (isLocalSubnetScan) {
+            const sysMatchIdx = hosts.findIndex(h => h.ip === sysGwIp);
+            const metricStr = (systemGw.metric !== undefined && systemGw.metric < 9999) ? ` [Metric ${systemGw.metric}]` : '';
+            if (sysMatchIdx !== -1) {
+                return {
+                    ip: sysGwIp,
+                    reason: `Verified Local OS Gateway (${sysGwIp})${metricStr}`,
+                    hostIndex: sysMatchIdx,
+                    isEstimated: false
+                };
+            } else {
+                return {
+                    ip: sysGwIp,
+                    reason: `Local OS Default Gateway (${sysGwIp}) [System Route Table${metricStr}]`,
+                    hostIndex: -1,
+                    isEstimated: false
+                };
+            }
+        }
+
+        // Priority 3: Traceroute Penultimate Hop Detection (for routed / remote subnets)
+        for (let i = 0; i < hosts.length; i++) {
+            const hops = hosts[i].trace_hops || [];
+            if (hops.length >= 2) {
+                const penultimateHop = hops[hops.length - 2];
+                const penIp = penultimateHop && (penultimateHop.ipaddr || penultimateHop.ip);
+                if (penIp && topPrefix && penIp.startsWith(topPrefix + '.')) {
+                    const penIdx = hosts.findIndex(h => h.ip === penIp);
+                    return {
+                        ip: penIp,
+                        reason: `Traceroute Subnet Hop (${penIp})`,
+                        hostIndex: penIdx,
+                        isEstimated: false
+                    };
+                }
+            }
+        }
+
+        // Priority 4: Score hosts based on Router Vendor OUI, Router OS, and Network Services
+        let bestHostIdx = -1;
+        let bestScore = 0;
+        let bestReasons = [];
+
+        hosts.forEach((h, i) => {
+            if (h.ip === '127.0.0.1') return;
+            let score = 0;
+            let reasons = [];
+            const vendor = (h.mac_vendor || '').toLowerCase();
+            const os = (h.os || '').toLowerCase();
+            const portNums = (h.ports || []).map(p => typeof p === 'object' ? parseInt(p.port, 10) : parseInt(p, 10));
+
+            if (ROUTER_VENDORS.some(v => vendor.includes(v))) {
+                score += 40;
+                reasons.push(h.mac_vendor);
+            }
+
+            if (os.includes('router') || os.includes('gateway') || os.includes('cisco') ||
+                os.includes('routeros') || os.includes('openwrt') || os.includes('firewall') ||
+                os.includes('pfsense') || os.includes('access point') || os.includes('wap')) {
+                score += 35;
+                reasons.push('Router OS');
+            }
+
+            if (portNums.includes(53))  { score += 25; reasons.push('DNS:53'); }
+            if (portNums.includes(67))  { score += 30; reasons.push('DHCP:67'); }
+            if (portNums.includes(161)) { score += 25; reasons.push('SNMP:161'); }
+            if (portNums.includes(80) || portNums.includes(443) || portNums.includes(8080) || portNums.includes(8443)) {
+                score += 10;
+                reasons.push('WebAdmin');
+            }
+            if (portNums.includes(22) || portNums.includes(23)) {
+                score += 5;
+                reasons.push('SSH/Telnet');
+            }
+
+            const parts = (h.ip || '').split('.');
+            if (parts.length === 4) {
+                const lastOctet = parseInt(parts[3], 10);
+                if (lastOctet === 1) score += 15;
+                else if (lastOctet === 254) score += 15;
+            }
+
+            if (score > bestScore && score >= 35) {
+                bestScore = score;
+                bestHostIdx = i;
+                bestReasons = reasons;
+            }
+        });
+
+        if (bestHostIdx !== -1) {
+            return {
+                ip: hosts[bestHostIdx].ip,
+                reason: `Detected Router (${bestReasons.join(', ')})`,
+                hostIndex: bestHostIdx,
+                isEstimated: false
+            };
+        }
+
+        // Priority 5: Evaluate active hosts ending in .1 vs .254
+        if (topPrefix) {
+            const dot1Idx = hosts.findIndex(h => h.ip === topPrefix + '.1');
+            const dot254Idx = hosts.findIndex(h => h.ip === topPrefix + '.254');
+
+            if (dot1Idx !== -1 && dot254Idx !== -1) {
+                const ports1 = (hosts[dot1Idx].ports || []).length;
+                const ports254 = (hosts[dot254Idx].ports || []).length;
+                if (ports254 > ports1) {
+                    return {
+                        ip: topPrefix + '.254',
+                        reason: 'Active Host (.254 Gateway - higher service count)',
+                        hostIndex: dot254Idx,
+                        isEstimated: false
+                    };
+                }
+                return {
+                    ip: topPrefix + '.1',
+                    reason: 'Active Host (.1 Gateway)',
+                    hostIndex: dot1Idx,
+                    isEstimated: false
+                };
+            } else if (dot1Idx !== -1) {
+                return {
+                    ip: topPrefix + '.1',
+                    reason: 'Active Host (.1 Gateway)',
+                    hostIndex: dot1Idx,
+                    isEstimated: false
+                };
+            } else if (dot254Idx !== -1) {
+                return {
+                    ip: topPrefix + '.254',
+                    reason: 'Active Host (.254 Gateway)',
+                    hostIndex: dot254Idx,
+                    isEstimated: false
+                };
+            }
+
+            return {
+                ip: topPrefix + '.1',
+                reason: 'Estimated Subnet Gateway (.1)',
+                hostIndex: -1,
+                isEstimated: true
+            };
+        }
+
+        return { ip: '', reason: 'Unknown', hostIndex: -1, isEstimated: false };
+    }
 
     // ═══════════════════════════════════════════════════════════════════════════
     // Cisco-style SVG icons (outline, สีฟ้า #4a9fd4)  — returns data URI string
@@ -1013,35 +1218,50 @@
     // ── Build graph data ───────────────────────────────────────────────────────
     const nodesData = [], edgesData = [];
 
-    // Gateway node — derive gateway IP from the most common /24 subnet
-    let gwIp = '';
-    if (SCAN_DATA.length > 0) {
-        const prefixCount = {};
-        SCAN_DATA.forEach(h => {
-            const parts = (h.ip || '').split('.');
-            if (parts.length === 4) {
-                const prefix = parts.slice(0, 3).join('.');
-                prefixCount[prefix] = (prefixCount[prefix] || 0) + 1;
-            }
-        });
-        const topPrefix = Object.keys(prefixCount).sort((a, b) => prefixCount[b] - prefixCount[a])[0];
-        if (topPrefix) gwIp = topPrefix + '.1';
+    // Intelligent Gateway detection
+    const gwInfo = detectGateway(SCAN_DATA, typeof SYSTEM_GATEWAY !== 'undefined' ? SYSTEM_GATEWAY : null);
+    const gwIp = gwInfo.ip;
+    const isGwEstimated = gwInfo.isEstimated;
+    const gwMatchedHostIndex = gwInfo.hostIndex; // -1 if not among scanned hosts
+
+    let gwLabel = 'Gateway';
+    if (gwIp) {
+        gwLabel = `Gateway\n${gwIp}${isGwEstimated ? ' (est)' : ''}`;
     }
-    const gwLabel = gwIp ? `Gateway\n${gwIp}` : 'Gateway';
+    const gwTitle = gwIp
+        ? `Default Gateway / Router\nIP: ${gwIp}\nDetection: ${gwInfo.reason}`
+        : 'Gateway / Router';
+
+    const gwDevice = gwMatchedHostIndex !== -1 ? SCAN_DATA[gwMatchedHostIndex] : null;
+    const gwPortCnt = (gwDevice && gwDevice.ports) ? gwDevice.ports.length : 0;
+
+    // Node 0: Gateway Hub
     nodesData.push({
         id: 0,
         label: gwLabel,
         image: ICON_URI['gateway'],
         shape: 'image',
-        size: 38,
+        size: 40,
         font: { color: '#1a6db5', size: 12, face: 'monospace', bold: true, vadjust: 6, multi: 'html' },
-        title: gwIp ? `Gateway / Router\n${gwIp}` : 'Gateway / Router',
+        title: gwTitle,
         shadow: { enabled: true, color: 'rgba(31,111,235,0.3)', size: 14 },
         fixed: true, x: 0, y: 0,
-        _device: null, _portCnt: 0
+        _device: gwDevice,
+        _portCnt: gwPortCnt,
+        _isGateway: true,
+        _gwIp: gwIp,
+        _gwReason: gwInfo.reason
     });
 
+    const gwSubnetPrefix = (gwIp || '').split('.').slice(0, 3).join('.');
+
     SCAN_DATA.forEach((device, i) => {
+        // If this host was detected as the gateway, it is already represented by Node 0
+        if (i === gwMatchedHostIndex) {
+            return;
+        }
+
+        const nodeId = i + 1;
         const iconKey = osIconKey(device.os || device.status);
         const portCnt = (device.ports && device.ports.length) ? device.ports.length : 0;
         const hasPorts = portCnt > 0;
@@ -1052,14 +1272,20 @@
             ? [...device.ports].sort((a, b) => a.port - b.port)
             : [];
 
+        // Check if device is loopback or on a different subnet
+        const devParts = (device.ip || '').split('.');
+        const devPrefix = devParts.slice(0, 3).join('.');
+        const isLoopback = device.ip === '127.0.0.1';
+        const isDiffSubnet = gwSubnetPrefix && devPrefix !== gwSubnetPrefix && !isLoopback;
+
         nodesData.push({
-            id: i + 1,
+            id: nodeId,
             label: `<b>●</b> ${device.ip}`,
             image: ICON_URI[iconKey],
             shape: 'image',
             size: 34,
             font: {
-                color: '#1a3a5c',
+                color: isLoopback ? '#78909c' : '#1a3a5c',
                 size: 12,
                 face: 'monospace',
                 vadjust: 6,
@@ -1071,18 +1297,35 @@
                     mod: 'bold'
                 }
             },
-            title: `คลิกเพื่อดูรายละเอียด: ${device.ip}`,
+            title: `คลิกเพื่อดูรายละเอียด: ${device.ip}${device.mac_vendor ? ' (' + device.mac_vendor + ')' : ''}`,
             shadow: { enabled: true, color: '#00000018', size: 8 },
             _device: device,
             _portCnt: portCnt,
             _sortedPorts: sortedPorts
         });
 
+        // Edge styling
+        let edgeColor = '#90a4ae';
+        let edgeDashes = portCnt === 0;
+        let edgeTitle = '';
+
+        if (isLoopback) {
+            edgeColor = '#b0bec5';
+            edgeDashes = [4, 4];
+            edgeTitle = 'Loopback (Localhost)';
+        } else if (isDiffSubnet) {
+            edgeColor = '#b0bec5';
+            edgeDashes = [5, 5];
+            edgeTitle = 'Routed / Secondary Subnet';
+        }
+
         edgesData.push({
-            from: 0, to: i + 1,
-            color: { color: '#90a4ae', highlight: '#607d8b', hover: '#607d8b' },
+            from: 0,
+            to: nodeId,
+            color: { color: edgeColor, highlight: '#607d8b', hover: '#607d8b' },
             width: 1.6,
-            dashes: portCnt === 0,
+            dashes: edgeDashes,
+            title: edgeTitle,
             smooth: false
         });
     });
@@ -1141,14 +1384,68 @@
     }
 
     network.on('click', function (params) {
-        if (!params.nodes.length || params.nodes[0] === 0) { closePopup(); return; }
+        if (!params.nodes.length) { closePopup(); return; }
 
         const nodeId = params.nodes[0];
-        const node = nodesData[nodeId];
+        const node = nodesData.find(n => n.id === nodeId);
+        if (!node) { closePopup(); return; }
+
         const dev = node._device;
+        if (!dev && nodeId === 0) {
+            // Gateway node without direct scanned host record
+            const header = document.getElementById('popup-header');
+            header.style.background = '#1a6db5';
+            header.style.borderBottom = '1px solid #1a6db5';
+            header.querySelector('div').textContent = '🌐';
+            header.querySelector('div').style.background = 'rgba(255,255,255,0.18)';
+            document.getElementById('popup-ip').style.color = '#ffffff';
+            document.getElementById('popup-ip').textContent = node._gwIp || 'Gateway';
+            header.querySelector('button').style.background = 'rgba(0,0,0,0.25)';
+            header.querySelector('button').style.color = '#ffffff';
+
+            const detailRows = [
+                ['Role:', 'Default Gateway / Router'],
+                ['IP Address:', node._gwIp || 'Unknown'],
+                ['Detection:', node._gwReason || 'Default Route'],
+                ['Status:', 'Gateway / Network Infrastructure'],
+            ];
+            if (typeof SYSTEM_GATEWAY !== 'undefined' && SYSTEM_GATEWAY) {
+                if (SYSTEM_GATEWAY.interface) detailRows.push(['Local Iface:', SYSTEM_GATEWAY.interface]);
+                if (SYSTEM_GATEWAY.metric !== undefined && SYSTEM_GATEWAY.metric < 9999) detailRows.push(['Metric:', SYSTEM_GATEWAY.metric]);
+                if (SYSTEM_GATEWAY.mac) detailRows.push(['MAC Address:', SYSTEM_GATEWAY.mac]);
+            }
+            document.getElementById('detail-tbody').innerHTML = detailRows.map(([label, value]) => `
+            <tr>
+                <td style="padding:5px 0;color:#777;white-space:nowrap;width:40%;">${label}</td>
+                <td style="padding:5px 0;font-family:monospace;word-break:break-all;">${value}</td>
+            </tr>`).join('');
+
+            const portTbody = document.getElementById('port-tbody');
+            portTbody.innerHTML = '<tr><td colspan="4" style="padding:12px;text-align:center;color:#888;">No port scan directly performed on this gateway</td></tr>';
+
+            const ddArea = document.getElementById('popup-drilldown-area');
+            if (ddArea) ddArea.style.display = 'none';
+
+            switchTab('detail');
+            const domPos = params.pointer.DOM;
+            let left = domPos.x + 16;
+            let top = domPos.y - 10;
+            if (left + 390 > container.offsetWidth) left = domPos.x - 390;
+            if (left < 4) left = 4;
+            if (top < 4) top = 4;
+            if (top + 340 > container.offsetHeight) top = container.offsetHeight - 350;
+            popup.style.left = left + 'px';
+            popup.style.top = top + 'px';
+            popup.style.display = 'block';
+            hint.style.display = 'none';
+            return;
+        }
+
+        if (!dev) { closePopup(); return; }
+
         const osStr = dev.os || dev.status || '';
-        const icon = osEmoji(osStr);
-        const hc = osHeaderColor(osStr);
+        const icon = nodeId === 0 ? '🌐' : osEmoji(osStr);
+        const hc = nodeId === 0 ? { bg: '#1a6db5', fg: '#ffffff' } : osHeaderColor(osStr);
 
         // ── Popup header: OS-specific colour + icon ──
         const header = document.getElementById('popup-header');
@@ -1164,6 +1461,7 @@
         // ── Detail tab ──
         const detailRows = [
             ['Name:', dev.hostname || dev.ip],
+            ...(nodeId === 0 ? [['Role:', 'Default Gateway / Router (' + (node._gwReason || '') + ')']] : []),
             ['IPv4:', dev.ip],
             ['IPv6:', dev.ipv6 || 'Not Available'],
             ['MAC:', (dev.mac && dev.mac !== 'Unknown') ? dev.mac : 'Unknown'],
