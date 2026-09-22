@@ -764,11 +764,94 @@ window.CLYLAR_PAGE_CONTEXT = {% block page_context %}"หน้า: ไม่ท
     background: #fff;
   }
   .cb-hist-footer-btn {
-    flex: 1; padding: 7px 0; border-radius: 10px; border: 1.5px solid #dee2e6;
+    flex: 1; padding: 7px 4px; border-radius: 10px; border: 1.5px solid #dee2e6;
     background: none; font-size: 0.78rem; cursor: pointer; color: #6c757d;
     transition: all 0.15s;
+    display: flex; align-items: center; justify-content: center; gap: 4px;
+    user-select: none;
   }
-  .cb-hist-footer-btn:hover { border-color: #dc3545; color: #dc3545; background: #fff5f5; }
+  .cb-hist-footer-btn:hover { border-color: #0d6efd; color: #0d6efd; background: #f0f7ff; }
+  .cb-hist-footer-btn.active { border-color: #0d6efd; background: #e7f1ff; color: #0d6efd; font-weight: 600; }
+  .cb-hist-footer-btn.del-btn:hover { border-color: #dc3545; color: #dc3545; background: #fff5f5; }
+
+  /* --- History Search Bar --- */
+  .cb-hist-search-bar {
+    padding: 8px 10px 6px 10px;
+    background: #f8fafc;
+    border-bottom: 1px solid #e9ecef;
+    flex-shrink: 0;
+    animation: cbSlideDown 0.18s ease-out;
+  }
+  @keyframes cbSlideDown {
+    from { opacity: 0; transform: translateY(-6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .cb-hist-search-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+  .cb-hist-search-icon {
+    position: absolute;
+    left: 9px;
+    color: #94a3b8;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+  }
+  .cb-hist-search-input {
+    width: 100%;
+    padding: 6px 26px 6px 28px;
+    font-size: 0.78rem;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 8px;
+    background: #fff;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    color: #1e293b;
+  }
+  .cb-hist-search-input:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.12);
+  }
+  .cb-hist-search-clear {
+    position: absolute;
+    right: 6px;
+    background: #e2e8f0;
+    border: none;
+    border-radius: 50%;
+    width: 17px;
+    height: 17px;
+    font-size: 0.65rem;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #64748b;
+    padding: 0;
+    line-height: 1;
+    transition: all 0.15s;
+  }
+  .cb-hist-search-clear:hover {
+    background: #cbd5e1;
+    color: #0f172a;
+  }
+  .cb-hist-search-info {
+    font-size: 0.7rem;
+    color: #64748b;
+    margin-top: 4px;
+    padding: 0 2px;
+    display: none;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .cb-hist-match-highlight {
+    background: #fef08a;
+    color: #854d0e;
+    padding: 1px 3px;
+    border-radius: 3px;
+    font-weight: 600;
+  }
 
   /* ===== SCAN RESULT CARD ===== */
   .cb-scan-card {
@@ -858,9 +941,37 @@ window.CLYLAR_PAGE_CONTEXT = {% block page_context %}"หน้า: ไม่ท
 
   <!-- Panel: History -->
   <div class="cb-panel" id="panel-history">
+    <!-- Search Bar (toggleable) -->
+    <div class="cb-hist-search-bar" id="cb-hist-search-bar" style="display: none;">
+      <div class="cb-hist-search-wrap">
+        <span class="cb-hist-search-icon">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+        </span>
+        <input class="cb-hist-search-input" id="cb-hist-search-input" type="text" placeholder="ค้นหาข้อความ, IP, วันที่..." oninput="onHistSearchInput(this.value)" onkeydown="if(event.key==='Escape') toggleHistSearch(false)">
+        <button class="cb-hist-search-clear" id="cb-hist-search-clear" onclick="clearHistSearch()" title="ล้างการค้นหา">✕</button>
+      </div>
+      <div class="cb-hist-search-info" id="cb-hist-search-info"></div>
+    </div>
+
     <div class="cb-history-panel" id="cb-history-list"></div>
     <div class="cb-hist-footer">
-      <button class="cb-hist-footer-btn" onclick="clearAllHistory()">ลบประวัติทั้งหมด</button>
+      <button class="cb-hist-footer-btn" id="cb-hist-search-btn" onclick="toggleHistSearch()" title="ค้นหาประวัติแชท">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        ค้นหาแชท
+      </button>
+      <button class="cb-hist-footer-btn del-btn" onclick="clearAllHistory()" title="ลบประวัติที่บันทึกไว้ทั้งหมด">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="3 6 5 6 21 6"></polyline>
+          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+        </svg>
+        ลบประวัติทั้งหมด
+      </button>
     </div>
   </div>
 </div>
@@ -1075,48 +1186,154 @@ function clearCurrentChat() {
   document.getElementById('cb-quick-replies').style.display = '';
 }
 
+// ─── Search History State & Helpers ───────────────────────────────
+let histSearchQuery = '';
+
+function toggleHistSearch(forceState) {
+  const bar = document.getElementById('cb-hist-search-bar');
+  const btn = document.getElementById('cb-hist-search-btn');
+  const input = document.getElementById('cb-hist-search-input');
+  if (!bar || !btn) return;
+
+  const willOpen = typeof forceState === 'boolean'
+    ? forceState
+    : (bar.style.display === 'none' || !bar.style.display);
+
+  if (willOpen) {
+    bar.style.display = 'block';
+    btn.classList.add('active');
+    setTimeout(() => { if (input) input.focus(); }, 60);
+  } else {
+    bar.style.display = 'none';
+    btn.classList.remove('active');
+    if (histSearchQuery) {
+      clearHistSearch();
+    }
+  }
+}
+
+function clearHistSearch() {
+  const input = document.getElementById('cb-hist-search-input');
+  const clearBtn = document.getElementById('cb-hist-search-clear');
+  if (input) input.value = '';
+  if (clearBtn) clearBtn.style.display = 'none';
+  histSearchQuery = '';
+  renderHistory('');
+  if (input) input.focus();
+}
+
+function onHistSearchInput(val) {
+  histSearchQuery = (val || '').trim();
+  const clearBtn = document.getElementById('cb-hist-search-clear');
+  if (clearBtn) clearBtn.style.display = histSearchQuery ? 'flex' : 'none';
+  renderHistory(histSearchQuery);
+}
+
+function highlightSearchText(text, query) {
+  if (!text) return '';
+  const escaped = (text || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+  if (!query) return escaped;
+  const safeQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  try {
+    const rx = new RegExp(`(${safeQuery})`, 'gi');
+    return escaped.replace(rx, '<mark class="cb-hist-match-highlight">$1</mark>');
+  } catch (e) {
+    return escaped;
+  }
+}
+
 function clearAllHistory() {
   if (!confirm('ลบประวัติแชทที่บันทึกไว้ทั้งหมดใช่ไหม?')) return;
   localStorage.removeItem(CB_STORAGE_KEY);
+  clearHistSearch();
   renderHistory();
 }
 
 // ─── History Panel ─────────────────────────────────────────────────
 
-function renderHistory() {
-  const sessions = loadSessions();
+function renderHistory(query = histSearchQuery) {
+  const allSessions = loadSessions();
   const container = document.getElementById('cb-history-list');
-  if (!sessions.length) {
-    container.innerHTML = '<p class="cb-hist-empty">ยังไม่มีประวัติแชท<br>เริ่มแชทเพื่อบันทึกอัตโนมัติ </p>';
+  const infoEl = document.getElementById('cb-hist-search-info');
+  if (!container) return;
+
+  if (!allSessions.length) {
+    container.innerHTML = '<p class="cb-hist-empty">ยังไม่มีประวัติแชท<br>เริ่มแชทเพื่อบันทึกอัตโนมัติ 💬</p>';
+    if (infoEl) infoEl.style.display = 'none';
     return;
   }
+
+  const q = (query || '').toLowerCase().trim();
+  let sessions = allSessions;
+  if (q) {
+    sessions = allSessions.filter(sess => {
+      if ((sess.preview || '').toLowerCase().includes(q)) return true;
+      if (sess.messages && sess.messages.some(m => (m.content || '').toLowerCase().includes(q))) return true;
+      return false;
+    });
+  }
+
+  if (infoEl) {
+    if (q) {
+      infoEl.style.display = 'flex';
+      infoEl.innerHTML = `<span>พบ <strong>${sessions.length}</strong> จาก ${allSessions.length} เซสชัน</span>`
+        + `<span style="cursor:pointer;color:#0d6efd;font-weight:600;" onclick="clearHistSearch()">ล้างคำค้น</span>`;
+    } else {
+      infoEl.style.display = 'none';
+    }
+  }
+
+  if (!sessions.length) {
+    container.innerHTML = `
+      <div style="text-align:center; padding:32px 14px; color:#64748b; font-size:0.8rem;">
+        <div style="font-size:1.6rem; margin-bottom:8px;">🔍</div>
+        ไม่พบประวัติแชทที่ตรงกับ "<strong>${highlightSearchText(query, '')}</strong>"<br>
+        <span style="font-size:0.72rem; color:#94a3b8; display:inline-block; margin-top:4px;">ลองค้นหาด้วย IP, ชนิดสแกน หรือคำสำคัญอื่น</span>
+      </div>`;
+    return;
+  }
+
   container.innerHTML = '';
   sessions.forEach((sess, i) => {
     const date = new Date(sess.updatedAt);
     const dateStr = date.toLocaleDateString('th-TH', { day: '2-digit', month: 'short' })
       + ' ' + date.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
     const msgCount = sess.messages.length;
-    const preview = sess.preview || sess.messages[0]?.content?.slice(0, 50) || '(ว่าง)';
+    const rawPreview = sess.preview || sess.messages[0]?.content?.slice(0, 50) || '(ว่าง)';
+    const previewHtml = q ? highlightSearchText(rawPreview, q) : (rawPreview || '').replace(/</g,'&lt;');
+
+    // ถ้ามีข้อความด้านในตรงกับคำค้นหา ให้ auto-expand แสดงทันที
+    const hasMsgMatch = q && sess.messages && sess.messages.some(m => (m.content || '').toLowerCase().includes(q));
+    const isExpanded = Boolean(q && hasMsgMatch);
+
+    const sessionIdSafe = sess.id || `sess_idx_${i}`;
 
     const el = document.createElement('div');
     el.className = 'cb-hist-session';
     el.innerHTML = `
-      <div class="cb-hist-header" id="hh-${i}" onclick="toggleHistSession(${i})">
+      <div class="cb-hist-header ${isExpanded ? 'expanded' : ''}" id="hh-${i}" onclick="toggleHistSession(${i})">
         <span class="cb-hist-date">${dateStr}</span>
-        <span class="cb-hist-preview">${preview}</span>
+        <span class="cb-hist-preview">${previewHtml}</span>
         <span class="cb-hist-count">${msgCount} ข้อ</span>
         <span class="cb-hist-chevron">▾</span>
       </div>
-      <div class="cb-hist-body" id="hb-${i}">
-        ${sess.messages.slice(0, 6).map(m => `
-          <div class="cb-hist-msg">
-            <span class="role-label ${m.role === 'user' ? 'user' : 'bot'}">${m.role === 'user' ? '👤' : '🤖'}</span>
-            <span class="msg-text">${(m.content || '').slice(0, 120).replace(/</g,'&lt;')}${m.content?.length > 120 ? '…' : ''}</span>
-          </div>`).join('')}
+      <div class="cb-hist-body ${isExpanded ? 'show' : ''}" id="hb-${i}">
+        ${sess.messages.slice(0, 6).map(m => {
+          const rawContent = (m.content || '').slice(0, 120);
+          const contentHtml = q ? highlightSearchText(rawContent, q) : rawContent.replace(/</g,'&lt;');
+          return `
+            <div class="cb-hist-msg">
+              <span class="role-label ${m.role === 'user' ? 'user' : 'bot'}">${m.role === 'user' ? '👤' : '🤖'}</span>
+              <span class="msg-text">${contentHtml}${m.content?.length > 120 ? '…' : ''}</span>
+            </div>`;
+        }).join('')}
         ${sess.messages.length > 6 ? `<div class="cb-hist-msg" style="color:#adb5bd;font-size:0.72rem">...และอีก ${sess.messages.length - 6} ข้อความ</div>` : ''}
         <div class="cb-hist-actions">
-          <button class="cb-hist-btn resume" onclick="resumeSession(${i})">↩ เปิดต่อ</button>
-          <button class="cb-hist-btn del" onclick="deleteSession(${i})"> ลบ</button>
+          <button class="cb-hist-btn resume" onclick="resumeSession('${sessionIdSafe}')">↩ เปิดต่อ</button>
+          <button class="cb-hist-btn del" onclick="deleteSession('${sessionIdSafe}')">🗑 ลบ</button>
         </div>
       </div>`;
     container.appendChild(el);
@@ -1126,13 +1343,19 @@ function renderHistory() {
 function toggleHistSession(i) {
   const header = document.getElementById('hh-' + i);
   const body   = document.getElementById('hb-' + i);
-  header.classList.toggle('expanded');
-  body.classList.toggle('show');
+  if (header) header.classList.toggle('expanded');
+  if (body) body.classList.toggle('show');
 }
 
-function resumeSession(i) {
+function resumeSession(idOrIdx) {
   const sessions = loadSessions();
-  const sess = sessions[i];
+  let sess = null;
+  if (typeof idOrIdx === 'string' && idOrIdx.startsWith('sess_idx_')) {
+    const idx = parseInt(idOrIdx.replace('sess_idx_', ''), 10);
+    sess = sessions[idx];
+  } else {
+    sess = sessions.find(s => s.id === idOrIdx) || sessions[idOrIdx];
+  }
   if (!sess) return;
 
   // บันทึก session ปัจจุบันก่อน
@@ -1157,9 +1380,18 @@ function resumeSession(i) {
   switchTab('chat');
 }
 
-function deleteSession(i) {
+function deleteSession(idOrIdx) {
   const sessions = loadSessions();
-  sessions.splice(i, 1);
+  let idx = -1;
+  if (typeof idOrIdx === 'string' && idOrIdx.startsWith('sess_idx_')) {
+    idx = parseInt(idOrIdx.replace('sess_idx_', ''), 10);
+  } else {
+    idx = sessions.findIndex(s => s.id === idOrIdx);
+    if (idx === -1 && typeof idOrIdx === 'number') idx = idOrIdx;
+  }
+  if (idx < 0 || idx >= sessions.length) return;
+  if (!confirm('ต้องการลบเซสชันแชทนี้ใช่ไหม?')) return;
+  sessions.splice(idx, 1);
   saveSessions(sessions);
   renderHistory();
 }
