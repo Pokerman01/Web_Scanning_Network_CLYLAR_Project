@@ -1,0 +1,11 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 100" width="520" height="100">
+  <rect x="0" y="32" width="10" height="18" rx="5" ry="5" fill="#F5C518"/>
+  <rect x="14" y="20" width="10" height="30" rx="5" ry="5" fill="#F5C518"/>
+  <rect x="28" y="32" width="10" height="18" rx="5" ry="5" fill="#F5C518"/>
+  <rect x="42" y="8" width="10" height="42" rx="5" ry="5" fill="#F5C518"/>
+  <rect x="56" y="36" width="10" height="14" rx="5" ry="5" fill="#F5C518"/>
+  <text x="75" y="58" font-family="Georgia, 'Times New Roman', serif" font-size="56" font-weight="700" fill="#4a4a4a" letter-spacing="-2">nt</text>
+  <line x1="168" y1="12" x2="168" y2="88" stroke="#cccccc" stroke-width="1.2"/>
+  <text x="180" y="46" font-family="Tahoma, Arial, sans-serif" font-size="16" fill="#4a4a4a">&#3610;&#3619;&#3636;&#3625;&#3633;&#3607; &#3650;&#3607;&#3619;&#3588;&#3617;&#3609;&#3634;&#3588;&#3617;&#3649;&#3627;&#3656;&#3591;&#3594;&#3634;&#3605;&#3636; &#3592;&#3635;&#3585;&#3633;&#3604; (&#3617;&#3627;&#3634;&#3594;&#3609;)</text>
+  <text x="180" y="68" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="#6a6a6a">National Telecom Public Company Limited</text>
+</svg>

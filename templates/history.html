@@ -1,0 +1,522 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+        <h2 class="mb-1">Scan History</h2>
+        <p class="text-muted mb-0">ประวัติการสแกนทั้งหมดในระบบ</p>
+    </div>
+    <span class="badge bg-secondary fs-6">{{ history|length }} รายการ</span>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ 'success' if category == 'success' else 'danger' }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
+{# ── scan data for port-search ── #}
+<script>
+const ALL_SCANS = [
+  {% for job in history %}{% if job.status == 'Completed' and job.result_data %}
+  {%- set jd = job.result_data | from_json %}
+  { id:{{ job.id }}, target:{{ job.target|tojson }}, scan_type:{{ (job.scan_type|scan_label)|tojson }},
+    date:{{ job.timestamp.strftime('%Y-%m-%d %H:%M')|tojson }}, url:{{ url_for('scan_detail',scan_id=job.id)|tojson }},
+    hosts:[{% for h in jd %}{% if h.ports %}{ ip:{{ h.ip|tojson }}, ports:[{% for p in h.ports %}{ port:{{ p.port|tojson }}, name:{{ (p.name or '')|tojson }}, proto:{{ (p.protocol or 'tcp')|tojson }} }{% if not loop.last %},{% endif %}{% endfor %}] }{% if not loop.last %},{% endif %}{% endif %}{% endfor %}]
+  }{% if not loop.last %},{% endif %}
+  {% endif %}{% endfor %}
+];
+</script>
+
+<!-- Tab Bar (Tasks style) -->
+<div class="mt-3 mb-1">
+    <div class="d-inline-flex rounded-3 p-1" style="background:#f0f0f0; gap:4px;">
+        <button id="tab-history-btn" onclick="switchHistoryTab('history')"
+                class="btn btn-sm fw-semibold rounded-2 px-4 py-2 hist-tab-btn active-tab"
+                style="font-size:.875rem; transition:all .18s;">
+            History
+        </button>
+        <button id="tab-portsearch-btn" onclick="switchHistoryTab('portsearch')"
+                class="btn btn-sm fw-semibold rounded-2 px-4 py-2 hist-tab-btn"
+                style="font-size:.875rem; transition:all .18s;">
+            Port Search
+        </button>
+    </div>
+</div>
+<hr class="mt-2 mb-3">
+
+<style>
+.hist-tab-btn { background: transparent; color: #555; border: none; }
+.hist-tab-btn.active-tab { background: #fff; color: #111; box-shadow: 0 1px 4px rgba(0,0,0,.12); }
+</style>
+<div>
+<div id="tab-history">
+
+
+<!-- Filter Bar -->
+<div class="card border-0 shadow-sm mb-3 p-3">
+    <div class="row g-2 align-items-center">
+        <div class="col-md-4">
+            <input type="text" id="searchInput" class="form-control form-control-sm" placeholder="🔍 ค้นหา IP / Target...">
+        </div>
+        <div class="col-md-3">
+            <select id="typeFilter" class="form-select form-select-sm">
+                <option value="">ทุก Type</option>
+                <option value="discovery">Discovery</option>
+                <option value="fast_scan">Fast Scan</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <select id="statusFilter" class="form-select form-select-sm">
+                <option value="">ทุก Status</option>
+                <option value="Completed">Completed</option>
+                <option value="Running">Running</option>
+            </select>
+        </div>
+        <div class="col-md-2 text-end">
+            <button class="btn btn-sm btn-outline-secondary" onclick="clearFilters()">ล้าง</button>
+        </div>
+    </div>
+</div>
+
+<!-- History Table -->
+<div class="card p-0 shadow-sm border-0">
+    <table class="table table-hover mb-0" id="historyTable">
+        <thead class="table-dark">
+            <tr>
+                <th>Job ID</th>
+                <th>Name</th>
+                <th>Target</th>
+                <th>Type</th>
+                <th>Triggered By</th>
+                <th>Status</th>
+                <th>Date & Time</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody id="historyBody">
+            {% for job in history %}
+            {% set job_data = job.result_data | from_json if job.result_data else [] %}
+            <tr data-target="{{ job.target }}" data-type="{{ job.scan_type }}" data-status="{{ job.status }}">
+                <td><span class="text-muted">#{{ owner_seq_map.get(job.id, job.id) }}</span></td>
+                <td>
+                    {% if job.scan_name %}
+                        <span class="fw-semibold">{{ job.scan_name }}</span>
+                    {% else %}
+                        <span class="text-muted">—</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <code>{{ job.target }}</code>
+                    {% set seq_info = scan_seq_map.get(job.id) %}
+                    {% if seq_info and seq_info[1] > 1 %}
+                    <span class="badge ms-1" style="font-size:.65rem;background:#EAF3DE;color:#3B6D11;border:0.5px solid #C0DD97;" title="สแกนครั้งที่ {{ seq_info[0] }} จากทั้งหมด {{ seq_info[1] }} ครั้ง">count: {{ seq_info[0] }}/{{ seq_info[1] }}</span>
+                    {% endif %}
+                </td>
+                <td><span class="badge bg-secondary">{{ job.scan_type | scan_label }}</span></td>
+                <td>
+                    {% if job.triggered_by == 'schedule' %}
+                        <span class="badge" style="background:#f1f5f9;color:#334155;border:1px solid #e2e8f0;font-weight:500;"><i class="ti ti-clock me-1"></i>Schedule</span>
+                    {% elif job.triggered_by == 'rescan' %}
+                        <span class="badge" style="background:#f0f9ff;color:#0369a1;border:1px solid #bae6fd;font-weight:500;"><i class="ti ti-refresh me-1"></i>Rescan</span>
+                    {% elif job.triggered_by == 'drilldown' %}
+                        <span class="badge" style="background:#f5f3ff;color:#6d28d9;border:1px solid #ddd6fe;font-weight:500;"><i class="ti ti-scan me-1"></i>Drill-down</span>
+                    {% else %}
+                        <span class="badge" style="background:#f8fafc;color:#475569;border:1px solid #e2e8f0;font-weight:500;"><i class="ti ti-user me-1"></i>Manual</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <span class="badge {{ 'bg-success' if job.status == 'Completed' else 'bg-danger' if job.status in ('Failed', 'Cancelled') else 'bg-warning text-dark' }}">
+                        {{ job.status }}
+                    </span>
+                </td>
+                <td>{{ job.timestamp.strftime('%Y-%m-%d %H:%M') }}</td>
+                <td>
+                    {% if job.status == 'Completed' %}
+                        <a href="{{ url_for('scan_detail', scan_id=job.id) }}"
+                           class="btn btn-sm btn-outline-primary">View</a>
+                        {% if current_user.is_any_admin %}
+                        <button class="btn btn-sm btn-outline-danger ms-1" title="Delete scan record"
+                                onclick="confirmDelete({{ job.id }}, '{{ job.target }}', {{ scan_seq_map.get(job.id, (1,1))[1] }})">
+                            <i class="ti ti-trash"></i>
+                        </button>
+                        {% endif %}
+                    {% elif job.status == 'Failed' %}
+                        {% if current_user.is_any_admin %}
+                        <button class="btn btn-sm btn-outline-danger" title="Delete scan record"
+                                onclick="confirmDelete({{ job.id }}, '{{ job.target }}', {{ scan_seq_map.get(job.id, (1,1))[1] }})">
+                            <i class="ti ti-trash"></i>
+                        </button>
+                        {% endif %}
+                    {% elif job.status == 'Cancelled' %}
+                        {% if current_user.is_any_admin %}
+                        <button class="btn btn-sm btn-outline-danger" title="Delete scan record"
+                                onclick="confirmDelete({{ job.id }}, '{{ job.target }}', {{ scan_seq_map.get(job.id, (1,1))[1] }})">
+                            <i class="ti ti-trash"></i>
+                        </button>
+                        {% endif %}
+                    {% else %}
+                        <button class="btn btn-sm btn-secondary" disabled>Running...</button>
+                    {% endif %}
+                </td>
+            </tr>
+
+            {% else %}
+            <tr>
+                <td colspan="8" class="text-center text-muted py-4">ยังไม่มีประวัติการสแกน</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+</div><!-- /tab-history -->
+
+<!-- TAB 2 — PORT SEARCH -->
+<div id="tab-portsearch" style="display:none;">
+
+    <div class="card border-0 shadow-sm mb-3 p-3">
+        <div class="row g-2 align-items-center mb-2">
+            <div class="col">
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-white border-end-0">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    </span>
+                    <input type="text" id="portSearchInput" class="form-control border-start-0"
+                           placeholder="พิมพ์พอร์ต เช่น 80, 443, ssh, rdp..."
+                           oninput="doPortSearch(this.value)">
+                    <button class="btn btn-outline-secondary" onclick="clearPortSearch()" id="portClearBtn" style="display:none;">&#x2715;</button>
+                </div>
+            </div>
+        </div>
+        <div class="d-flex flex-wrap gap-2" id="portChips">
+            <button class="btn btn-sm port-chip active-chip" onclick="quickPort(this,'80')">80 / http</button>
+            <button class="btn btn-sm port-chip" onclick="quickPort(this,'443')">443 / https</button>
+            <button class="btn btn-sm port-chip" onclick="quickPort(this,'22')">22 / ssh</button>
+            <button class="btn btn-sm port-chip" onclick="quickPort(this,'3389')">3389 / rdp</button>
+            <button class="btn btn-sm port-chip" onclick="quickPort(this,'3306')">3306 / mysql</button>
+            <button class="btn btn-sm port-chip" onclick="quickPort(this,'21')">21 / ftp</button>
+            <button class="btn btn-sm port-chip" onclick="quickPort(this,'')">ทั้งหมด</button>
+        </div>
+    </div>
+
+    <p class="text-muted small mb-2" id="portResultInfo"></p>
+
+    <div class="card p-0 shadow-sm border-0">
+        <table class="table table-hover mb-0">
+            <thead class="table-dark">
+                <tr>
+                    <th style="width:22%">IP Address</th>
+                    <th style="width:28%">Matched port</th>
+                    <th style="width:22%">Target / Scan</th>
+                    <th style="width:16%">Date</th>
+                    <th style="width:12%">Action</th>
+                </tr>
+            </thead>
+            <tbody id="portBody">
+                <tr><td colspan="5" class="text-center text-muted py-4">เปิด tab Port Search เพื่อค้นหา</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+</div><!-- /tab-portsearch -->
+</div>
+
+<style>
+.port-chip { font-size:.75rem; padding:3px 10px; border-radius:999px; border:1px solid #dee2e6; background:#fff; color:#6c757d; transition:all .12s; }
+.port-chip:hover { background:#f8f9fa; }
+.active-chip { background:#0d6efd !important; color:#fff !important; border-color:#0d6efd !important; }
+.port-pill { display:inline-block; font-family:monospace; font-size:.72rem; font-weight:600; padding:2px 7px; border-radius:4px; background:#fff3cd; color:#856404; border:1px solid #ffc107; margin:2px 2px 2px 0; white-space:nowrap; }
+</style>
+
+<script>
+function doPortSearch(q) {
+    q = (q || '').trim().toLowerCase();
+    document.getElementById('portClearBtn').style.display = q ? '' : 'none';
+    const rows = [];
+    ALL_SCANS.forEach(scan => {
+        scan.hosts.forEach(host => {
+            const matched = q
+                ? host.ports.filter(p => String(p.port).includes(q) || p.name.toLowerCase().includes(q))
+                : host.ports;
+            if (matched.length) rows.push({ host, matched, scan });
+        });
+    });
+    const info = document.getElementById('portResultInfo');
+    info.innerHTML = q
+        ? `พบ <strong>${rows.length}</strong> host ที่มี port ตรงกับ "<strong>${q}</strong>"`
+        : `แสดงทุก host ที่มี open port ทั้งหมด <strong>${rows.length}</strong> รายการ`;
+    const tbody = document.getElementById('portBody');
+    if (!rows.length) {
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted py-4">ไม่พบ host ที่มี port ตรงกับ "${q}"</td></tr>`;
+        return;
+    }
+    tbody.innerHTML = rows.map(({ host, matched, scan }) => {
+        const pills = matched.map(p => `<span class="port-pill">${p.port}/${p.name || p.proto}</span>`).join('');
+        return `<tr>
+            <td><code>${host.ip}</code></td>
+            <td>${pills}</td>
+            <td><code style="font-size:.78rem">${scan.target}</code><br>
+                <span class="badge bg-secondary" style="font-size:.65rem">${scan.scan_type}</span></td>
+            <td><span class="text-muted small">${scan.date}</span></td>
+            <td><a href="${scan.url}" class="btn btn-sm btn-outline-primary">View</a></td>
+        </tr>`;
+    }).join('');
+}
+function quickPort(el, val) {
+    document.querySelectorAll('.port-chip').forEach(c => c.classList.remove('active-chip'));
+    el.classList.add('active-chip');
+    document.getElementById('portSearchInput').value = val;
+    doPortSearch(val);
+}
+function clearPortSearch() {
+    document.getElementById('portSearchInput').value = '';
+    document.querySelectorAll('.port-chip').forEach(c => c.classList.remove('active-chip'));
+    const chips = document.querySelectorAll('.port-chip');
+    chips[chips.length - 1].classList.add('active-chip');
+    doPortSearch('');
+}
+function switchHistoryTab(tab) {
+    document.getElementById('tab-history').style.display = tab === 'history' ? '' : 'none';
+    document.getElementById('tab-portsearch').style.display = tab === 'portsearch' ? '' : 'none';
+    document.getElementById('tab-history-btn').classList.toggle('active-tab', tab === 'history');
+    document.getElementById('tab-portsearch-btn').classList.toggle('active-tab', tab === 'portsearch');
+    if (tab === 'portsearch' && !document.getElementById('portSearchInput').value) {
+        document.getElementById('portSearchInput').value = '80';
+        doPortSearch('80');
+    }
+}
+</script>
+
+<script>
+function filterTable() {
+    const search = document.getElementById('searchInput').value.toLowerCase();
+    const type   = document.getElementById('typeFilter').value.toLowerCase();
+    const status = document.getElementById('statusFilter').value.toLowerCase();
+    const rows   = document.querySelectorAll('#historyBody tr[data-target]');
+
+    rows.forEach(row => {
+        // skip collapse/expand port rows (they don't have data-type)
+        if (!row.dataset.type) return;
+        const target = row.dataset.target.toLowerCase();
+        const rType  = row.dataset.type.toLowerCase();
+        const rStat  = row.dataset.status.toLowerCase();
+        const show   = (!search || target.includes(search))
+                    && (!type   || rType === type)
+                    && (!status || rStat === status);
+        row.style.display = show ? '' : 'none';
+    });
+}
+
+function clearFilters() {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('typeFilter').value = '';
+    document.getElementById('statusFilter').value = '';
+    filterTable();
+}
+
+document.getElementById('searchInput').addEventListener('input', filterTable);
+document.getElementById('typeFilter').addEventListener('change', filterTable);
+document.getElementById('statusFilter').addEventListener('change', filterTable);
+</script>
+
+<!-- Delete Confirmation Modal -->
+<style>
+#deleteModal .modal-content {
+    border-radius: 16px;
+    overflow: hidden;
+}
+#deleteModal .delete-modal-header {
+    background: linear-gradient(135deg, #fff5f5 0%, #ffe8e8 100%);
+    padding: 24px 24px 16px;
+    border-bottom: 1px solid #ffd0d0;
+    position: relative;
+}
+#deleteModal .delete-icon-wrap {
+    width: 56px;
+    height: 56px;
+    background: #fee2e2;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 12px;
+    font-size: 24px;
+    border: 2px solid #fca5a5;
+}
+#deleteModal .delete-modal-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #b91c1c;
+    margin: 0;
+}
+#deleteModal .delete-modal-subtitle {
+    font-size: 0.82rem;
+    color: #ef4444;
+    margin: 2px 0 0;
+    opacity: 0.8;
+}
+#deleteModal .modal-body {
+    padding: 20px 24px;
+}
+#deleteModal .scan-info-card {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 12px 16px;
+    margin-bottom: 14px;
+}
+#deleteModal .scan-info-card .label {
+    font-size: 0.72rem;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+}
+#deleteModal .scan-info-card .value {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #1e293b;
+}
+#deleteModal .delete-warning-text {
+    font-size: 0.82rem;
+    color: #64748b;
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    border-radius: 8px;
+    padding: 8px 12px;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+}
+#deleteModal .modal-footer-custom {
+    padding: 16px 24px 20px;
+    background: #f8fafc;
+    border-top: 1px solid #f1f5f9;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+#deleteModal .btn-delete-single {
+    background: #dc2626;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 16px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    width: 100%;
+    transition: background 0.15s;
+}
+#deleteModal .btn-delete-single:hover { background: #b91c1c; color: white; }
+#deleteModal .btn-delete-all {
+    background: white;
+    color: #dc2626;
+    border: 1.5px solid #fca5a5;
+    border-radius: 8px;
+    padding: 9px 16px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    width: 100%;
+    transition: all 0.15s;
+}
+#deleteModal .btn-delete-all:hover { background: #fff5f5; border-color: #dc2626; color: #b91c1c; }
+#deleteModal .btn-cancel {
+    background: transparent;
+    color: #64748b;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-size: 0.85rem;
+    width: 100%;
+    transition: background 0.15s;
+}
+#deleteModal .btn-cancel:hover { background: #e2e8f0; color: #334155; }
+</style>
+
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:400px">
+        <div class="modal-content border-0 shadow-lg">
+            <!-- Header -->
+            <div class="delete-modal-header">
+                <button type="button" class="btn-close" data-bs-dismiss="modal"
+                    style="position:absolute;top:16px;right:16px;"></button>
+                <div class="delete-icon-wrap">🗑️</div>
+                <h5 class="delete-modal-title">ยืนยันการลบ</h5>
+                <p class="delete-modal-subtitle">การดำเนินการนี้ไม่สามารถย้อนกลับได้</p>
+            </div>
+            <!-- Body -->
+            <div class="modal-body">
+                <div class="scan-info-card">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <div class="label">Scan ID</div>
+                            <div class="value" id="modalScanId">—</div>
+                        </div>
+                        <div>
+                            <div class="label">Target</div>
+                            <div class="value" id="modalTarget">—</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="delete-warning-text" id="modalWarningText" style="display:none">
+                    <span>⚠️</span>
+                    <span id="modalWarningMsg"></span>
+                </div>
+            </div>
+            <!-- Footer -->
+            <div class="modal-footer-custom">
+                <form id="deleteSingleForm" method="POST" class="m-0 w-100">
+                    <button type="submit" class="btn-delete-single">🗑️ ลบรายการนี้</button>
+                </form>
+                <form id="deleteAllForm" method="POST" action="{{ url_for('delete_scans_by_target') }}" class="m-0 w-100" id="deleteAllWrapper">
+                    <input type="hidden" name="target" id="deleteTargetInput">
+                    <button type="submit" class="btn-delete-all" id="deleteAllBtn">ลบทั้งหมดของ Target นี้</button>
+                </form>
+                <button type="button" class="btn-cancel" data-bs-dismiss="modal">ยกเลิก</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function confirmDelete(scanId, target, totalCount) {
+    document.getElementById('deleteSingleForm').action = `/history/${scanId}/delete`;
+    document.getElementById('deleteTargetInput').value = target;
+    document.getElementById('modalScanId').textContent = `#${scanId}`;
+    document.getElementById('modalTarget').textContent = target;
+
+    const warningDiv = document.getElementById('modalWarningText');
+    const warningMsg = document.getElementById('modalWarningMsg');
+    const deleteAllWrapper = document.getElementById('deleteAllForm');
+
+    if (totalCount > 1) {
+        warningMsg.innerHTML = `Target นี้มีทั้งหมด <strong>${totalCount} รายการ</strong> คุณสามารถเลือกลบเฉพาะรายการนี้ หรือลบทั้งหมดพร้อมกัน`;
+        warningDiv.style.display = 'flex';
+        document.getElementById('deleteAllBtn').textContent = `ลบทั้งหมด ${totalCount} รายการของ ${target}`;
+        deleteAllWrapper.style.display = '';
+    } else {
+        warningDiv.style.display = 'none';
+        deleteAllWrapper.style.display = 'none';
+    }
+
+    new bootstrap.Modal(document.getElementById('deleteModal')).show();
+
+    // auto-close modal when any form inside it is submitted
+    ['deleteSingleForm', 'deleteAllForm'].forEach(function(id) {
+        const f = document.getElementById(id);
+        if (!f) return;
+        f.addEventListener('submit', function() {
+            const bsModal = bootstrap.Modal.getInstance(document.getElementById('deleteModal'));
+            if (bsModal) bsModal.hide();
+        }, { once: true });
+    });
+}
+</script>
+{% endblock %}
