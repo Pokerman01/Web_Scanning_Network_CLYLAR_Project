@@ -625,13 +625,26 @@ window.CLYLAR_PAGE_CONTEXT = {% block page_context %}"หน้า: ไม่ท
   .cb-msg { display: flex; align-items: flex-end; gap: 8px; animation: msg-in 0.22s ease; }
   @keyframes msg-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
   .cb-msg.user { flex-direction: row-reverse; }
+  .cb-msg > div {
+    display: flex;
+    flex-direction: column;
+    max-width: 82%;
+  }
+  .cb-msg.user > div { align-items: flex-end; }
+  .cb-msg.bot > div { align-items: flex-start; }
+
   .cb-bubble {
-    max-width: 78%;
-    padding: 10px 16px;
+    width: fit-content;
+    max-width: 100%;
+    min-width: 48px;
+    padding: 8px 14px;
     border-radius: 18px;
     font-size: 0.84rem;
-    line-height: 1.5;
-    word-break: break-word;
+    line-height: 1.45;
+    word-break: normal;
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+    box-sizing: border-box;
   }
   .cb-msg.bot .cb-bubble {
     background: #fff;
@@ -639,14 +652,18 @@ window.CLYLAR_PAGE_CONTEXT = {% block page_context %}"หน้า: ไม่ท
     border-radius: 18px;
     border: 1px solid #e9ecef;
     box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    text-align: left;
   }
   .cb-msg.user .cb-bubble {
     background: linear-gradient(135deg, #0d6efd, #0a58ca);
     color: #fff;
     border-radius: 18px;
     box-shadow: 0 2px 6px rgba(13,110,253,0.25);
+    text-align: center;
   }
-  .cb-time { font-size: 0.67rem; color: #adb5bd; margin-top: 3px; text-align: center; }
+  .cb-time { font-size: 0.67rem; color: #adb5bd; margin-top: 3px; }
+  .cb-msg.user .cb-time { padding-right: 4px; }
+  .cb-msg.bot .cb-time { padding-left: 4px; }
 
   /* Typing indicator */
   .cb-typing { display: flex; gap: 4px; padding: 10px 14px; }
