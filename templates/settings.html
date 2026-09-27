@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+
+{% block page_title %}<div class="topbar-page-title">ตั้งค่า</div>{% endblock %}
+{% block page_subtitle %}<div class="topbar-page-subtitle">ข้อมูลบัญชีผู้ใช้ของคุณ</div>{% endblock %}
+
+{% block content %}
+
+<div class="row g-3">
+  <div class="col-12 col-lg-6">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body p-4">
+        <h6 class="fw-bold mb-3">บัญชีผู้ใช้</h6>
+        <div class="d-flex align-items-center gap-3 mb-4">
+          <div style="width:52px;height:52px;border-radius:50%;background:#e2e5ea;display:flex;align-items:center;justify-content:center;font-size:22px;color:#8a8f98;">
+            <i class="ti ti-user"></i>
+          </div>
+          <div>
+            <div style="font-weight:700;font-size:1.05rem;color:#0f172a;">{{ current_user.username | title }}</div>
+            <div style="font-size:.8rem;color:#6b7280;">{{ current_user.role | title }}</div>
+          </div>
+        </div>
+        <table class="table table-sm mb-0" style="font-size:.85rem;">
+          <tbody>
+            <tr>
+              <td class="text-muted" style="width:40%;">Username</td>
+              <td class="fw-semibold">{{ current_user.username }}</td>
+            </tr>
+            <tr>
+              <td class="text-muted">Role</td>
+              <td class="fw-semibold">{{ current_user.role | title }}</td>
+            </tr>
+            <tr>
+              <td class="text-muted">สร้างเมื่อ</td>
+              <td class="fw-semibold">{{ current_user.created_at.strftime('%Y-%m-%d %H:%M') if current_user.created_at else '—' }}</td>
+            </tr>
+            {% if current_user.creator %}
+            <tr>
+              <td class="text-muted">สร้างโดย</td>
+              <td class="fw-semibold">{{ current_user.creator.username }}</td>
+            </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-lg-6">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body p-4">
+        <h6 class="fw-bold mb-3">เปลี่ยนรหัสผ่าน</h6>
+        <p class="text-muted mb-3" style="font-size:.85rem;">
+          ติดต่อผู้ดูแลระบบ (Admin) เพื่อรีเซ็ตรหัสผ่านของคุณผ่านหน้า
+          {% if current_user.role in ('admin', 'superadmin') %}
+          <a href="{{ url_for('user_management') }}">จัดการผู้ใช้งาน</a>
+          {% else %}
+          จัดการผู้ใช้งาน
+          {% endif %}
+        </p>
+        <hr>
+        <h6 class="fw-bold mb-2 mt-4">เกี่ยวกับระบบ</h6>
+        <div class="text-muted" style="font-size:.85rem;">
+          CLYLAR Network Scanner · v1.0.0<br>
+          National Telecom Public Company Limited
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

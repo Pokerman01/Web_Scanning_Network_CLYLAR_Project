@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+
+{% block page_title %}<div class="topbar-page-title">รายงาน</div>{% endblock %}
+{% block page_subtitle %}<div class="topbar-page-subtitle">ส่งออกรายงานผลสแกนเป็น CSV หรือ PDF</div>{% endblock %}
+
+{% block content %}
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+{% for category, message in messages %}
+<div class="alert alert-{{ 'success' if category == 'success' else 'danger' }} alert-dismissible fade show" role="alert">
+  {{ message }}
+  <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+{% endfor %}
+{% endif %}
+{% endwith %}
+
+<div class="card border-0 shadow-sm">
+  <div class="card-body p-0">
+    {% if history %}
+    <div class="table-responsive">
+      <table class="table align-middle mb-0" style="font-size:.88rem;">
+        <thead>
+          <tr style="background:#f8fafc;">
+            <th class="ps-4 py-3 text-muted" style="font-weight:600;font-size:.78rem;">ชื่อการสแกน</th>
+            <th class="py-3 text-muted" style="font-weight:600;font-size:.78rem;">เป้าหมาย</th>
+            <th class="py-3 text-muted" style="font-weight:600;font-size:.78rem;">ประเภท</th>
+            <th class="py-3 text-muted" style="font-weight:600;font-size:.78rem;">วันที่</th>
+            <th class="pe-4 py-3 text-muted" style="font-weight:600;font-size:.78rem;">Export</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for job in history %}
+          <tr style="border-top:1px solid #f1f3f5;">
+            <td class="ps-4 py-3 fw-semibold" style="color:#0f172a;">{{ job.scan_name or ('Job #' ~ job.id) }}</td>
+            <td class="py-3">{{ job.target }}</td>
+            <td class="py-3">
+              <span class="badge rounded-pill" style="background:var(--nt-gold-bg,#fff8e1);color:var(--nt-gold-dark,#b8860b);font-weight:600;">
+                {{ job.scan_type | scan_label }}
+              </span>
+            </td>
+            <td class="py-3 text-muted">{{ job.timestamp.strftime('%Y-%m-%d %H:%M') if job.timestamp else '—' }}</td>
+            <td class="pe-4 py-3 text-end">
+              <a href="{{ url_for('export_csv', scan_id=job.id) }}" class="btn btn-sm btn-outline-secondary">
+                <i class="ti ti-file-spreadsheet"></i> CSV
+              </a>
+              <a href="{{ url_for('export_pdf', scan_id=job.id) }}" class="btn btn-sm btn-outline-secondary">
+                <i class="ti ti-file-type-pdf"></i> PDF
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="text-center py-5 text-muted">
+      <i class="ti ti-file-analytics" style="font-size:2.5rem;color:#cbd5e1;"></i>
+      <p class="mt-2 mb-0">ยังไม่มี Scan ที่เสร็จสมบูรณ์ให้ออกรายงาน</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}

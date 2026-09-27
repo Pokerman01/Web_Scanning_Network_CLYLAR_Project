@@ -6,6 +6,7 @@
     <title>CLYLAR Network Scanner</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         // Prevent layout shift/flash before render
@@ -22,16 +23,24 @@
             --sidebar-width: 280px;
             --sidebar-collapsed-width: 72px;
             --sidebar-transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1), margin-left 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            --nt-gold: #f5c518;
+            --nt-gold-dark: #b8860b;
+            --nt-gold-bg: #fff8e1;
+            --nt-text: #363a42;
+            --nt-text-muted: #6b7280;
+            --nt-border: #eef0f3;
+            --nt-bg: #f7f8fa;
         }
 
-        body { background-color: #f4f6f9; }
+        body { background-color: var(--nt-bg); }
 
-        /* ===== SIDEBAR (Gemini Style) ===== */
+        /* ===== SIDEBAR (NT Light Style) ===== */
         .sidebar {
             height: 100vh;
             width: var(--sidebar-width);
-            background-color: #0f1117;
-            color: white;
+            background-color: #ffffff;
+            color: var(--nt-text);
+            border-right: 1px solid var(--nt-border);
             position: fixed;
             top: 0;
             left: 0;
@@ -46,12 +55,12 @@
         }
         /* Custom scrollbar for sidebar */
         .sidebar::-webkit-scrollbar { width: 4px; }
-        .sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+        .sidebar::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.12); border-radius: 4px; }
 
         /* Sidebar Header */
         .sidebar-header {
-            padding: 16px 14px 16px 18px;
-            border-bottom: 1px solid rgba(255,255,255,0.07);
+            padding: 18px 14px 16px 18px;
+            border-bottom: 1px solid var(--nt-border);
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -63,39 +72,38 @@
         }
         .sidebar-brand {
             display: flex;
-            align-items: center;
-            gap: 12px;
+            align-items: flex-end;
+            gap: 4px;
             text-decoration: none;
             overflow: hidden;
             flex: 1;
             min-width: 0;
         }
         .sidebar-logo-icon {
-            width: 36px; height: 36px;
-            background: #1d4ed8;
-            border-radius: 10px;
+            width: 34px; height: 34px;
             display: flex; align-items: center; justify-content: center;
-            font-size: 19px; color: #fff;
             flex-shrink: 0;
-            box-shadow: 0 4px 12px rgba(29, 78, 216, 0.35);
             transition: transform 0.15s ease;
         }
+        .sidebar-logo-icon svg { width: 100%; height: 100%; }
         .sidebar-logo-details {
             display: flex;
-            flex-direction: column;
+            flex-direction: row;
+            align-items: center;
+            gap: 6px;
             overflow: hidden;
             transition: opacity 0.2s ease;
             white-space: nowrap;
         }
-        .sidebar-logo-text { font-size: 17.5px; font-weight: 700; color: #fff; letter-spacing: 0.3px; line-height: 1.2; }
-        .sidebar-logo-sub { font-size: 11px; color: rgba(255,255,255,0.35); margin-top: 2px; }
+        .sidebar-logo-text { font-family: 'Nunito', 'Arial', sans-serif; font-size: 26px; font-weight: 700; color: #4a4a4a; letter-spacing: -0.5px; line-height: 1; padding-bottom: 1px; }
+        .sidebar-logo-sub { font-family: 'Arial', 'Helvetica Neue', sans-serif; font-size: 10.5px; font-weight: 600; color: #8a8d91; letter-spacing: 0; line-height: 1.28; text-align: left; }
 
-        /* Gemini Style Sidebar Toggle Button */
+        /* Sidebar Toggle Button */
         .sidebar-toggle-btn {
             background: transparent;
             border: none;
             outline: none;
-            color: rgba(255, 255, 255, 0.7);
+            color: var(--nt-text-muted);
             width: 36px;
             height: 36px;
             border-radius: 8px;
@@ -108,8 +116,8 @@
             padding: 0;
         }
         .sidebar-toggle-btn:hover {
-            background-color: rgba(255, 255, 255, 0.09);
-            color: #ffffff;
+            background-color: #f1f3f5;
+            color: var(--nt-text);
         }
         .sidebar-toggle-btn:active {
             transform: scale(0.92);
@@ -121,11 +129,40 @@
             stroke-width: 2;
         }
 
+        /* User card (below header) */
+        .sidebar-user-card {
+            margin: 14px 14px 4px;
+            padding: 10px 12px;
+            display: flex;
+            align-items: center;
+            gap: 11px;
+            background: var(--nt-bg);
+            border: 1px solid var(--nt-border);
+            border-radius: 12px;
+            transition: opacity 0.2s ease, padding 0.25s cubic-bezier(0.4, 0, 0.2, 1), margin 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .sidebar-user-avatar {
+            width: 34px; height: 34px;
+            border-radius: 50%;
+            background: #e2e5ea;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 15px; color: #8a8f98;
+            flex-shrink: 0;
+        }
+        .sidebar-user-details {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transition: opacity 0.2s ease;
+        }
+        .sidebar-user-name { font-size: 13.5px; color: var(--nt-text); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .sidebar-user-role { font-size: 11.5px; color: var(--nt-text-muted); }
+
         /* Nav */
-        .sidebar-nav { padding: 12px 10px; flex: 1; overflow-y: auto; overflow-x: hidden; }
+        .sidebar-nav { padding: 14px 10px; flex: 1; overflow-y: auto; overflow-x: hidden; }
         .sidebar-section-label {
             font-size: 11px;
-            color: rgba(255,255,255,0.3);
+            color: #a3a9b3;
             text-transform: uppercase;
             letter-spacing: 1px;
             padding: 10px 12px 5px;
@@ -134,22 +171,25 @@
             overflow: hidden;
         }
         .sidebar a.nav-link {
-            color: rgba(255,255,255,0.55);
+            color: #4b5563;
             text-decoration: none;
-            padding: 11px 14px;
+            padding: 10px 14px;
             display: flex;
             align-items: center;
             gap: 12px;
-            border-radius: 8px;
+            border-radius: 10px;
             margin-bottom: 3px;
-            font-size: 15px;
+            font-size: 14.5px;
+            font-weight: 500;
+            border-left: 3px solid transparent;
             transition: background 0.15s, color 0.15s, padding 0.25s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
         }
-        .sidebar a.nav-link i { font-size: 20px; width: 22px; text-align: center; flex-shrink: 0; }
-        .sidebar a.nav-link:hover { background-color: rgba(255,255,255,0.07); color: rgba(255,255,255,0.9); }
-        .sidebar a.nav-link.active { background-color: #1d4ed8; color: #fff; }
-        .sidebar a.nav-link.active:hover { background-color: #2563eb; }
+        .sidebar a.nav-link i { font-size: 19px; width: 22px; text-align: center; flex-shrink: 0; color: #9aa1ac; transition: color 0.15s; }
+        .sidebar a.nav-link:hover { background-color: #f8f9fb; color: var(--nt-text); }
+        .sidebar a.nav-link.active { background-color: var(--nt-gold-bg); color: var(--nt-gold-dark); font-weight: 700; border-left-color: var(--nt-gold); }
+        .sidebar a.nav-link.active i { color: var(--nt-gold-dark); }
+        .sidebar a.nav-link.active:hover { background-color: var(--nt-gold-bg); }
         .sidebar a.nav-link .nav-label {
             transition: opacity 0.2s ease;
             white-space: nowrap;
@@ -169,35 +209,20 @@
             line-height: 1.6;
         }
 
-        /* Footer user row */
+        /* Footer brand block */
         .sidebar-footer {
-            padding: 12px 10px 16px;
-            border-top: 1px solid rgba(255,255,255,0.07);
-        }
-        .sidebar-user-row {
+            padding: 14px 16px 16px;
+            border-top: 1px solid var(--nt-border);
             display: flex;
             align-items: center;
-            gap: 11px;
-            padding: 8px 10px;
-            border-radius: 8px;
-            transition: padding 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            gap: 10px;
         }
-        .sidebar-user-avatar {
-            width: 36px; height: 36px;
-            border-radius: 50%;
-            background: #1d4ed8;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 13px; font-weight: 600; color: #fff;
-            flex-shrink: 0;
-        }
-        .sidebar-user-details {
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            transition: opacity 0.2s ease;
-        }
-        .sidebar-user-name { font-size: 14px; color: rgba(255,255,255,0.8); font-weight: 500; }
-        .sidebar-user-role { font-size: 11.5px; color: rgba(255,255,255,0.35); }
+        .sidebar-footer-logo { width: 24px; height: 24px; flex-shrink: 0; }
+        .sidebar-footer-logo svg { width: 100%; height: 100%; }
+        .sidebar-footer-text { overflow: hidden; transition: opacity 0.2s ease; }
+        .sidebar-footer-name-th { font-size: 11px; font-weight: 700; color: var(--nt-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .sidebar-footer-name-en { font-size: 9.5px; color: var(--nt-text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .sidebar-footer-meta { font-size: 9px; color: #b3b8c1; margin-top: 2px; white-space: nowrap; }
 
         /* ===== COLLAPSED (ICON MODE) STYLES ===== */
         html.sidebar-collapsed .sidebar,
@@ -239,25 +264,36 @@
             height: 0;
             padding: 0;
             margin: 6px 0;
-            border-top: 1px solid rgba(255,255,255,0.08);
+            border-top: 1px solid var(--nt-border);
         }
         html.sidebar-collapsed .sidebar a.nav-link,
         body.sidebar-collapsed .sidebar a.nav-link {
-            padding: 11px 0;
+            padding: 10px 0;
             justify-content: center;
             gap: 0;
+            border-left: none;
         }
         html.sidebar-collapsed .sidebar a.nav-link .nav-label,
         body.sidebar-collapsed .sidebar a.nav-link .nav-label {
             display: none;
         }
-        html.sidebar-collapsed .sidebar-user-row,
-        body.sidebar-collapsed .sidebar-user-row {
-            padding: 6px 0;
+        html.sidebar-collapsed .sidebar-user-card,
+        body.sidebar-collapsed .sidebar-user-card {
+            margin: 14px 8px 4px;
+            padding: 8px;
             justify-content: center;
         }
         html.sidebar-collapsed .sidebar-user-details,
         body.sidebar-collapsed .sidebar-user-details {
+            display: none;
+        }
+        html.sidebar-collapsed .sidebar-footer,
+        body.sidebar-collapsed .sidebar-footer {
+            justify-content: center;
+            padding: 14px 0 16px;
+        }
+        html.sidebar-collapsed .sidebar-footer-text,
+        body.sidebar-collapsed .sidebar-footer-text {
             display: none;
         }
 
@@ -273,24 +309,61 @@
         }
         .topbar {
             background-color: #fff;
-            border-bottom: 1px solid #e9ecef;
-            padding: 12px 28px;
+            border-bottom: 1px solid var(--nt-border);
+            padding: 14px 28px;
             display: flex;
             align-items: center;
             justify-content: space-between;
             gap: 16px;
         }
         .topbar-title { font-weight: 600; color: #495057; font-size: 1rem; }
-        .topbar-user { display: flex; align-items: center; gap: 12px; margin-left: auto; }
+        .topbar-left { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+        .topbar-page-title { font-size: 1.3rem; font-weight: 700; color: var(--nt-text); line-height: 1.25; }
+        .topbar-page-subtitle { font-size: 0.82rem; color: var(--nt-text-muted); margin-top: 1px; }
+        .topbar-right { display: flex; align-items: center; gap: 14px; margin-left: auto; }
+        .topbar-date-pill {
+            display: flex; align-items: center; gap: 8px;
+            border: 1px solid var(--nt-border);
+            background: var(--nt-bg);
+            color: var(--nt-text);
+            font-size: 0.8rem; font-weight: 500;
+            padding: 7px 13px;
+            border-radius: 10px;
+            white-space: nowrap;
+            user-select: none;
+        }
+        .topbar-date-pill i { font-size: 15px; color: var(--nt-text-muted); }
+        .topbar-bell {
+            position: relative;
+            width: 38px; height: 38px;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 50%;
+            color: var(--nt-text-muted);
+            background: var(--nt-bg);
+            border: 1px solid var(--nt-border);
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        .topbar-bell i { font-size: 18px; }
+        .topbar-bell-badge {
+            position: absolute; top: -4px; right: -4px;
+            min-width: 17px; height: 17px; padding: 0 3px;
+            background: #ef4444; color: #fff;
+            border: 2px solid #fff;
+            border-radius: 999px;
+            font-size: 9.5px; font-weight: 700;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .topbar-user { display: flex; align-items: center; gap: 12px; }
         .topbar-user-info { text-align: right; line-height: 1.2; }
         .topbar-user-name { font-weight: 600; font-size: 0.9rem; color: #212529; }
         .topbar-user-role { font-size: 0.75rem; color: #6c757d; }
         .topbar-avatar {
             width: 38px; height: 38px;
-            background-color: #6c757d;
+            background-color: var(--nt-gold);
             border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
-            color: white; font-size: 1rem;
+            color: #4d3b00; font-size: 0.95rem; font-weight: 700;
             cursor: pointer;
             position: relative;
         }
@@ -350,15 +423,15 @@
     {% if current_user.is_authenticated %}
     <nav class="sidebar shadow-lg" id="mainSidebar">
 
-        <!-- Sidebar Header (Gemini Style) -->
+        <!-- Sidebar Header (NT Branding) -->
         <div class="sidebar-header">
-            <a href="/" class="sidebar-brand" id="sidebarBrand" title="CLYLAR Network Scanner">
+            <a href="/" class="sidebar-brand" id="sidebarBrand" title="National Telecom — CLYLAR Network Scanner">
                 <div class="sidebar-logo-icon">
-                    <i class="ti ti-radar" aria-hidden="true"></i>
+                    {% include 'partials/_nt_mark.html' %}
                 </div>
                 <div class="sidebar-logo-details">
-                    <div class="sidebar-logo-text">CLYLAR</div>
-                    <div class="sidebar-logo-sub">Network Scanner</div>
+                    <span class="sidebar-logo-text">nt</span>
+                    <span class="sidebar-logo-sub">National<br>Telecom</span>
                 </div>
             </a>
             <button class="sidebar-toggle-btn" id="sidebarToggleBtn" type="button" aria-label="Collapse Sidebar" title="Collapse Sidebar (Ctrl+B)">
@@ -369,41 +442,81 @@
             </button>
         </div>
 
+        <!-- Current user card -->
+        <div class="sidebar-user-card">
+            <div class="sidebar-user-avatar">
+                <i class="ti ti-user" aria-hidden="true"></i>
+            </div>
+            <div class="sidebar-user-details">
+                <div class="sidebar-user-name">{{ current_user.username | title }}</div>
+                <div class="sidebar-user-role">{{ 'Administrator' if current_user.role in ('admin','superadmin') else 'User' }}</div>
+            </div>
+        </div>
+
         <!-- Nav -->
         <div class="sidebar-nav">
-            <span class="sidebar-section-label">Main</span>
             <ul class="nav flex-column">
                 <li class="nav-item">
-                    <a href="/" class="nav-link {% if request.path == '/' %}active{% endif %}" data-bs-toggle="tooltip" data-bs-placement="right" title="Dashboard">
+                    <a href="/" class="nav-link {% if request.path == '/' %}active{% endif %}" data-bs-toggle="tooltip" data-bs-placement="right" title="แดชบอร์ด">
                         <i class="ti ti-layout-dashboard" aria-hidden="true"></i>
-                        <span class="nav-label">Dashboard</span>
+                        <span class="nav-label">แดชบอร์ด</span>
                     </a>
                 </li>
                 {% if current_user.role in ('admin', 'superadmin') %}
                 <li class="nav-item">
-                    <a href="{{ url_for('tasks_page') }}" class="nav-link {% if request.path.startswith('/tasks') %}active{% endif %}" data-bs-toggle="tooltip" data-bs-placement="right" title="Tasks">
+                    <a href="{{ url_for('tasks_page') }}" class="nav-link {% if request.path.startswith('/tasks') %}active{% endif %}" data-bs-toggle="tooltip" data-bs-placement="right" title="งานสแกน">
                         <i class="ti ti-list-check" aria-hidden="true"></i>
-                        <span class="nav-label">Tasks</span>
+                        <span class="nav-label">งานสแกน</span>
                     </a>
                 </li>
                 {% endif %}
-            </ul>
-
-            <span class="sidebar-section-label">Network</span>
-            <ul class="nav flex-column">
                 <li class="nav-item">
-                    <a href="{{ url_for('topology_page') }}" class="nav-link {% if request.path.startswith('/topology') %}active{% endif %}" data-bs-toggle="tooltip" data-bs-placement="right" title="Network Topology">
-                        <i class="ti ti-topology-star" aria-hidden="true"></i>
-                        <span class="nav-label">Network Topology</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="{{ url_for('history_page') }}" class="nav-link {% if request.path.startswith('/history') %}active{% endif %}" data-bs-toggle="tooltip" data-bs-placement="right" title="Scan History">
+                    <a href="{{ url_for('history_page') }}" class="nav-link {% if request.path.startswith('/history') %}active{% endif %}" data-bs-toggle="tooltip" data-bs-placement="right" title="ประวัติการสแกน">
                         <i class="ti ti-history" aria-hidden="true"></i>
-                        <span class="nav-label">Scan History</span>
+                        <span class="nav-label">ประวัติการสแกน</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ url_for('devices_page') }}" class="nav-link {% if request.path.startswith('/devices') %}active{% endif %}" data-bs-toggle="tooltip" data-bs-placement="right" title="อุปกรณ์">
+                        <i class="ti ti-device-desktop" aria-hidden="true"></i>
+                        <span class="nav-label">อุปกรณ์</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ url_for('vulnerabilities_page') }}" class="nav-link {% if request.path.startswith('/vulnerabilities') %}active{% endif %}" data-bs-toggle="tooltip" data-bs-placement="right" title="ช่องโหว่">
+                        <i class="ti ti-shield-exclamation" aria-hidden="true"></i>
+                        <span class="nav-label">ช่องโหว่</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ url_for('topology_page') }}" class="nav-link {% if request.path.startswith('/topology') %}active{% endif %}" data-bs-toggle="tooltip" data-bs-placement="right" title="แผนผังเครือข่าย">
+                        <i class="ti ti-topology-star" aria-hidden="true"></i>
+                        <span class="nav-label">แผนผังเครือข่าย</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ url_for('reports_page') }}" class="nav-link {% if request.path.startswith('/reports') %}active{% endif %}" data-bs-toggle="tooltip" data-bs-placement="right" title="รายงาน">
+                        <i class="ti ti-file-analytics" aria-hidden="true"></i>
+                        <span class="nav-label">รายงาน</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ url_for('settings_page') }}" class="nav-link {% if request.path.startswith('/settings') %}active{% endif %}" data-bs-toggle="tooltip" data-bs-placement="right" title="ตั้งค่า">
+                        <i class="ti ti-settings" aria-hidden="true"></i>
+                        <span class="nav-label">ตั้งค่า</span>
                     </a>
                 </li>
             </ul>
+        </div>
+
+        <!-- Brand footer -->
+        <div class="sidebar-footer">
+            <div class="sidebar-footer-logo">{% include 'partials/_nt_mark.html' %}</div>
+            <div class="sidebar-footer-text">
+                <div class="sidebar-footer-name-th">บริษัท โทรคมนาคมแห่งชาติ จำกัด (มหาชน)</div>
+                <div class="sidebar-footer-name-en">National Telecom Public Company Limited</div>
+                <div class="sidebar-footer-meta">© {{ now_year }} NT Public Company Limited · v1.0.0</div>
+            </div>
         </div>
 
     </nav>
@@ -414,24 +527,40 @@
         <div class="topbar">
             <div class="topbar-left">
                 <span class="topbar-title"></span>
+                {% block page_title %}{% endblock %}
+                {% block page_subtitle %}{% endblock %}
             </div>
-            <div class="topbar-user">
-                <div class="topbar-user-info">
-                    <div class="topbar-user-name">{{ current_user.username | title }}</div>
-                    <div class="topbar-user-role">{{ current_user.role | title }}</div>
+            <div class="topbar-right">
+                <div class="topbar-date-pill" title="วันที่ปัจจุบัน">
+                    <i class="ti ti-calendar" aria-hidden="true"></i>
+                    <span>{{ thai_date_today }}</span>
+                    <i class="ti ti-chevron-down" aria-hidden="true" style="font-size:12px;"></i>
                 </div>
-                <div class="topbar-avatar" id="profileAvatar" onclick="toggleProfileDropdown()">
-                    👤
-                    <div class="profile-dropdown" id="profileDropdown">
-                        {% if current_user.role in ('admin', 'superadmin') %}
-                        <a href="{{ url_for('user_management') }}">
-                            <span></span> User Management
-                        </a>
-                        <div class="dropdown-divider"></div>
-                        {% endif %}
-                        <a href="{{ url_for('logout') }}" class="logout-link">
-                            <span></span> Logout
-                        </a>
+                <div class="topbar-bell" title="{{ notification_count }} งานกำลังทำงานอยู่">
+                    <i class="ti ti-bell" aria-hidden="true"></i>
+                    {% if notification_count and notification_count > 0 %}
+                    <span class="topbar-bell-badge">{{ notification_count }}</span>
+                    {% endif %}
+                </div>
+                <div class="topbar-user">
+                    <div class="topbar-avatar" id="profileAvatar" onclick="toggleProfileDropdown()">
+                        {{ current_user.username[0] | upper }}
+                        <div class="profile-dropdown" id="profileDropdown">
+                            <div style="padding:12px 16px 8px;">
+                                <div style="font-weight:600;font-size:.875rem;color:#212529;">{{ current_user.username | title }}</div>
+                                <div style="font-size:.75rem;color:#6c757d;">{{ current_user.role | title }}</div>
+                            </div>
+                            <div class="dropdown-divider"></div>
+                            {% if current_user.role in ('admin', 'superadmin') %}
+                            <a href="{{ url_for('user_management') }}">
+                                <span></span> User Management
+                            </a>
+                            <div class="dropdown-divider"></div>
+                            {% endif %}
+                            <a href="{{ url_for('logout') }}" class="logout-link">
+                                <span></span> Logout
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>

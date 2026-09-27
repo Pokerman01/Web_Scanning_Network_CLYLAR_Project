@@ -138,6 +138,30 @@ def visible_schedules_query():
 
 
 # ─────────────────────────────────────────
+#  Layout context (sidebar/topbar — every template)
+# ─────────────────────────────────────────
+
+THAI_MONTHS = ['', 'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
+               'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม']
+
+
+@app.context_processor
+def inject_layout_context():
+    now = now_th()
+    notif_count = 0
+    if current_user.is_authenticated:
+        try:
+            notif_count = visible_scans_query().filter_by(status='Running').count()
+        except Exception:
+            notif_count = 0
+    return {
+        'now_year': now.year,
+        'thai_date_today': f"{now.day} {THAI_MONTHS[now.month]} {now.year + 543}",
+        'notification_count': notif_count,
+    }
+
+
+# ─────────────────────────────────────────
 #  Helpers: Schedule calculation
 # ─────────────────────────────────────────
 
@@ -402,8 +426,8 @@ def dashboard():
                 if port_label:
                     all_ports_global.add(port_label)
                 for cve in p.get('cves', []):
-                    cve_id = cve if isinstance(cve, str) else cve.get('id', str(cve))
-                    if cve_id not in seen_cves:
+                    cve_id = cve if isinstance(cve, str) else cve.get('cve_id', '')
+                    if cve_id and cve_id not in seen_cves:
                         seen_cves.add(cve_id)
                         total_cves_found += 1
                         severity = cve.get('severity', 'unknown') if isinstance(cve, dict) else 'unknown'
@@ -618,6 +642,120 @@ def tasks_page():
     all_jobs = visible_scans_query().all()
     target_scan_counts = Counter(j.target for j in all_jobs if j.status == 'Completed')
     return render_template("tasks.html", schedules=schedules, target_scan_counts=target_scan_counts)
+
+
+# ─────────────────────────────────────────
+#  DEVICES / VULNERABILITIES / REPORTS / SETTINGS
+# ─────────────────────────────────────────
+
+@app.route('/devices')
+@login_required
+def devices_page():
+    """รวมอุปกรณ์ที่ไม่ซ้ำกันจากประวัติการสแกนทั้งหมด (เรียงจากล่าสุดไปเก่าสุด)"""
+    history = visible_scans_query().order_by(ScanJob.timestamp.desc()).all()
+    devices = {}
+    for job in history:
+        if not job.result_data:
+            continue
+        try:
+            job_data = json.loads(job.result_data)
+        except Exception:
+            continue
+        for d in job_data:
+            ip = d.get('ip', '')
+            if not ip:
+                continue
+            if ip not in devices:
+                mac = d.get('mac', '')
+                devices[ip] = {
+                    'ip': ip,
+                    'mac': mac if mac and mac != 'Unknown' else '',
+                    'mac_vendor': d.get('mac_vendor', ''),
+                    'os': d.get('os', ''),
+                    'ports': set(),
+                    'scan_count': 0,
+                    'last_seen': job.timestamp,
+                    'last_scan_id': job.id,
+                }
+            devices[ip]['scan_count'] += 1
+            for p in d.get('ports', []):
+                devices[ip]['ports'].add(f"{p.get('port')}/{p.get('name', '?')}")
+
+    device_list = []
+    for ip, e in devices.items():
+        device_list.append({
+            'ip': e['ip'],
+            'mac': e['mac'] or '—',
+            'mac_vendor': e['mac_vendor'],
+            'os': e['os'] or 'Unknown',
+            'port_count': len(e['ports']),
+            'ports': sorted(e['ports']),
+            'scan_count': e['scan_count'],
+            'last_seen': e['last_seen'].strftime('%Y-%m-%d %H:%M') if e['last_seen'] else '—',
+            'last_scan_id': e['last_scan_id'],
+        })
+    device_list.sort(key=lambda x: x['ip'])
+    return render_template('devices.html', devices=device_list)
+
+
+@app.route('/vulnerabilities')
+@login_required
+def vulnerabilities_page():
+    """รวม CVE ที่ไม่ซ้ำกัน (ตาม IP + CVE ID) จาก Vulnerability Scan ทั้งหมด"""
+    history = visible_scans_query().filter_by(scan_type='vuln_scan').order_by(ScanJob.timestamp.desc()).all()
+    seen = set()
+    cve_list = []
+    severity_counts = {'CRITICAL': 0, 'HIGH': 0, 'MEDIUM': 0, 'LOW': 0, 'UNKNOWN': 0}
+
+    for job in history:
+        if not job.result_data:
+            continue
+        try:
+            job_data = json.loads(job.result_data)
+        except Exception:
+            continue
+        for d in job_data:
+            ip = d.get('ip', '')
+            for p in d.get('ports', []):
+                for cve in (p.get('cves') or []):
+                    cve_id = cve.get('cve_id', '')
+                    key = (ip, cve_id)
+                    if not cve_id or key in seen:
+                        continue
+                    seen.add(key)
+                    sev = (cve.get('severity') or 'UNKNOWN').upper()
+                    severity_counts[sev] = severity_counts.get(sev, 0) + 1
+                    cve_list.append({
+                        'cve_id': cve_id,
+                        'severity': sev,
+                        'cvss_score': cve.get('cvss_score'),
+                        'cwe_name': cve.get('cwe_name', ''),
+                        'description': cve.get('description', ''),
+                        'ip': ip,
+                        'port': p.get('port', ''),
+                        'service': p.get('name', ''),
+                        'job_id': job.id,
+                        'found_at': job.timestamp.strftime('%Y-%m-%d') if job.timestamp else '',
+                    })
+
+    sev_order = {'CRITICAL': 0, 'HIGH': 1, 'MEDIUM': 2, 'LOW': 3, 'UNKNOWN': 4}
+    cve_list.sort(key=lambda c: sev_order.get(c['severity'], 5))
+    return render_template('vulnerabilities.html', cves=cve_list,
+                           severity_counts=severity_counts, total_cves=len(cve_list))
+
+
+@app.route('/reports')
+@login_required
+def reports_page():
+    """รายการ scan ที่เสร็จสมบูรณ์ พร้อมลิงก์ export CSV / PDF"""
+    history = visible_scans_query().filter_by(status='Completed').order_by(ScanJob.timestamp.desc()).all()
+    return render_template('reports.html', history=history)
+
+
+@app.route('/settings')
+@login_required
+def settings_page():
+    return render_template('settings.html')
 
 
 # ─────────────────────────────────────────
@@ -1421,6 +1559,7 @@ def _build_app_context():
         all_ips = {}   # ip → set of "port/service"
         all_ports_global = set()
         vuln_summary = []
+        seen_vulns = set()
 
         for job in scans:
             entry = {
@@ -1450,14 +1589,17 @@ def _build_app_context():
                                 all_ports_global.add(str(p.get('port', '')))
 
                         # CVE / Vuln
-                        for vuln in h.get('vulns', []):
-                            cve_id = vuln.get('id') or vuln.get('cve', '')
-                            if cve_id:
+                        for p in h.get('ports', []):
+                            for cve in (p.get('cves') or []):
+                                cve_id = cve.get('cve_id', '')
+                                if not cve_id or (ip, cve_id) in seen_vulns:
+                                    continue
+                                seen_vulns.add((ip, cve_id))
                                 vuln_summary.append({
                                     'ip': ip,
                                     'cve': cve_id,
-                                    'severity': vuln.get('severity', ''),
-                                    'description': (vuln.get('description', '') or '')[:120],
+                                    'severity': cve.get('severity', ''),
+                                    'description': (cve.get('description', '') or '')[:120],
                                 })
                 except Exception:
                     entry['host_count'] = 0

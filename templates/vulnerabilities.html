@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+
+{% block page_title %}<div class="topbar-page-title">ช่องโหว่</div>{% endblock %}
+{% block page_subtitle %}<div class="topbar-page-subtitle">ช่องโหว่ (CVE) ที่พบจาก Vulnerability Scan ทั้งหมด</div>{% endblock %}
+
+{% block content %}
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+{% for category, message in messages %}
+<div class="alert alert-{{ 'success' if category == 'success' else 'danger' }} alert-dismissible fade show" role="alert">
+  {{ message }}
+  <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+{% endfor %}
+{% endif %}
+{% endwith %}
+
+<!-- Severity summary chips -->
+<div class="row g-3 mb-4">
+  {% set sev_meta = [
+    ('CRITICAL', '#7c3aed', '#f3e8ff'),
+    ('HIGH', '#dc2626', '#fee2e2'),
+    ('MEDIUM', '#ca8a04', '#fef9c3'),
+    ('LOW', '#16a34a', '#dcfce7'),
+  ] %}
+  {% for label, color, bg in sev_meta %}
+  <div class="col-6 col-md-3">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body d-flex align-items-center gap-3 p-3">
+        <div style="width:40px;height:40px;border-radius:50%;background:{{ bg }};display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <i class="ti ti-shield-exclamation" style="color:{{ color }};font-size:19px;"></i>
+        </div>
+        <div>
+          <div style="font-size:.75rem;color:#64748b;font-weight:500;">{{ label|title }}</div>
+          <div style="font-size:1.4rem;font-weight:700;color:#0f172a;">{{ severity_counts.get(label, 0) }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="card border-0 shadow-sm">
+  <div class="card-body p-0">
+    {% if cves %}
+    <div class="table-responsive">
+      <table class="table align-middle mb-0" style="font-size:.85rem;">
+        <thead>
+          <tr style="background:#f8fafc;">
+            <th class="ps-4 py-3 text-muted" style="font-weight:600;font-size:.78rem;">CVE ID</th>
+            <th class="py-3 text-muted" style="font-weight:600;font-size:.78rem;">Severity</th>
+            <th class="py-3 text-muted" style="font-weight:600;font-size:.78rem;">CVSS</th>
+            <th class="py-3 text-muted" style="font-weight:600;font-size:.78rem;">CWE</th>
+            <th class="py-3 text-muted" style="font-weight:600;font-size:.78rem;">Host</th>
+            <th class="py-3 text-muted" style="font-weight:600;font-size:.78rem;">Service</th>
+            <th class="py-3 text-muted" style="font-weight:600;font-size:.78rem;">Found</th>
+            <th class="pe-4 py-3 text-muted" style="font-weight:600;font-size:.78rem;"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in cves %}
+          <tr style="border-top:1px solid #f1f3f5;">
+            <td class="ps-4 py-3 fw-semibold" style="color:#0f172a;">{{ c.cve_id }}</td>
+            <td class="py-3">
+              <span class="badge sev-{{ c.severity|lower }}">{{ c.severity }}</span>
+            </td>
+            <td class="py-3">{{ c.cvss_score if c.cvss_score is not none else '—' }}</td>
+            <td class="py-3 text-muted">{{ c.cwe_name or '—' }}</td>
+            <td class="py-3">{{ c.ip }}</td>
+            <td class="py-3 text-muted">{{ c.port }}/{{ c.service }}</td>
+            <td class="py-3 text-muted">{{ c.found_at }}</td>
+            <td class="pe-4 py-3 text-end">
+              <a href="{{ url_for('scan_detail', scan_id=c.job_id) }}" class="btn btn-sm btn-outline-secondary">ดู Scan</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="text-center py-5 text-muted">
+      <i class="ti ti-shield-check" style="font-size:2.5rem;color:#cbd5e1;"></i>
+      <p class="mt-2 mb-0">ยังไม่พบช่องโหว่ — รัน Vulnerability Scan เพื่อตรวจ CVE</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<style>
+  .sev-critical { background:#7c3aed; color:#fff; }
+  .sev-high { background:#dc2626; color:#fff; }
+  .sev-medium { background:#ca8a04; color:#fff; }
+  .sev-low { background:#16a34a; color:#fff; }
+  .sev-unknown { background:#6c757d; color:#fff; }
+</style>
+
+{% endblock %}

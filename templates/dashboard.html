@@ -1,9 +1,9 @@
 {% extends 'base.html' %}
 
-{% block content %}
+{% block page_title %}<div class="topbar-page-title">แดชบอร์ด</div>{% endblock %}
+{% block page_subtitle %}<div class="topbar-page-subtitle">ภาพรวมระบบสแกนเครือข่าย</div>{% endblock %}
 
-<h2 class="mb-1">Network Dashboard</h2>
-<p class="text-muted mb-4">ภาพรวมเครือข่าย</p>
+{% block content %}
 
 {% with messages = get_flashed_messages(with_categories=true) %}
 {% if messages %}
@@ -25,15 +25,15 @@
     <div class="stat-card card h-100 shadow-sm" id="card-devices" data-card="devices"
       style="cursor:pointer; transform-origin: center center;">
       <div class="card-body d-flex flex-column justify-content-between p-3">
-        <div class="d-flex align-items-start justify-content-between">
-          <div>
-            <span class="stat-card-label">อุปกรณ์ทั้งหมด</span>
-            <div class="stat-card-value">{{ total_devices }}</div>
-          </div>
+        <div class="d-flex align-items-start gap-3">
           <div class="stat-icon-badge" style="background:#E6F1FB;">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
             </svg>
+          </div>
+          <div>
+            <span class="stat-card-label">อุปกรณ์ทั้งหมด</span>
+            <div class="stat-card-value">{{ total_devices }}</div>
           </div>
         </div>
         <div class="stat-card-footer mt-2">
@@ -48,15 +48,16 @@
     <div class="stat-card card h-100 shadow-sm" id="card-ports" data-card="ports"
       style="cursor:pointer; transform-origin: center center;">
       <div class="card-body d-flex flex-column justify-content-between p-3">
-        <div class="d-flex align-items-start justify-content-between">
+        <div class="d-flex align-items-start gap-3">
+          <div class="stat-icon-badge" style="background:#fff8e1;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#b8860b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+              <line x1="8.6" y1="10.6" x2="15.4" y2="6.4"/><line x1="8.6" y1="13.4" x2="15.4" y2="17.6"/>
+            </svg>
+          </div>
           <div>
             <span class="stat-card-label">Open Ports</span>
             <div class="stat-card-value">{{ total_open_ports }}</div>
-          </div>
-          <div class="stat-icon-badge" style="background:#EAF3DE;">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18" stroke-width="2.5"/><path d="M9 7h6M9 11h4"/>
-            </svg>
           </div>
         </div>
         <div class="stat-card-footer mt-2">
@@ -71,15 +72,15 @@
     <div class="stat-card card h-100 shadow-sm" id="card-cve" data-card="cve"
       style="cursor:pointer; transform-origin: center center;">
       <div class="card-body d-flex flex-column justify-content-between p-3">
-        <div class="d-flex align-items-start justify-content-between">
-          <div>
-            <span class="stat-card-label">CVE Found</span>
-            <div class="stat-card-value">{{ total_cves_found }}</div>
-          </div>
+        <div class="d-flex align-items-start gap-3">
           <div class="stat-icon-badge" style="background:#FEE2E2;">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
             </svg>
+          </div>
+          <div>
+            <span class="stat-card-label">CVE Found</span>
+            <div class="stat-card-value">{{ total_cves_found }}</div>
           </div>
         </div>
         <div class="stat-card-footer mt-2">
@@ -94,15 +95,15 @@
     <div class="stat-card card h-100 shadow-sm" id="card-tasks" data-card="tasks"
       style="cursor:pointer; transform-origin: center center;">
       <div class="card-body d-flex flex-column justify-content-between p-3">
-        <div class="d-flex align-items-start justify-content-between">
+        <div class="d-flex align-items-start gap-3">
+          <div class="stat-icon-badge" style="background:#fff8e1;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#b8860b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+            </svg>
+          </div>
           <div>
             <span class="stat-card-label">Total Task</span>
             <div class="stat-card-value">{{ total_tasks }}</div>
-          </div>
-          <div class="stat-icon-badge" style="background:#F3E8FF;">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
-            </svg>
           </div>
         </div>
         <div class="stat-card-footer mt-2">
@@ -115,7 +116,7 @@
 
 <!-- ===== CHARTS ROW ===== -->
 {% if total_devices > 0 %}
-<div class="row g-3 mb-5">
+<div class="row g-3 mb-3">
 
   <!-- Donut: Device Port Count -->
   <div class="col-md-6">
@@ -125,16 +126,24 @@
           <h6 class="fw-bold mb-0">Device Status</h6>
           <span class="text-muted" style="font-size:.72rem;" title="Port counts are aggregated from all scan jobs in history">Across all scan history</span>
         </div>
-        <div class="d-flex align-items-center flex-grow-1" style="gap:0">
-          <!-- Legend flush left -->
-          <div class="d-flex flex-column gap-3" id="deviceStatusLegend"
-            style="font-size:.82rem;min-width:180px;align-self:center">
+        <div class="d-flex align-items-center flex-grow-1 gap-4">
+          <!-- Donut chart with center label -->
+          <div style="position:relative;flex-shrink:0;width:200px;height:200px;">
+            <canvas id="deviceStatusChart" style="max-height:200px;max-width:200px;"></canvas>
+            <div id="donutCenterLabel" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;">
+              <span id="donutCenterCount" style="font-size:1.7rem;font-weight:700;color:#0f172a;line-height:1;"></span>
+              <span style="font-size:.72rem;color:#94a3b8;margin-top:2px;">Devices</span>
+            </div>
+          </div>
+          <!-- Legend -->
+          <div class="d-flex flex-column gap-3 flex-grow-1" id="deviceStatusLegend" style="font-size:.85rem;">
             <!-- Populated by JS -->
           </div>
-          <!-- Donut chart centered in remaining space -->
-          <div class="d-flex align-items-center justify-content-center flex-grow-1">
-            <canvas id="deviceStatusChart" style="max-height:220px;max-width:220px;margin-right:150px"></canvas>
-          </div>
+        </div>
+        <!-- Majority insight banner -->
+        <div id="donutInfoBanner" style="display:none;margin-top:16px;background:var(--nt-gold-bg,#fff8e1);border:1px solid #fde68a;border-radius:10px;padding:10px 14px;font-size:.8rem;color:#92702a;align-items:center;gap:8px;">
+          <i class="ti ti-info-circle" style="font-size:16px;flex-shrink:0;"></i>
+          <span id="donutInfoText"></span>
         </div>
         <!-- Animated filtered device list -->
         <div id="donut-filter-panel" style="display:none; margin-top:16px;">
@@ -181,6 +190,106 @@
 </div>
 {% endif %}
 
+<!-- ===== RECENT SCAN TASKS + TOP OPEN PORTS ===== -->
+<div class="row g-3 mb-4">
+
+  <!-- Recent Scan Tasks -->
+  <div class="col-lg-7">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body p-4">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <h6 class="fw-bold mb-0">Recent Scan Tasks</h6>
+          <a href="{{ url_for('history_page') }}" style="font-size:.8rem;color:var(--nt-gold-dark,#b8860b);font-weight:600;text-decoration:none;">ดูทั้งหมด →</a>
+        </div>
+        {% if history %}
+        <div class="table-responsive">
+          <table class="table align-middle mb-0" style="font-size:.82rem;">
+            <thead>
+              <tr>
+                <th class="text-muted ps-0" style="font-weight:600;font-size:.72rem;">ชื่อการสแกน</th>
+                <th class="text-muted" style="font-weight:600;font-size:.72rem;">เป้าหมาย</th>
+                <th class="text-muted" style="font-weight:600;font-size:.72rem;">สถานะ</th>
+                <th class="text-muted" style="font-weight:600;font-size:.72rem;">เริ่มต้น</th>
+                <th class="text-muted pe-0" style="font-weight:600;font-size:.72rem;">ผลลัพธ์</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for job in history[:5] %}
+              <tr style="border-top:1px solid #f1f3f5;cursor:pointer;" onclick="window.location='{{ url_for('scan_detail', scan_id=job.id) }}'">
+                <td class="ps-0 py-2 fw-semibold" style="color:#0f172a;">{{ job.scan_name or ('Job #' ~ job.id) }}</td>
+                <td class="py-2 text-muted">{{ job.target }}</td>
+                <td class="py-2">
+                  {% if job.status == 'Completed' %}
+                  <span class="badge rounded-pill" style="background:#dcfce7;color:#16a34a;font-weight:600;"><i class="ti ti-check" style="font-size:11px;"></i> Complete</span>
+                  {% elif job.status == 'Running' %}
+                  <span class="badge rounded-pill" style="background:#dbeafe;color:#2563eb;font-weight:600;"><i class="ti ti-loader-2" style="font-size:11px;"></i> Running</span>
+                  {% elif job.status == 'Failed' %}
+                  <span class="badge rounded-pill" style="background:#fee2e2;color:#dc2626;font-weight:600;"><i class="ti ti-x" style="font-size:11px;"></i> Failed</span>
+                  {% else %}
+                  <span class="badge rounded-pill" style="background:#f1f3f5;color:#6c757d;font-weight:600;">{{ job.status }}</span>
+                  {% endif %}
+                </td>
+                <td class="py-2 text-muted">{{ job.timestamp.strftime('%Y-%m-%d %H:%M') if job.timestamp else '—' }}</td>
+                <td class="py-2 pe-0 text-muted">
+                  {% set host_count = (job.result_data | from_json | length) if job.result_data else 0 %}
+                  {{ host_count }} Devices
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="text-center text-muted py-4" style="font-size:.85rem;">ยังไม่มีประวัติการสแกน</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Top Open Ports -->
+  <div class="col-lg-5">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body p-4">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <h6 class="fw-bold mb-0">Top Open Ports</h6>
+        </div>
+        {% if top_ports %}
+        <table class="table table-borderless mb-0" style="font-size:.82rem;">
+          <thead>
+            <tr>
+              <th class="text-muted ps-0" style="font-weight:600;font-size:.72rem;">พอร์ต</th>
+              <th class="text-muted" style="font-weight:600;font-size:.72rem;">บริการ</th>
+              <th class="text-muted" style="font-weight:600;font-size:.72rem;width:45%;">อุปกรณ์</th>
+              <th class="text-muted pe-0 text-end" style="font-weight:600;font-size:.72rem;">%</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for label, count in top_ports %}
+            {% set port_num = label.split('/')[0] %}
+            {% set svc_name = label.split('/', 1)[1] if '/' in label else '?' %}
+            {% set pct = ((count / total_devices) * 100) | round | int if total_devices else 0 %}
+            <tr>
+              <td class="ps-0 py-2 fw-semibold" style="color:#0f172a;">{{ port_num }}</td>
+              <td class="py-2 text-muted">{{ svc_name }}</td>
+              <td class="py-2 align-middle">
+                <div style="background:#f1f3f5;border-radius:6px;height:7px;overflow:hidden;">
+                  <div style="background:var(--nt-gold,#f5c518);height:100%;width:{{ pct }}%;"></div>
+                </div>
+              </td>
+              <td class="py-2 pe-0 text-end text-muted">{{ pct }}%</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <div class="text-center text-muted py-4" style="font-size:.85rem;">ยังไม่พบข้อมูล Port</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+</div>
+
 <!-- Chart Scripts -->
 {% if total_devices > 0 %}
 <script>
@@ -217,6 +326,26 @@
     { label: '3–6 Port', count: warning, color: '#ffc107' },
     { label: '> 6 Port', count: danger, color: '#dc3545' },
   ];
+  // Center label inside donut
+  const donutCenterCountEl = document.getElementById('donutCenterCount');
+  if (donutCenterCountEl) donutCenterCountEl.textContent = totalDevices;
+
+  // Majority insight banner
+  const infoBanner = document.getElementById('donutInfoBanner');
+  const infoText = document.getElementById('donutInfoText');
+  if (infoBanner && infoText && totalDevices > 0) {
+    const buckets = [
+      { count: safe, msg: 'อุปกรณ์ส่วนใหญ่มีพอร์ตเปิดอยู่น้อยกว่า 3 พอร์ต' },
+      { count: warning, msg: 'อุปกรณ์ส่วนใหญ่มีพอร์ตเปิดอยู่ระหว่าง 3-6 พอร์ต' },
+      { count: danger, msg: 'อุปกรณ์ส่วนใหญ่มีพอร์ตเปิดอยู่มากกว่า 6 พอร์ต' },
+    ];
+    const majority = buckets.reduce((a, b) => (b.count > a.count ? b : a));
+    if (majority.count > 0) {
+      infoText.textContent = majority.msg;
+      infoBanner.style.display = 'flex';
+    }
+  }
+
   const legendEl = document.getElementById('deviceStatusLegend');
   legendData.forEach((item, idx) => {
     const pct = totalDevices > 0 ? Math.round(item.count / totalDevices * 100) : 0;
@@ -261,11 +390,23 @@
         tooltip: {
           callbacks: {
             label: function (ctx) {
-              return `  ${ctx.parsed} Device${ctx.parsed !== 1 ? 's' : ''}`;
+              return `${ctx.parsed} Device${ctx.parsed !== 1 ? 's' : ''}`;
             }
           },
-          bodyFont: { size: 14, weight: 'bold' },
-          padding: 10
+          backgroundColor: '#ffffff',
+          titleColor: '#0f172a',
+          bodyColor: '#334155',
+          borderColor: '#e2e8f0',
+          borderWidth: 1,
+          cornerRadius: 10,
+          padding: { top: 9, bottom: 9, left: 12, right: 14 },
+          boxPadding: 6,
+          usePointStyle: true,
+          titleFont: { size: 12.5, weight: '700' },
+          bodyFont: { size: 13, weight: '600' },
+          titleMarginBottom: 4,
+          caretSize: 6,
+          displayColors: true
         }
       },
       onClick: function (evt, elements) {
@@ -288,7 +429,7 @@
     const bg = segmentColors.map((c, i) => i === segIdx ? c : hexWithOpacity(c, 0.2));
     donutChart.data.datasets[0].backgroundColor = bg;
     donutChart.data.datasets[0].hoverBackgroundColor = bg;
-    donutChart.update('active');
+    donutChart.update();
 
     // Show filtered device list
     const panel = document.getElementById('donut-filter-panel');
@@ -359,7 +500,7 @@
     activeSegment = null;
     donutChart.data.datasets[0].backgroundColor = segmentColors;
     donutChart.data.datasets[0].hoverBackgroundColor = ['#157347', '#e0a800', '#b02a37'];
-    donutChart.update('active');
+    donutChart.update();
 
     const panel = document.getElementById('donut-filter-panel');
     panel.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
@@ -607,7 +748,7 @@
   .stat-icon-badge {
     width: 44px;
     height: 44px;
-    border-radius: 10px;
+    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;

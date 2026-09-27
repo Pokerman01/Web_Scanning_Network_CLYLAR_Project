@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+
+{% block page_title %}<div class="topbar-page-title">อุปกรณ์</div>{% endblock %}
+{% block page_subtitle %}<div class="topbar-page-subtitle">อุปกรณ์ทั้งหมดที่พบจากการสแกน ({{ devices|length }} เครื่อง)</div>{% endblock %}
+
+{% block content %}
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+{% for category, message in messages %}
+<div class="alert alert-{{ 'success' if category == 'success' else 'danger' }} alert-dismissible fade show" role="alert">
+  {{ message }}
+  <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+{% endfor %}
+{% endif %}
+{% endwith %}
+
+<div class="card border-0 shadow-sm">
+  <div class="card-body p-0">
+    {% if devices %}
+    <div class="table-responsive">
+      <table class="table align-middle mb-0" style="font-size:.88rem;">
+        <thead>
+          <tr style="background:#f8fafc;">
+            <th class="ps-4 py-3 text-muted" style="font-weight:600;font-size:.78rem;">IP Address</th>
+            <th class="py-3 text-muted" style="font-weight:600;font-size:.78rem;">MAC Address</th>
+            <th class="py-3 text-muted" style="font-weight:600;font-size:.78rem;">OS</th>
+            <th class="py-3 text-muted" style="font-weight:600;font-size:.78rem;">Open Ports</th>
+            <th class="py-3 text-muted" style="font-weight:600;font-size:.78rem;">Scan Count</th>
+            <th class="py-3 text-muted" style="font-weight:600;font-size:.78rem;">Last Seen</th>
+            <th class="pe-4 py-3 text-muted" style="font-weight:600;font-size:.78rem;"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for d in devices %}
+          <tr style="border-top:1px solid #f1f3f5;">
+            <td class="ps-4 py-3 fw-semibold" style="color:#0f172a;">{{ d.ip }}</td>
+            <td class="py-3 text-muted">
+              {{ d.mac }}{% if d.mac_vendor %} <span style="font-size:.75rem;">({{ d.mac_vendor }})</span>{% endif %}
+            </td>
+            <td class="py-3">{{ d.os }}</td>
+            <td class="py-3">
+              <span class="badge rounded-pill" style="background:var(--nt-gold-bg,#fff8e1);color:var(--nt-gold-dark,#b8860b);font-weight:600;">
+                {{ d.port_count }} port{{ 's' if d.port_count != 1 else '' }}
+              </span>
+            </td>
+            <td class="py-3 text-muted">{{ d.scan_count }}</td>
+            <td class="py-3 text-muted">{{ d.last_seen }}</td>
+            <td class="pe-4 py-3 text-end">
+              <a href="{{ url_for('scan_detail', scan_id=d.last_scan_id) }}" class="btn btn-sm btn-outline-secondary">ดูรายละเอียด</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="text-center py-5 text-muted">
+      <i class="ti ti-device-desktop" style="font-size:2.5rem;color:#cbd5e1;"></i>
+      <p class="mt-2 mb-0">ยังไม่พบอุปกรณ์ — เริ่มสแกนเครือข่ายเพื่อดูข้อมูลที่นี่</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}
