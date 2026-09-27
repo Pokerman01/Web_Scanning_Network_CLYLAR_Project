@@ -1,0 +1,1804 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CLYLAR Network Scanner</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Prevent layout shift/flash before render
+        (function() {
+            try {
+                if (localStorage.getItem('clylar_sidebar_collapsed') === 'true') {
+                    document.documentElement.classList.add('sidebar-collapsed');
+                }
+            } catch (e) {}
+        })();
+    </script>
+    <style>
+        :root {
+            --sidebar-width: 280px;
+            --sidebar-collapsed-width: 72px;
+            --sidebar-transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1), margin-left 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body { background-color: #f4f6f9; }
+
+        /* ===== SIDEBAR (Gemini Style) ===== */
+        .sidebar {
+            height: 100vh;
+            width: var(--sidebar-width);
+            background-color: #0f1117;
+            color: white;
+            position: fixed;
+            top: 0;
+            left: 0;
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+            z-index: 1000;
+            overflow-x: hidden;
+            overflow-y: auto;
+            transition: var(--sidebar-transition);
+            white-space: nowrap;
+        }
+        /* Custom scrollbar for sidebar */
+        .sidebar::-webkit-scrollbar { width: 4px; }
+        .sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+
+        /* Sidebar Header */
+        .sidebar-header {
+            padding: 16px 14px 16px 18px;
+            border-bottom: 1px solid rgba(255,255,255,0.07);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            min-height: 72px;
+            box-sizing: border-box;
+            transition: padding 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: hidden;
+            gap: 8px;
+        }
+        .sidebar-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            overflow: hidden;
+            flex: 1;
+            min-width: 0;
+        }
+        .sidebar-logo-icon {
+            width: 36px; height: 36px;
+            background: #1d4ed8;
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 19px; color: #fff;
+            flex-shrink: 0;
+            box-shadow: 0 4px 12px rgba(29, 78, 216, 0.35);
+            transition: transform 0.15s ease;
+        }
+        .sidebar-logo-details {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transition: opacity 0.2s ease;
+            white-space: nowrap;
+        }
+        .sidebar-logo-text { font-size: 17.5px; font-weight: 700; color: #fff; letter-spacing: 0.3px; line-height: 1.2; }
+        .sidebar-logo-sub { font-size: 11px; color: rgba(255,255,255,0.35); margin-top: 2px; }
+
+        /* Gemini Style Sidebar Toggle Button */
+        .sidebar-toggle-btn {
+            background: transparent;
+            border: none;
+            outline: none;
+            color: rgba(255, 255, 255, 0.7);
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: background-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+            padding: 0;
+        }
+        .sidebar-toggle-btn:hover {
+            background-color: rgba(255, 255, 255, 0.09);
+            color: #ffffff;
+        }
+        .sidebar-toggle-btn:active {
+            transform: scale(0.92);
+        }
+        .sidebar-toggle-btn svg {
+            width: 20px;
+            height: 20px;
+            stroke: currentColor;
+            stroke-width: 2;
+        }
+
+        /* Nav */
+        .sidebar-nav { padding: 12px 10px; flex: 1; overflow-y: auto; overflow-x: hidden; }
+        .sidebar-section-label {
+            font-size: 11px;
+            color: rgba(255,255,255,0.3);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 10px 12px 5px;
+            display: block;
+            transition: opacity 0.2s ease, height 0.2s ease, margin 0.2s ease;
+            overflow: hidden;
+        }
+        .sidebar a.nav-link {
+            color: rgba(255,255,255,0.55);
+            text-decoration: none;
+            padding: 11px 14px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-radius: 8px;
+            margin-bottom: 3px;
+            font-size: 15px;
+            transition: background 0.15s, color 0.15s, padding 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+        .sidebar a.nav-link i { font-size: 20px; width: 22px; text-align: center; flex-shrink: 0; }
+        .sidebar a.nav-link:hover { background-color: rgba(255,255,255,0.07); color: rgba(255,255,255,0.9); }
+        .sidebar a.nav-link.active { background-color: #1d4ed8; color: #fff; }
+        .sidebar a.nav-link.active:hover { background-color: #2563eb; }
+        .sidebar a.nav-link .nav-label {
+            transition: opacity 0.2s ease;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Nav badge */
+        .sidebar-badge {
+            margin-left: auto;
+            background: #ef4444;
+            color: #fff;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 2px 7px;
+            border-radius: 20px;
+            line-height: 1.6;
+        }
+
+        /* Footer user row */
+        .sidebar-footer {
+            padding: 12px 10px 16px;
+            border-top: 1px solid rgba(255,255,255,0.07);
+        }
+        .sidebar-user-row {
+            display: flex;
+            align-items: center;
+            gap: 11px;
+            padding: 8px 10px;
+            border-radius: 8px;
+            transition: padding 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .sidebar-user-avatar {
+            width: 36px; height: 36px;
+            border-radius: 50%;
+            background: #1d4ed8;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 13px; font-weight: 600; color: #fff;
+            flex-shrink: 0;
+        }
+        .sidebar-user-details {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transition: opacity 0.2s ease;
+        }
+        .sidebar-user-name { font-size: 14px; color: rgba(255,255,255,0.8); font-weight: 500; }
+        .sidebar-user-role { font-size: 11.5px; color: rgba(255,255,255,0.35); }
+
+        /* ===== COLLAPSED (ICON MODE) STYLES ===== */
+        html.sidebar-collapsed .sidebar,
+        body.sidebar-collapsed .sidebar {
+            width: var(--sidebar-collapsed-width);
+        }
+        html.sidebar-collapsed .main-wrapper,
+        body.sidebar-collapsed .main-wrapper {
+            margin-left: var(--sidebar-collapsed-width);
+        }
+        html.sidebar-collapsed .sidebar-header,
+        body.sidebar-collapsed .sidebar-header {
+            padding: 16px 0;
+            justify-content: center;
+        }
+        html.sidebar-collapsed .sidebar-brand,
+        body.sidebar-collapsed .sidebar-brand {
+            justify-content: center;
+            width: 100%;
+            cursor: pointer;
+        }
+        html.sidebar-collapsed .sidebar-logo-details,
+        body.sidebar-collapsed .sidebar-logo-details {
+            opacity: 0;
+            width: 0;
+            height: 0;
+            display: none;
+        }
+        html.sidebar-collapsed .sidebar-toggle-btn,
+        body.sidebar-collapsed .sidebar-toggle-btn {
+            display: none;
+        }
+        html.sidebar-collapsed .sidebar-logo-icon:hover {
+            transform: scale(1.08);
+        }
+        html.sidebar-collapsed .sidebar-section-label,
+        body.sidebar-collapsed .sidebar-section-label {
+            opacity: 0;
+            height: 0;
+            padding: 0;
+            margin: 6px 0;
+            border-top: 1px solid rgba(255,255,255,0.08);
+        }
+        html.sidebar-collapsed .sidebar a.nav-link,
+        body.sidebar-collapsed .sidebar a.nav-link {
+            padding: 11px 0;
+            justify-content: center;
+            gap: 0;
+        }
+        html.sidebar-collapsed .sidebar a.nav-link .nav-label,
+        body.sidebar-collapsed .sidebar a.nav-link .nav-label {
+            display: none;
+        }
+        html.sidebar-collapsed .sidebar-user-row,
+        body.sidebar-collapsed .sidebar-user-row {
+            padding: 6px 0;
+            justify-content: center;
+        }
+        html.sidebar-collapsed .sidebar-user-details,
+        body.sidebar-collapsed .sidebar-user-details {
+            display: none;
+        }
+
+        /* ===== MAIN WRAPPER & TOPBAR ===== */
+        .main-wrapper {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            margin-left: var(--sidebar-width);
+            transition: var(--sidebar-transition);
+            min-width: 0;
+        }
+        .topbar {
+            background-color: #fff;
+            border-bottom: 1px solid #e9ecef;
+            padding: 12px 28px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+        }
+        .topbar-title { font-weight: 600; color: #495057; font-size: 1rem; }
+        .topbar-user { display: flex; align-items: center; gap: 12px; margin-left: auto; }
+        .topbar-user-info { text-align: right; line-height: 1.2; }
+        .topbar-user-name { font-weight: 600; font-size: 0.9rem; color: #212529; }
+        .topbar-user-role { font-size: 0.75rem; color: #6c757d; }
+        .topbar-avatar {
+            width: 38px; height: 38px;
+            background-color: #6c757d;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-size: 1rem;
+            cursor: pointer;
+            position: relative;
+        }
+        .profile-dropdown {
+            position: absolute;
+            right: 0;
+            top: calc(100% + 10px);
+            background: #fff;
+            border: 1px solid #e9ecef;
+            border-radius: 10px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+            min-width: 180px;
+            z-index: 9999;
+            display: none;
+            overflow: hidden;
+        }
+        .profile-dropdown.show { display: block; }
+        .profile-dropdown a {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 16px;
+            color: #212529;
+            text-decoration: none;
+            font-size: 0.875rem;
+            transition: background 0.15s;
+        }
+        .profile-dropdown a:hover { background-color: #f8f9fa; }
+        .profile-dropdown .dropdown-divider {
+            border-top: 1px solid #e9ecef;
+            margin: 0;
+        }
+        .profile-dropdown a.logout-link { color: #dc3545; }
+        .profile-dropdown a.logout-link:hover { background-color: #fff5f5; }
+        .topbar-user { position: relative; }
+        .main-content { flex-grow: 1; padding: 30px; }
+
+        /* Dark Tooltip Styling for Mini Sidebar */
+        .sidebar-tooltip .tooltip-inner {
+            background-color: #0f1117;
+            color: #f8fafc;
+            font-size: 12.5px;
+            font-weight: 500;
+            padding: 6px 11px;
+            border-radius: 6px;
+            border: 1px solid rgba(255,255,255,0.12);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.3);
+        }
+        .sidebar-tooltip.bs-tooltip-end .tooltip-arrow::before {
+            border-right-color: #0f1117;
+        }
+    </style>
+</head>
+<body>
+<div class="d-flex">
+
+    {% if current_user.is_authenticated %}
+    <nav class="sidebar shadow-lg" id="mainSidebar">
+
+        <!-- Sidebar Header (Gemini Style) -->
+        <div class="sidebar-header">
+            <a href="/" class="sidebar-brand" id="sidebarBrand" title="CLYLAR Network Scanner">
+                <div class="sidebar-logo-icon">
+                    <i class="ti ti-radar" aria-hidden="true"></i>
+                </div>
+                <div class="sidebar-logo-details">
+                    <div class="sidebar-logo-text">CLYLAR</div>
+                    <div class="sidebar-logo-sub">Network Scanner</div>
+                </div>
+            </a>
+            <button class="sidebar-toggle-btn" id="sidebarToggleBtn" type="button" aria-label="Collapse Sidebar" title="Collapse Sidebar (Ctrl+B)">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect width="18" height="18" x="3" y="3" rx="4" />
+                    <line x1="9" y1="3" x2="9" y2="21" />
+                </svg>
+            </button>
+        </div>
+
+        <!-- Nav -->
+        <div class="sidebar-nav">
+            <span class="sidebar-section-label">Main</span>
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a href="/" class="nav-link {% if request.path == '/' %}active{% endif %}" data-bs-toggle="tooltip" data-bs-placement="right" title="Dashboard">
+                        <i class="ti ti-layout-dashboard" aria-hidden="true"></i>
+                        <span class="nav-label">Dashboard</span>
+                    </a>
+                </li>
+                {% if current_user.role in ('admin', 'superadmin') %}
+                <li class="nav-item">
+                    <a href="{{ url_for('tasks_page') }}" class="nav-link {% if request.path.startswith('/tasks') %}active{% endif %}" data-bs-toggle="tooltip" data-bs-placement="right" title="Tasks">
+                        <i class="ti ti-list-check" aria-hidden="true"></i>
+                        <span class="nav-label">Tasks</span>
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+
+            <span class="sidebar-section-label">Network</span>
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a href="{{ url_for('topology_page') }}" class="nav-link {% if request.path.startswith('/topology') %}active{% endif %}" data-bs-toggle="tooltip" data-bs-placement="right" title="Network Topology">
+                        <i class="ti ti-topology-star" aria-hidden="true"></i>
+                        <span class="nav-label">Network Topology</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ url_for('history_page') }}" class="nav-link {% if request.path.startswith('/history') %}active{% endif %}" data-bs-toggle="tooltip" data-bs-placement="right" title="Scan History">
+                        <i class="ti ti-history" aria-hidden="true"></i>
+                        <span class="nav-label">Scan History</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+    </nav>
+    {% endif %}
+
+    <div class="main-wrapper">
+        {% if current_user.is_authenticated %}
+        <div class="topbar">
+            <div class="topbar-left">
+                <span class="topbar-title"></span>
+            </div>
+            <div class="topbar-user">
+                <div class="topbar-user-info">
+                    <div class="topbar-user-name">{{ current_user.username | title }}</div>
+                    <div class="topbar-user-role">{{ current_user.role | title }}</div>
+                </div>
+                <div class="topbar-avatar" id="profileAvatar" onclick="toggleProfileDropdown()">
+                    👤
+                    <div class="profile-dropdown" id="profileDropdown">
+                        {% if current_user.role in ('admin', 'superadmin') %}
+                        <a href="{{ url_for('user_management') }}">
+                            <span></span> User Management
+                        </a>
+                        <div class="dropdown-divider"></div>
+                        {% endif %}
+                        <a href="{{ url_for('logout') }}" class="logout-link">
+                            <span></span> Logout
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        <main class="main-content">
+            {% block content %}
+            {% endblock %}
+        </main>
+    </div>
+
+</div>
+
+<!-- Page context for chatbot (injected per template) -->
+<script>
+window.CLYLAR_PAGE_CONTEXT = {% block page_context %}"หน้า: ไม่ทราบ"{% endblock %};
+</script>
+
+<!-- ===== CHATBOT WIDGET ===== -->
+<style>
+  /* --- Floating Button --- */
+  #chatbot-btn {
+    position: fixed;
+    bottom: 28px;
+    right: 28px;
+    width: 58px;
+    height: 58px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+    box-shadow: 0 4px 20px rgba(13,110,253,0.45);
+    border: none;
+    cursor: pointer;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  #chatbot-btn:hover { transform: scale(1.08); box-shadow: 0 6px 28px rgba(13,110,253,0.55); }
+  #chatbot-btn svg { transition: opacity 0.2s, transform 0.2s; }
+  #chatbot-btn.open .icon-chat { opacity: 0; transform: rotate(90deg) scale(0.5); }
+  #chatbot-btn.open .icon-close { opacity: 1; transform: rotate(0deg) scale(1); }
+  #chatbot-btn .icon-close { position: absolute; opacity: 0; transform: rotate(-90deg) scale(0.5); }
+  #chatbot-btn::before {
+    content: '';
+    position: absolute;
+    inset: -5px;
+    border-radius: 50%;
+    border: 2px solid rgba(13,110,253,0.4);
+    animation: pulse-ring 2.2s ease-out infinite;
+  }
+  @keyframes pulse-ring {
+    0%   { opacity: 0.8; transform: scale(1); }
+    100% { opacity: 0;   transform: scale(1.5); }
+  }
+  #chatbot-badge {
+    position: absolute;
+    top: 2px; right: 2px;
+    width: 16px; height: 16px;
+    background: #dc3545;
+    border-radius: 50%;
+    font-size: 10px;
+    font-weight: 700;
+    color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    border: 2px solid #fff;
+  }
+
+  /* --- Popup Window --- */
+  #chatbot-popup {
+    position: fixed;
+    bottom: 100px;
+    right: 28px;
+    width: 370px;
+    height: 540px;
+    background: #fff;
+    border-radius: 18px;
+    box-shadow: 0 12px 48px rgba(0,0,0,0.18);
+    display: flex;
+    flex-direction: column;
+    z-index: 9999;
+    overflow: hidden;
+    transform: scale(0.85) translateY(30px);
+    transform-origin: bottom right;
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 0.28s cubic-bezier(.34,1.56,.64,1), opacity 0.22s ease;
+  }
+  #chatbot-popup.open {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+    pointer-events: all;
+  }
+  #chatbot-popup.is-dragging {
+    transition: none !important;
+    transform: scale(1) translateY(0) !important;
+    opacity: 1 !important;
+    pointer-events: all !important;
+    user-select: none;
+  }
+
+  /* Header */
+  .cb-header {
+    background: linear-gradient(135deg, #212529 0%, #343a40 100%);
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+    cursor: grab;
+    user-select: none;
+  }
+  .cb-header:active { cursor: grabbing; }
+  .cb-drag-hint {
+    font-size: 0.65rem;
+    color: #6c757d;
+    margin-left: 2px;
+    letter-spacing: 0.02em;
+  }
+  .cb-avatar {
+    width: 36px; height: 36px;
+    background: linear-gradient(135deg, #0d6efd, #0a58ca);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+    position: relative;
+  }
+  .cb-avatar::after {
+    content: '';
+    position: absolute;
+    bottom: 1px; right: 1px;
+    width: 9px; height: 9px;
+    background: #28a745;
+    border-radius: 50%;
+    border: 2px solid #212529;
+  }
+  .cb-header-info h6 { margin: 0; color: #fff; font-size: 0.875rem; font-weight: 600; }
+  .cb-header-info span { color: #adb5bd; font-size: 0.72rem; }
+  .cb-header-actions { margin-left: auto; display: flex; gap: 4px; align-items: center; }
+  .cb-icon-btn {
+    background: none; border: none;
+    color: #adb5bd; cursor: pointer; font-size: 15px; line-height: 1;
+    padding: 5px 6px; border-radius: 6px;
+    transition: background 0.15s, color 0.15s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .cb-icon-btn:hover { background: rgba(255,255,255,0.12); color: #fff; }
+  .cb-icon-btn.active { color: #0d6efd; background: rgba(13,110,253,0.15); }
+
+  /* Tab bar */
+  .cb-tabs {
+    display: flex;
+    background: #f1f3f5;
+    border-bottom: 1px solid #dee2e6;
+    flex-shrink: 0;
+  }
+  .cb-tab {
+    flex: 1;
+    padding: 8px 0;
+    border: none;
+    background: none;
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: #6c757d;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .cb-tab.active { color: #0d6efd; border-bottom-color: #0d6efd; background: #fff; }
+
+  /* Panels */
+  .cb-panel { display: none; flex: 1; flex-direction: column; overflow: hidden; }
+  .cb-panel.active { display: flex; }
+
+  /* Messages */
+  .cb-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background: #f8f9fa;
+    scroll-behavior: smooth;
+  }
+  .cb-messages::-webkit-scrollbar { width: 4px; }
+  .cb-messages::-webkit-scrollbar-thumb { background: #dee2e6; border-radius: 4px; }
+
+  /* Message bubbles */
+  .cb-msg { display: flex; align-items: flex-end; gap: 8px; animation: msg-in 0.22s ease; }
+  @keyframes msg-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  .cb-msg.user { flex-direction: row-reverse; }
+  .cb-msg > div {
+    display: flex;
+    flex-direction: column;
+    max-width: 82%;
+  }
+  .cb-msg.user > div { align-items: flex-end; }
+  .cb-msg.bot > div { align-items: flex-start; }
+
+  .cb-bubble {
+    width: fit-content;
+    max-width: 100%;
+    min-width: 48px;
+    padding: 8px 14px;
+    border-radius: 18px;
+    font-size: 0.84rem;
+    line-height: 1.45;
+    word-break: normal;
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+    box-sizing: border-box;
+  }
+  .cb-msg.bot .cb-bubble {
+    background: #fff;
+    color: #212529;
+    border-radius: 18px;
+    border: 1px solid #e9ecef;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    text-align: left;
+  }
+  .cb-msg.user .cb-bubble {
+    background: linear-gradient(135deg, #0d6efd, #0a58ca);
+    color: #fff;
+    border-radius: 18px;
+    box-shadow: 0 2px 6px rgba(13,110,253,0.25);
+    text-align: center;
+  }
+  .cb-time { font-size: 0.67rem; color: #adb5bd; margin-top: 3px; }
+  .cb-msg.user .cb-time { padding-right: 4px; }
+  .cb-msg.bot .cb-time { padding-left: 4px; }
+
+  /* Typing indicator */
+  .cb-typing { display: flex; gap: 4px; padding: 10px 14px; }
+  .cb-typing span { width: 7px; height: 7px; background: #adb5bd; border-radius: 50%; animation: bounce 1s infinite; }
+  .cb-typing span:nth-child(2) { animation-delay: 0.15s; }
+  .cb-typing span:nth-child(3) { animation-delay: 0.3s; }
+  @keyframes bounce { 0%, 60%, 100% { transform: translateY(0); } 30% { transform: translateY(-6px); } }
+
+  /* Quick replies */
+  .cb-quick-replies { padding: 6px 12px 4px; display: flex; flex-wrap: wrap; gap: 5px; background: #f8f9fa; }
+  .cb-qr {
+    padding: 4px 11px; border: 1.5px solid #0d6efd; border-radius: 20px;
+    background: none; color: #0d6efd; font-size: 0.755rem; cursor: pointer;
+    transition: all 0.15s; white-space: nowrap;
+  }
+  .cb-qr:hover { background: #0d6efd; color: #fff; }
+
+  /* Input bar */
+  .cb-input-bar {
+    padding: 10px 12px;
+    background: #fff;
+    border-top: 1px solid #e9ecef;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-shrink: 0;
+  }
+  .cb-input {
+    flex: 1; border: 1px solid #ced4da; border-radius: 20px;
+    padding: 9px 16px; font-size: 0.84rem; outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s, background 0.2s; background: #f8f9fa; resize: none;
+    box-shadow: none;
+  }
+  .cb-input:focus { border-color: #0d6efd; background: #fff; box-shadow: 0 0 0 3px rgba(13,110,253,0.15); }
+  .cb-send {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: linear-gradient(135deg, #0d6efd, #0a58ca);
+    border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; transition: transform 0.15s;
+  }
+  .cb-send:hover { transform: scale(1.1); }
+  .cb-send svg { width: 15px; height: 15px; }
+
+  /* ===== HISTORY PANEL ===== */
+  .cb-history-panel {
+    flex: 1; overflow-y: auto; background: #f8f9fa; padding: 10px;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .cb-history-panel::-webkit-scrollbar { width: 4px; }
+  .cb-history-panel::-webkit-scrollbar-thumb { background: #dee2e6; border-radius: 4px; }
+  .cb-hist-empty { color: #adb5bd; font-size: 0.82rem; text-align: center; margin-top: 30px; }
+  .cb-hist-session {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+    overflow: hidden;
+    flex-shrink: 0;
+    border: 1px solid #e9ecef;
+  }
+  .cb-hist-header {
+    padding: 10px 12px;
+    display: flex; align-items: center; gap: 8px;
+    cursor: pointer;
+    border-bottom: 1px solid transparent;
+    transition: background 0.15s;
+    background: #fff;
+  }
+  .cb-hist-header:hover { background: #f8f9fa; }
+  .cb-hist-header.expanded { border-bottom-color: #e9ecef; }
+  .cb-hist-date { font-size: 0.72rem; color: #6c757d; flex-shrink: 0; }
+  .cb-hist-preview { font-size: 0.8rem; color: #212529; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cb-hist-count { font-size: 0.7rem; background: #e9ecef; border-radius: 10px; padding: 1px 7px; color: #6c757d; flex-shrink: 0; }
+  .cb-hist-chevron { font-size: 0.7rem; color: #adb5bd; transition: transform 0.2s; flex-shrink: 0; }
+  .cb-hist-header.expanded .cb-hist-chevron { transform: rotate(180deg); }
+  .cb-hist-body { display: none; padding: 10px 12px 12px; border-top: 1px solid #f1f3f5; }
+  .cb-hist-body.show { display: block; }
+  .cb-hist-msg { font-size: 0.775rem; padding: 5px 0; border-bottom: 1px solid #f8f9fa; line-height: 1.4; }
+  .cb-hist-msg:last-child { border-bottom: none; }
+  .cb-hist-msg .role-label { font-weight: 600; font-size: 0.7rem; margin-right: 4px; }
+  .cb-hist-msg .role-label.user { color: #0d6efd; }
+  .cb-hist-msg .role-label.bot { color: #198754; }
+  .cb-hist-msg .msg-text { color: #495057; }
+  .cb-hist-actions { display: flex; gap: 8px; margin-top: 10px; padding-top: 6px; border-top: 1px dashed #f1f3f5; }
+  .cb-hist-btn {
+    flex: 1; padding: 7px 0; border-radius: 8px; border: none; font-size: 0.78rem;
+    font-weight: 500; cursor: pointer; transition: all 0.15s;
+    display: flex; align-items: center; justify-content: center; gap: 4px;
+  }
+  .cb-hist-btn:hover { opacity: 0.88; }
+  .cb-hist-btn.resume { background: #0d6efd; color: #fff; }
+  .cb-hist-btn.del { background: #fee2e2; color: #dc2626; }
+  .cb-hist-footer {
+    padding: 8px 10px;
+    border-top: 1px solid #e9ecef;
+    display: flex; gap: 6px;
+    flex-shrink: 0;
+    background: #fff;
+  }
+  .cb-hist-footer-btn {
+    flex: 1; padding: 7px 4px; border-radius: 10px; border: 1.5px solid #dee2e6;
+    background: none; font-size: 0.78rem; cursor: pointer; color: #6c757d;
+    transition: all 0.15s;
+    display: flex; align-items: center; justify-content: center; gap: 4px;
+    user-select: none;
+  }
+  .cb-hist-footer-btn:hover { border-color: #0d6efd; color: #0d6efd; background: #f0f7ff; }
+  .cb-hist-footer-btn.active { border-color: #0d6efd; background: #e7f1ff; color: #0d6efd; font-weight: 600; }
+  .cb-hist-footer-btn.del-btn:hover { border-color: #dc3545; color: #dc3545; background: #fff5f5; }
+
+  /* --- History Search Bar --- */
+  .cb-hist-search-bar {
+    padding: 8px 10px 6px 10px;
+    background: #f8fafc;
+    border-bottom: 1px solid #e9ecef;
+    flex-shrink: 0;
+    animation: cbSlideDown 0.18s ease-out;
+  }
+  @keyframes cbSlideDown {
+    from { opacity: 0; transform: translateY(-6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .cb-hist-search-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+  .cb-hist-search-icon {
+    position: absolute;
+    left: 9px;
+    color: #94a3b8;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+  }
+  .cb-hist-search-input {
+    width: 100%;
+    padding: 6px 26px 6px 28px;
+    font-size: 0.78rem;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 8px;
+    background: #fff;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    color: #1e293b;
+  }
+  .cb-hist-search-input:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.12);
+  }
+  .cb-hist-search-clear {
+    position: absolute;
+    right: 6px;
+    background: #e2e8f0;
+    border: none;
+    border-radius: 50%;
+    width: 17px;
+    height: 17px;
+    font-size: 0.65rem;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #64748b;
+    padding: 0;
+    line-height: 1;
+    transition: all 0.15s;
+  }
+  .cb-hist-search-clear:hover {
+    background: #cbd5e1;
+    color: #0f172a;
+  }
+  .cb-hist-search-info {
+    font-size: 0.7rem;
+    color: #64748b;
+    margin-top: 4px;
+    padding: 0 2px;
+    display: none;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .cb-hist-match-highlight {
+    background: #fef08a;
+    color: #854d0e;
+    padding: 1px 3px;
+    border-radius: 3px;
+    font-weight: 600;
+  }
+
+  /* ===== SCAN RESULT CARD ===== */
+  .cb-scan-card {
+    max-width: 92% !important;
+    background: #f0f7ff !important;
+    border: 1.5px solid #b6d4fe;
+    border-radius: 12px !important;
+    padding: 10px 13px !important;
+    font-size: 0.82rem !important;
+  }
+  .cb-scan-card.cb-scan-fail { background: #fff5f5 !important; border-color: #f5c6cb; }
+  .cb-scan-header { font-weight: 700; font-size: 0.875rem; color: #198754; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+  .cb-scan-fail .cb-scan-header { color: #dc3545; }
+  .cb-job-id { font-size: 0.72rem; background: #d1e7dd; color: #0a3622; border-radius: 6px; padding: 1px 6px; }
+  .cb-scan-row { color: #495057; margin-bottom: 3px; line-height: 1.5; }
+  .cb-port-badge {
+    display: inline-block; background: #e2e8f0; color: #334155;
+    border-radius: 6px; padding: 1px 7px; font-size: 0.72rem;
+    margin: 2px 2px 0 0;
+  }
+  .cb-scan-link {
+    display: inline-block; margin-top: 8px;
+    color: #0d6efd; font-size: 0.8rem; font-weight: 600;
+    text-decoration: none;
+  }
+  .cb-scan-link:hover { text-decoration: underline; }
+</style>
+
+{% if current_user.is_authenticated and current_user.is_any_admin %}
+<!-- Floating button (เฉพาะ admin/superadmin เท่านั้น — user ทั่วไปไม่เห็นแชทบอท) -->
+<button id="chatbot-btn" onclick="toggleChat()" title="CLYLAR Assistant">
+  <span id="chatbot-badge">1</span>
+  <svg class="icon-chat" width="26" height="26" viewBox="0 0 24 24" fill="none">
+    <path d="M20 2H4C2.9 2 2 2.9 2 4v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z" fill="white"/>
+  </svg>
+  <svg class="icon-close" width="22" height="22" viewBox="0 0 24 24" fill="none">
+    <path d="M18 6L6 18M6 6l12 12" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+  </svg>
+</button>
+
+<!-- Chat popup -->
+<div id="chatbot-popup">
+  <!-- Header (draggable) -->
+  <div class="cb-header" id="cb-drag-handle">
+    <div class="cb-avatar">🤖</div>
+    <div class="cb-header-info">
+      <h6>CLYLAR Assistant <span class="cb-drag-hint">⠿ ลาก</span></h6>
+      <span>🟢 Online — ตอบทันที</span>
+    </div>
+    <div class="cb-header-actions">
+      <button class="cb-icon-btn" onclick="clearCurrentChat()" title="ล้างแชทปัจจุบัน"></button>
+      <button class="cb-icon-btn" onclick="toggleChat()" title="ปิด">✕</button>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="cb-tabs">
+    <button class="cb-tab active" id="tab-chat" onclick="switchTab('chat')">แชท</button>
+    <button class="cb-tab" id="tab-history" onclick="switchTab('history')">ประวัติ</button>
+  </div>
+
+  <!-- Panel: Chat -->
+  <div class="cb-panel active" id="panel-chat">
+    <div class="cb-messages" id="cb-messages">
+      <div class="cb-msg bot">
+        <div>
+          <div class="cb-bubble">สวัสดีครับ! ผมคือ CLYLAR Assistant<br>ช่วยตอบคำถามเกี่ยวกับ Network Scanner ได้เลยครับ</div>
+          <div class="cb-time">เพิ่งเมื่อกี้</div>
+        </div>
+      </div>
+    </div>
+    <div class="cb-quick-replies" id="cb-quick-replies">
+      <button class="cb-qr" onclick="sendQuick('IP ที่พบทั้งหมดมีอะไรบ้าง')"> IP ทั้งหมด</button>
+      <button class="cb-qr" onclick="sendQuick('Scan ล่าสุดผลเป็นอย่างไร')"> Scan ล่าสุด</button>
+      <button class="cb-qr" onclick="sendQuick('มีช่องโหว่ CVE อะไรบ้าง')"> ช่องโหว่</button>
+      <button class="cb-qr" onclick="promptScan()"> สั่ง Scan</button>
+    </div>
+    <div class="cb-input-bar">
+      <input class="cb-input" id="cb-input" type="text" placeholder="พิมพ์ข้อความ..." onkeydown="if(event.key==='Enter') sendMsg()">
+      <button class="cb-send" onclick="sendMsg()">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M22 2L11 13M22 2L15 22L11 13M22 2L2 9L11 13" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Panel: History -->
+  <div class="cb-panel" id="panel-history">
+    <!-- Search Bar (toggleable) -->
+    <div class="cb-hist-search-bar" id="cb-hist-search-bar" style="display: none;">
+      <div class="cb-hist-search-wrap">
+        <span class="cb-hist-search-icon">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+        </span>
+        <input class="cb-hist-search-input" id="cb-hist-search-input" type="text" placeholder="ค้นหาข้อความ, IP, วันที่..." oninput="onHistSearchInput(this.value)" onkeydown="if(event.key==='Escape') toggleHistSearch(false)">
+        <button class="cb-hist-search-clear" id="cb-hist-search-clear" onclick="clearHistSearch()" title="ล้างการค้นหา">✕</button>
+      </div>
+      <div class="cb-hist-search-info" id="cb-hist-search-info"></div>
+    </div>
+
+    <div class="cb-history-panel" id="cb-history-list"></div>
+    <div class="cb-hist-footer">
+      <button class="cb-hist-footer-btn" id="cb-hist-search-btn" onclick="toggleHistSearch()" title="ค้นหาประวัติแชท">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        ค้นหาแชท
+      </button>
+      <button class="cb-hist-footer-btn del-btn" onclick="clearAllHistory()" title="ลบประวัติที่บันทึกไว้ทั้งหมด">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="3 6 5 6 21 6"></polyline>
+          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+        </svg>
+        ลบประวัติทั้งหมด
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===================================================================
+//  CLYLAR Chatbot — Chat History + Draggable
+// ===================================================================
+
+// แยกประวัติแชทของแต่ละ admin ออกจากกันด้วย user id ต่อท้าย key
+// (คนละ account = คนละ key ใน localStorage ไม่มีวันปนกัน)
+const CB_STORAGE_KEY = 'clylha_chat_sessions_uid_{{ current_user.id }}';
+const CB_MAX_SESSIONS = 30;
+
+let chatHistory = [];        // multi-turn messages ของ session ปัจจุบัน
+let currentSessionId = null; // id ของ session ที่กำลังแชทอยู่
+
+// ─── Session Storage Helpers ───────────────────────────────────────
+
+function loadSessions() {
+  try { return JSON.parse(localStorage.getItem(CB_STORAGE_KEY) || '[]'); }
+  catch { return []; }
+}
+
+function saveSessions(sessions) {
+  localStorage.setItem(CB_STORAGE_KEY, JSON.stringify(sessions));
+}
+
+function saveCurrentSession() {
+  if (!chatHistory.length) return;
+  const sessions = loadSessions();
+  const idx = sessions.findIndex(s => s.id === currentSessionId);
+  const session = {
+    id: currentSessionId,
+    messages: chatHistory,
+    updatedAt: Date.now(),
+    preview: chatHistory[0]?.content?.slice(0, 60) || ''
+  };
+  if (idx >= 0) sessions[idx] = session;
+  else sessions.unshift(session);
+  // จำกัด max sessions
+  saveSessions(sessions.slice(0, CB_MAX_SESSIONS));
+}
+
+function startNewSession() {
+  currentSessionId = 'sess_' + Date.now();
+  chatHistory = [];
+}
+
+// ─── UI Helpers ────────────────────────────────────────────────────
+
+function toggleChat() {
+  const popup = document.getElementById('chatbot-popup');
+  const btn   = document.getElementById('chatbot-btn');
+  const badge = document.getElementById('chatbot-badge');
+  popup.classList.toggle('open');
+  btn.classList.toggle('open');
+  badge.style.display = 'none';
+  if (popup.classList.contains('open')) {
+    document.getElementById('cb-input').focus();
+  }
+}
+
+function switchTab(tab) {
+  document.getElementById('panel-chat').classList.toggle('active', tab === 'chat');
+  document.getElementById('panel-history').classList.toggle('active', tab === 'history');
+  document.getElementById('tab-chat').classList.toggle('active', tab === 'chat');
+  document.getElementById('tab-history').classList.toggle('active', tab === 'history');
+  if (tab === 'history') renderHistory();
+}
+
+function formatMsgHtml(text) {
+  return text
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\n/g,'<br>');
+}
+
+function addMsg(text, role, skipSave) {
+  const wrap = document.getElementById('cb-messages');
+  const div  = document.createElement('div');
+  div.className = 'cb-msg ' + role;
+  const now = new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+  div.innerHTML = `<div><div class="cb-bubble">${formatMsgHtml(text)}</div><div class="cb-time">${now}</div></div>`;
+  wrap.appendChild(div);
+  wrap.scrollTop = wrap.scrollHeight;
+  if (!skipSave) saveCurrentSession();
+}
+
+function showTyping() {
+  const wrap = document.getElementById('cb-messages');
+  const div  = document.createElement('div');
+  div.className = 'cb-msg bot'; div.id = 'cb-typing-indicator';
+  div.innerHTML = `<div><div class="cb-bubble cb-typing"><span></span><span></span><span></span></div></div>`;
+  wrap.appendChild(div);
+  wrap.scrollTop = wrap.scrollHeight;
+}
+function hideTyping() { const el = document.getElementById('cb-typing-indicator'); if (el) el.remove(); }
+
+// ─── Send Message ──────────────────────────────────────────────────
+
+async function sendMsg() {
+  const input = document.getElementById('cb-input');
+  const text  = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  input.disabled = true;
+
+  // Start session on first message
+  if (!chatHistory.length) startNewSession();
+
+  addMsg(text, 'user', true);
+  chatHistory.push({ role: 'user', content: text });
+  document.getElementById('cb-quick-replies').style.display = 'none';
+  showTyping();
+
+  try {
+    // รวบรวม page context จากหน้าปัจจุบัน
+    const pageCtx = typeof window.CLYLAR_PAGE_CONTEXT !== 'undefined'
+      ? window.CLYLAR_PAGE_CONTEXT : '';
+
+    const resp = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages: chatHistory, page_context: pageCtx })
+    });
+    const data = await resp.json();
+    hideTyping();
+
+    const reply = data.reply || 'ไม่ได้รับคำตอบ';
+    addMsg(reply, 'bot', true);
+    chatHistory.push({ role: 'assistant', content: reply });
+
+    // ถ้า backend รัน scan จริงและได้ผล — แสดง scan card
+    if (data.scan_result) {
+      const sr = data.scan_result;
+      renderScanResult(sr);
+    }
+
+    saveCurrentSession();
+  } catch (err) {
+    hideTyping();
+    addMsg('❌ เชื่อมต่อ AI ไม่ได้ กรุณาลองใหม่', 'bot');
+  } finally {
+    input.disabled = false;
+    input.focus();
+  }
+}
+
+function renderScanResult(sr) {
+  const wrap = document.getElementById('cb-messages');
+  const div  = document.createElement('div');
+  div.className = 'cb-msg bot';
+  const now = new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+
+  if (sr.status === 'completed') {
+    const portsHtml = (sr.ports || []).map(p =>
+      `<span class="cb-port-badge">${p}</span>`).join('') || '<span style="color:#adb5bd">ไม่พบ</span>';
+    div.innerHTML = `<div>
+      <div class="cb-bubble cb-scan-card">
+        <div class="cb-scan-header">✅ Scan เสร็จแล้ว <span class="cb-job-id">#${sr.job_id}</span></div>
+        <div class="cb-scan-row">🎯 <b>Target:</b> ${sr.target}</div>
+        <div class="cb-scan-row">🔬 <b>ประเภท:</b> ${sr.scan_type}</div>
+        <div class="cb-scan-row">🖥️ <b>พบ:</b> ${sr.host_count} host (${sr.online} online)</div>
+        <div class="cb-scan-row">🔓 <b>Open Ports:</b><br>${portsHtml}</div>
+        <a class="cb-scan-link" href="/scan/${sr.job_id}" target="_blank">📋 ดูรายละเอียดเต็ม →</a>
+      </div>
+      <div class="cb-time">${now}</div>
+    </div>`;
+  } else {
+    div.innerHTML = `<div>
+      <div class="cb-bubble cb-scan-card cb-scan-fail">
+        ❌ Scan ล้มเหลว (Job #${sr.job_id})<br>
+        <small>${sr.error || ''}</small>
+      </div>
+      <div class="cb-time">${now}</div>
+    </div>`;
+  }
+  wrap.appendChild(div);
+  wrap.scrollTop = wrap.scrollHeight;
+}
+
+function sendQuick(text) {
+  document.getElementById('cb-input').value = text;
+  sendMsg();
+}
+
+function promptScan() {
+  const input = document.getElementById('cb-input');
+  input.value = 'scan ';
+  input.focus();
+  // วาง cursor ท้ายสุด
+  const len = input.value.length;
+  input.setSelectionRange(len, len);
+  // แสดงคำแนะนำ
+  addMsg('🚀 พิมพ์ target ที่ต้องการสแกน เช่น:\n"scan 192.168.1.1"\n"scan 10.0.0.0/24 แบบ intense"\n"สแกน 192.168.1.1 หาช่องโหว่"', 'bot', true);
+}
+
+// ─── Clear ─────────────────────────────────────────────────────────
+
+function clearCurrentChat() {
+  saveCurrentSession(); // บันทึก session เก่าก่อน
+  startNewSession();
+  const wrap = document.getElementById('cb-messages');
+  wrap.innerHTML = `
+    <div class="cb-msg bot">
+      <div>
+        <div class="cb-bubble">สวัสดีครับ! ผมคือ CLYLAR Assistant<br>ช่วยตอบคำถามเกี่ยวกับ Network Scanner ได้เลยครับ</div>
+        <div class="cb-time">เพิ่งเมื่อกี้</div>
+      </div>
+    </div>`;
+  document.getElementById('cb-quick-replies').style.display = '';
+}
+
+// ─── Search History State & Helpers ───────────────────────────────
+let histSearchQuery = '';
+
+function toggleHistSearch(forceState) {
+  const bar = document.getElementById('cb-hist-search-bar');
+  const btn = document.getElementById('cb-hist-search-btn');
+  const input = document.getElementById('cb-hist-search-input');
+  if (!bar || !btn) return;
+
+  const willOpen = typeof forceState === 'boolean'
+    ? forceState
+    : (bar.style.display === 'none' || !bar.style.display);
+
+  if (willOpen) {
+    bar.style.display = 'block';
+    btn.classList.add('active');
+    setTimeout(() => { if (input) input.focus(); }, 60);
+  } else {
+    bar.style.display = 'none';
+    btn.classList.remove('active');
+    if (histSearchQuery) {
+      clearHistSearch();
+    }
+  }
+}
+
+function clearHistSearch() {
+  const input = document.getElementById('cb-hist-search-input');
+  const clearBtn = document.getElementById('cb-hist-search-clear');
+  if (input) input.value = '';
+  if (clearBtn) clearBtn.style.display = 'none';
+  histSearchQuery = '';
+  renderHistory('');
+  if (input) input.focus();
+}
+
+function onHistSearchInput(val) {
+  histSearchQuery = (val || '').trim();
+  const clearBtn = document.getElementById('cb-hist-search-clear');
+  if (clearBtn) clearBtn.style.display = histSearchQuery ? 'flex' : 'none';
+  renderHistory(histSearchQuery);
+}
+
+function highlightSearchText(text, query) {
+  if (!text) return '';
+  const escaped = (text || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+  if (!query) return escaped;
+  const safeQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  try {
+    const rx = new RegExp(`(${safeQuery})`, 'gi');
+    return escaped.replace(rx, '<mark class="cb-hist-match-highlight">$1</mark>');
+  } catch (e) {
+    return escaped;
+  }
+}
+
+function clearAllHistory() {
+  if (!confirm('ลบประวัติแชทที่บันทึกไว้ทั้งหมดใช่ไหม?')) return;
+  localStorage.removeItem(CB_STORAGE_KEY);
+  clearHistSearch();
+  renderHistory();
+}
+
+// ─── History Panel ─────────────────────────────────────────────────
+
+function renderHistory(query = histSearchQuery) {
+  const allSessions = loadSessions();
+  const container = document.getElementById('cb-history-list');
+  const infoEl = document.getElementById('cb-hist-search-info');
+  if (!container) return;
+
+  if (!allSessions.length) {
+    container.innerHTML = '<p class="cb-hist-empty">ยังไม่มีประวัติแชท<br>เริ่มแชทเพื่อบันทึกอัตโนมัติ 💬</p>';
+    if (infoEl) infoEl.style.display = 'none';
+    return;
+  }
+
+  const q = (query || '').toLowerCase().trim();
+  let sessions = allSessions;
+  if (q) {
+    sessions = allSessions.filter(sess => {
+      if ((sess.preview || '').toLowerCase().includes(q)) return true;
+      if (sess.messages && sess.messages.some(m => (m.content || '').toLowerCase().includes(q))) return true;
+      return false;
+    });
+  }
+
+  if (infoEl) {
+    if (q) {
+      infoEl.style.display = 'flex';
+      infoEl.innerHTML = `<span>พบ <strong>${sessions.length}</strong> จาก ${allSessions.length} เซสชัน</span>`
+        + `<span style="cursor:pointer;color:#0d6efd;font-weight:600;" onclick="clearHistSearch()">ล้างคำค้น</span>`;
+    } else {
+      infoEl.style.display = 'none';
+    }
+  }
+
+  if (!sessions.length) {
+    container.innerHTML = `
+      <div style="text-align:center; padding:32px 14px; color:#64748b; font-size:0.8rem;">
+        <div style="font-size:1.6rem; margin-bottom:8px;">🔍</div>
+        ไม่พบประวัติแชทที่ตรงกับ "<strong>${highlightSearchText(query, '')}</strong>"<br>
+        <span style="font-size:0.72rem; color:#94a3b8; display:inline-block; margin-top:4px;">ลองค้นหาด้วย IP, ชนิดสแกน หรือคำสำคัญอื่น</span>
+      </div>`;
+    return;
+  }
+
+  container.innerHTML = '';
+  sessions.forEach((sess, i) => {
+    const date = new Date(sess.updatedAt);
+    const dateStr = date.toLocaleDateString('th-TH', { day: '2-digit', month: 'short' })
+      + ' ' + date.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+    const msgCount = sess.messages.length;
+    const rawPreview = sess.preview || sess.messages[0]?.content?.slice(0, 50) || '(ว่าง)';
+    const previewHtml = q ? highlightSearchText(rawPreview, q) : (rawPreview || '').replace(/</g,'&lt;');
+
+    // ถ้ามีข้อความด้านในตรงกับคำค้นหา ให้ auto-expand แสดงทันที
+    const hasMsgMatch = q && sess.messages && sess.messages.some(m => (m.content || '').toLowerCase().includes(q));
+    const isExpanded = Boolean(q && hasMsgMatch);
+
+    const sessionIdSafe = sess.id || `sess_idx_${i}`;
+
+    const el = document.createElement('div');
+    el.className = 'cb-hist-session';
+    el.innerHTML = `
+      <div class="cb-hist-header ${isExpanded ? 'expanded' : ''}" id="hh-${i}" onclick="toggleHistSession(${i})">
+        <span class="cb-hist-date">${dateStr}</span>
+        <span class="cb-hist-preview">${previewHtml}</span>
+        <span class="cb-hist-count">${msgCount} ข้อ</span>
+        <span class="cb-hist-chevron">▾</span>
+      </div>
+      <div class="cb-hist-body ${isExpanded ? 'show' : ''}" id="hb-${i}">
+        ${sess.messages.slice(0, 6).map(m => {
+          const rawContent = (m.content || '').slice(0, 120);
+          const contentHtml = q ? highlightSearchText(rawContent, q) : rawContent.replace(/</g,'&lt;');
+          return `
+            <div class="cb-hist-msg">
+              <span class="role-label ${m.role === 'user' ? 'user' : 'bot'}">${m.role === 'user' ? '👤' : '🤖'}</span>
+              <span class="msg-text">${contentHtml}${m.content?.length > 120 ? '…' : ''}</span>
+            </div>`;
+        }).join('')}
+        ${sess.messages.length > 6 ? `<div class="cb-hist-msg" style="color:#adb5bd;font-size:0.72rem">...และอีก ${sess.messages.length - 6} ข้อความ</div>` : ''}
+        <div class="cb-hist-actions">
+          <button class="cb-hist-btn resume" onclick="resumeSession('${sessionIdSafe}')">↩ เปิดต่อ</button>
+          <button class="cb-hist-btn del" onclick="deleteSession('${sessionIdSafe}')">🗑 ลบ</button>
+        </div>
+      </div>`;
+    container.appendChild(el);
+  });
+}
+
+function toggleHistSession(i) {
+  const header = document.getElementById('hh-' + i);
+  const body   = document.getElementById('hb-' + i);
+  if (header) header.classList.toggle('expanded');
+  if (body) body.classList.toggle('show');
+}
+
+function resumeSession(idOrIdx) {
+  const sessions = loadSessions();
+  let sess = null;
+  if (typeof idOrIdx === 'string' && idOrIdx.startsWith('sess_idx_')) {
+    const idx = parseInt(idOrIdx.replace('sess_idx_', ''), 10);
+    sess = sessions[idx];
+  } else {
+    sess = sessions.find(s => s.id === idOrIdx) || sessions[idOrIdx];
+  }
+  if (!sess) return;
+
+  // บันทึก session ปัจจุบันก่อน
+  saveCurrentSession();
+
+  // โหลด session เก่า
+  currentSessionId = sess.id;
+  chatHistory = [...sess.messages];
+
+  // แสดงใน chat panel
+  const wrap = document.getElementById('cb-messages');
+  wrap.innerHTML = '';
+  chatHistory.forEach(m => {
+    const role = m.role === 'user' ? 'user' : 'bot';
+    const div = document.createElement('div');
+    div.className = 'cb-msg ' + role;
+    div.innerHTML = `<div><div class="cb-bubble">${formatMsgHtml(m.content)}</div></div>`;
+    wrap.appendChild(div);
+  });
+  wrap.scrollTop = wrap.scrollHeight;
+  document.getElementById('cb-quick-replies').style.display = 'none';
+  switchTab('chat');
+}
+
+function deleteSession(idOrIdx) {
+  const sessions = loadSessions();
+  let idx = -1;
+  if (typeof idOrIdx === 'string' && idOrIdx.startsWith('sess_idx_')) {
+    idx = parseInt(idOrIdx.replace('sess_idx_', ''), 10);
+  } else {
+    idx = sessions.findIndex(s => s.id === idOrIdx);
+    if (idx === -1 && typeof idOrIdx === 'number') idx = idOrIdx;
+  }
+  if (idx < 0 || idx >= sessions.length) return;
+  if (!confirm('ต้องการลบเซสชันแชทนี้ใช่ไหม?')) return;
+  sessions.splice(idx, 1);
+  saveSessions(sessions);
+  renderHistory();
+}
+
+// ─── Draggable ─────────────────────────────────────────────────────
+
+(function initDraggable() {
+  const popup  = document.getElementById('chatbot-popup');
+  const handle = document.getElementById('cb-drag-handle');
+  let isDragging = false, startX = 0, startY = 0, origLeft = 0, origTop = 0;
+
+  function getPopupRect() {
+    const style = window.getComputedStyle(popup);
+    const rect  = popup.getBoundingClientRect();
+    return { left: rect.left, top: rect.top, width: rect.width, height: rect.height };
+  }
+
+  handle.addEventListener('mousedown', function(e) {
+    if (e.target.classList.contains('cb-icon-btn')) return; // ไม่ลากถ้าคลิก button
+    // เปลี่ยนจาก fixed bottom/right เป็น fixed top/left
+    const rect = popup.getBoundingClientRect();
+    popup.style.bottom = 'auto';
+    popup.style.right  = 'auto';
+    popup.style.left   = rect.left + 'px';
+    popup.style.top    = rect.top  + 'px';
+    popup.style.transformOrigin = 'top left';
+
+    isDragging = true;
+    startX  = e.clientX;
+    startY  = e.clientY;
+    origLeft = rect.left;
+    origTop  = rect.top;
+    popup.classList.add('is-dragging');
+    document.body.style.userSelect = 'none';
+    e.preventDefault();
+  });
+
+  document.addEventListener('mousemove', function(e) {
+    if (!isDragging) return;
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
+    let newLeft = origLeft + dx;
+    let newTop  = origTop  + dy;
+
+    // Clamp ไม่ให้ออกนอกหน้าจอ
+    const pw = popup.offsetWidth, ph = popup.offsetHeight;
+    newLeft = Math.max(0, Math.min(window.innerWidth  - pw, newLeft));
+    newTop  = Math.max(0, Math.min(window.innerHeight - ph, newTop));
+
+    popup.style.left = newLeft + 'px';
+    popup.style.top  = newTop  + 'px';
+  });
+
+  document.addEventListener('mouseup', function() {
+    if (!isDragging) return;
+    isDragging = false;
+    popup.classList.remove('is-dragging');
+    document.body.style.userSelect = '';
+  });
+
+  // Touch support
+  handle.addEventListener('touchstart', function(e) {
+    if (e.target.classList.contains('cb-icon-btn')) return;
+    const touch = e.touches[0];
+    const rect = popup.getBoundingClientRect();
+    popup.style.bottom = 'auto'; popup.style.right = 'auto';
+    popup.style.left = rect.left + 'px'; popup.style.top = rect.top + 'px';
+    popup.style.transformOrigin = 'top left';
+    isDragging = true;
+    startX = touch.clientX; startY = touch.clientY;
+    origLeft = rect.left;   origTop  = rect.top;
+    popup.classList.add('is-dragging');
+    e.preventDefault();
+  }, { passive: false });
+
+  document.addEventListener('touchmove', function(e) {
+    if (!isDragging) return;
+    const touch = e.touches[0];
+    const dx = touch.clientX - startX, dy = touch.clientY - startY;
+    let newLeft = origLeft + dx, newTop = origTop + dy;
+    const pw = popup.offsetWidth, ph = popup.offsetHeight;
+    newLeft = Math.max(0, Math.min(window.innerWidth  - pw, newLeft));
+    newTop  = Math.max(0, Math.min(window.innerHeight - ph, newTop));
+    popup.style.left = newLeft + 'px'; popup.style.top = newTop + 'px';
+    e.preventDefault();
+  }, { passive: false });
+
+  document.addEventListener('touchend', function() {
+    if (isDragging) { isDragging = false; popup.classList.remove('is-dragging'); }
+  });
+})();
+
+// ─── Init ──────────────────────────────────────────────────────────
+startNewSession();
+</script>
+{% endif %}
+<!-- ===== END CHATBOT ===== -->
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    function toggleProfileDropdown() {
+        const dropdown = document.getElementById('profileDropdown');
+        dropdown.classList.toggle('show');
+    }
+    document.addEventListener('click', function(e) {
+        const avatar = document.getElementById('profileAvatar');
+        const dropdown = document.getElementById('profileDropdown');
+        if (avatar && dropdown && !avatar.contains(e.target)) {
+            dropdown.classList.remove('show');
+        }
+    });
+
+    // ===== SIDEBAR TOGGLE & SHORTCUT (shadcn/ui style) =====
+    let sidebarTooltips = [];
+
+    function initSidebarTooltips() {
+        if (typeof bootstrap === 'undefined' || !bootstrap.Tooltip) return;
+        const tooltipTriggerList = [].slice.call(document.querySelectorAll('#mainSidebar [data-bs-toggle="tooltip"]'));
+        sidebarTooltips = tooltipTriggerList.map(function (el) {
+            return new bootstrap.Tooltip(el, {
+                customClass: 'sidebar-tooltip',
+                trigger: 'hover',
+                boundary: 'window'
+            });
+        });
+        const isCollapsed = document.documentElement.classList.contains('sidebar-collapsed');
+        updateTooltipState(isCollapsed);
+    }
+
+    function updateTooltipState(isCollapsed) {
+        sidebarTooltips.forEach(t => {
+            if (isCollapsed) {
+                t.enable();
+            } else {
+                t.hide();
+                t.disable();
+            }
+        });
+    }
+
+    function updateSidebarToggleIcon(isCollapsed) {
+        const toggleBtn = document.getElementById('sidebarToggleBtn');
+        if (toggleBtn) {
+            toggleBtn.title = isCollapsed ? 'Expand Sidebar (Ctrl+B)' : 'Collapse Sidebar (Ctrl+B)';
+        }
+    }
+
+    function toggleSidebar() {
+        const isCurrentlyCollapsed = document.documentElement.classList.contains('sidebar-collapsed');
+        const newState = !isCurrentlyCollapsed;
+
+        if (newState) {
+            document.documentElement.classList.add('sidebar-collapsed');
+            document.body.classList.add('sidebar-collapsed');
+            try { localStorage.setItem('clylar_sidebar_collapsed', 'true'); } catch (e) {}
+        } else {
+            document.documentElement.classList.remove('sidebar-collapsed');
+            document.body.classList.remove('sidebar-collapsed');
+            try { localStorage.setItem('clylar_sidebar_collapsed', 'false'); } catch (e) {}
+        }
+
+        updateSidebarToggleIcon(newState);
+        updateTooltipState(newState);
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const isCollapsed = document.documentElement.classList.contains('sidebar-collapsed');
+        if (isCollapsed) {
+            document.body.classList.add('sidebar-collapsed');
+        }
+        updateSidebarToggleIcon(isCollapsed);
+
+        const toggleBtn = document.getElementById('sidebarToggleBtn');
+        if (toggleBtn) {
+            toggleBtn.addEventListener('click', toggleSidebar);
+        }
+
+        const sidebarBrand = document.getElementById('sidebarBrand');
+        if (sidebarBrand) {
+            sidebarBrand.addEventListener('click', function(e) {
+                if (document.documentElement.classList.contains('sidebar-collapsed')) {
+                    e.preventDefault();
+                    toggleSidebar();
+                }
+            });
+        }
+
+        initSidebarTooltips();
+    });
+
+    // Keyboard shortcut Ctrl+B or Cmd+B to toggle sidebar (like shadcn/ui)
+    document.addEventListener('keydown', function(e) {
+        if ((e.ctrlKey || e.metaKey) && (e.key === 'b' || e.key === 'B')) {
+            const activeEl = document.activeElement;
+            const isTyping = activeEl && (
+                activeEl.tagName === 'INPUT' || 
+                activeEl.tagName === 'TEXTAREA' || 
+                activeEl.isContentEditable
+            );
+            if (!isTyping) {
+                e.preventDefault();
+                toggleSidebar();
+            }
+        }
+    });
+</script>
+
+<!-- Global Scan Notification Toast -->
+<style>
+/* Premium Toast Styling */
+#globalScanToast {
+    background: rgba(255, 255, 255, 0.98) !important;
+    backdrop-filter: blur(12px);
+    border-radius: 14px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.12);
+    border: 1px solid rgba(0,0,0,0.06);
+    overflow: hidden;
+    min-width: 320px;
+}
+.toast-indicator {
+    width: 6px;
+    background: #10b981; 
+}
+.toast-content-wrapper {
+    display: flex;
+    padding: 16px 20px 16px 16px;
+    align-items: center;
+    gap: 16px;
+    flex-grow: 1;
+}
+.toast-icon-box {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.toast-success .toast-indicator { background: #10b981; }
+.toast-success .toast-icon-box { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+.toast-error .toast-indicator { background: #ef4444; }
+.toast-error .toast-icon-box { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+
+.toast-text-content {
+    flex-grow: 1;
+}
+.toast-title {
+    font-weight: 700;
+    color: #1e293b;
+    font-size: 0.95rem;
+    margin-bottom: 3px;
+    letter-spacing: -0.2px;
+}
+.toast-desc {
+    color: #64748b;
+    font-size: 0.85rem;
+    line-height: 1.4;
+}
+.toast-desc strong { color: #334155; }
+.toast-close-btn {
+    background: none;
+    border: none;
+    color: #94a3b8;
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 0 16px 0 0;
+    transition: color 0.2s;
+}
+.toast-close-btn:hover {
+    color: #475569;
+}
+#globalScanToast.show {
+    display: flex !important;
+    flex-direction: row;
+}
+</style>
+
+{% if current_user.is_authenticated %}
+<div class="toast-container position-fixed bottom-0 end-0 p-4" style="z-index: 10005;">
+  <div id="globalScanToast" class="toast border-0 p-0" role="alert" aria-live="assertive" aria-atomic="true">
+    <div class="toast-indicator" id="scanToastIndicator"></div>
+    <div class="toast-content-wrapper">
+      <div class="toast-icon-box" id="scanToastIcon">
+      </div>
+      <div class="toast-text-content">
+        <div class="toast-title" id="scanToastTitle">Scan Update</div>
+        <div class="toast-desc" id="globalScanToastBody">Your scan status has been updated.</div>
+      </div>
+    </div>
+    <button type="button" class="toast-close-btn" data-bs-dismiss="toast" aria-label="Close">✕</button>
+  </div>
+</div>
+{% endif %}
+
+<script>
+    {% if current_user.is_authenticated %}
+    document.addEventListener('DOMContentLoaded', () => {
+        const toastEl = document.getElementById('globalScanToast');
+        if (!toastEl) return;
+        const toastBody = document.getElementById('globalScanToastBody');
+        const bsToast = new bootstrap.Toast(toastEl, { autohide: true, delay: 6000 });
+
+        // Clear any stale localStorage from previous code versions.
+        localStorage.removeItem('notifiedJobs');
+
+        // --- Toast queue (one at a time) ---
+        const notifQueue = [];
+        let toastBusy = false;
+
+        function showNextInQueue() {
+            if (notifQueue.length === 0) { toastBusy = false; return; }
+            toastBusy = true;
+            const job = notifQueue.shift();
+            toastEl.classList.remove('toast-success', 'toast-error');
+            if (job.status === 'Completed') {
+                toastEl.classList.add('toast-success');
+                document.getElementById('scanToastIcon').innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+                document.getElementById('scanToastTitle').innerText = 'Scan Complete';
+                toastBody.innerHTML = `Job <strong>#${job.owner_seq}</strong> to <em>${job.target}</em> has successfully finished.`;
+            } else {
+                toastEl.classList.add('toast-error');
+                document.getElementById('scanToastIcon').innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
+                document.getElementById('scanToastTitle').innerText = 'Scan Failed';
+                toastBody.innerHTML = `Job <strong>#${job.owner_seq}</strong> to <em>${job.target}</em> encountered an error.`;
+            }
+            bsToast.show();
+        }
+        toastEl.addEventListener('hidden.bs.toast', () => showNextInQueue());
+        function enqueueNotification(job) {
+            notifQueue.push(job);
+            if (!toastBusy) showNextInQueue();
+        }
+
+        // --- Session-only helpers ---
+        function getShown() { return JSON.parse(sessionStorage.getItem('toastShownIds') || '[]'); }
+        function addShown(id) {
+            const a = getShown(); if (!a.includes(id)) { a.push(id); sessionStorage.setItem('toastShownIds', JSON.stringify(a)); }
+        }
+        function getWatched() { return JSON.parse(sessionStorage.getItem('watchRunningJobs') || '[]'); }
+        function setWatched(ids) { sessionStorage.setItem('watchRunningJobs', JSON.stringify(ids)); }
+
+        // --- Flag form submits so next page load can detect a scan result ---
+        document.querySelectorAll('form').forEach(form => {
+            form.addEventListener('submit', () => {
+                sessionStorage.setItem('expectScanResult', Date.now().toString());
+            });
+        });
+
+        function processJobs(jobs, isInitialLoad) {
+            const watched = getWatched();
+            const shown = getShown();
+            const newRunning = [];
+            let consumedExpect = false;
+
+            jobs.forEach(job => {
+                if (job.status === 'Running') {
+                    if (!newRunning.includes(job.id)) newRunning.push(job.id);
+                    return; // forEach continue
+                }
+
+                if (job.status !== 'Completed' && job.status !== 'Failed') return;
+                if (shown.includes(job.id)) return; // already toasted
+
+                // PATH 1: Job was Running in a previous poll/page → now finished.
+                if (watched.includes(job.id)) {
+                    addShown(job.id);
+                    enqueueNotification(job);
+                    return;
+                }
+
+                // PATH 2: On page load after user submitted a form.
+                // The scan ran synchronously so we never saw it as Running.
+                // Notify for the FIRST (newest) unshown finished job only.
+                if (isInitialLoad && !consumedExpect) {
+                    const expectAt = parseInt(sessionStorage.getItem('expectScanResult') || '0');
+                    if (expectAt > 0 && (Date.now() - expectAt) < 5 * 60 * 1000) {
+                        consumedExpect = true;
+                        sessionStorage.removeItem('expectScanResult');
+                        addShown(job.id);
+                        enqueueNotification(job);
+                        return;
+                    }
+                }
+
+                // Old job from before this session — mark silently.
+                addShown(job.id);
+            });
+
+            setWatched(newRunning);
+        }
+
+        // Initial fetch on page load.
+        fetch('/api/jobs')
+            .then(r => r.json())
+            .then(jobs => processJobs(jobs, true))
+            .catch(e => console.log('Error fetching jobs:', e))
+            .finally(() => {
+                setInterval(() => {
+                    fetch('/api/jobs')
+                        .then(r => r.json())
+                        .then(jobs => processJobs(jobs, false))
+                        .catch(e => console.log('Error polling jobs:', e));
+                }, 5000);
+            });
+    });
+    {% endif %}
+</script>
+</body>
+</html>
