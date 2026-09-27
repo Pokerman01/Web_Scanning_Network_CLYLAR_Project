@@ -3,6 +3,7 @@
 {% block content %}
 
 <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+<script src="{{ url_for('static', filename='js/subnet-topology.js') }}"></script>
 
 {% with messages = get_flashed_messages(with_categories=true) %}
 {% if messages %}
@@ -401,6 +402,12 @@
 <div class="card shadow-sm border-0 mb-4">
     <div class="card-header bg-dark text-white d-flex align-items-center justify-content-between">
         <h6 class="mb-0">Network Diagram</h6>
+        <div class="d-flex align-items-center gap-2 ms-auto me-3">
+            <label for="subnetPrefix" class="mb-0 text-white-50 d-none" style="font-size:.75rem;white-space:nowrap;">แยกตาม Subnet</label>
+            <select id="subnetPrefix" class="form-select form-select-sm" style="width:auto;min-width:150px;font-size:.78rem;" onchange="changeSubnetPrefix(this.value)">
+                <option value="0">ไม่แยก Subnet</option><option value="24" selected>แยกตาม Subnet/24</option>
+            </select>
+        </div>
         <div id="network-legend" class="d-flex gap-2 align-items-center flex-wrap">
             <span
                 style="display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:20px;padding:3px 10px 3px 7px;">
@@ -485,9 +492,6 @@
                                font-weight:600;font-size:.82rem;cursor:pointer;">
                     Port
                 </button>
-                               font-weight:600;font-size:.82rem;cursor:pointer;">
-                    Port
-                </button>
             </div>
 
             <!-- Detail Panel -->
@@ -528,7 +532,7 @@
 <!-- ===== SUMMARY STATS ===== -->
 {% if scan_data %}
 {% set ns = namespace(total_ports=0) %}
-{% for d in scan_data %}{% set ns.total_ports = ns.total_ports + (d.ports | length) %}{% endfor %}
+{% for d in scan_data %}{% set ns.total_ports = ns.total_ports + (d.ports | selectattr('state', 'equalto', 'open') | list | length) %}{% endfor %}
 <div class="row g-3 mb-4">
     <div class="col-6">
         <div class="stat-card-v2">
@@ -642,7 +646,7 @@
                 {% endif %}
                 <td>{{ port.port }}</td>
                 <td>{{ port.protocol | lower if port.protocol else 'tcp' }}</td>
-                <td>open</td>
+                <td>{{ port.state | default('unknown', true) }}</td>
                 <td>{% if port.name %}{{ port.name }}{% else %}—{% endif %}</td>
                 <td class="text-secondary">
                     {% if port.version_info and port.version_info != 'Unknown Version' %}
@@ -828,6 +832,11 @@
 
         // Priority 2: Verified Local System Gateway (if the scan covers the local subnet)
         const sysGwIp = systemGw && systemGw.ip ? systemGw.ip.trim() : '';
+        // A loopback-only scan has no subnet from which to infer a router.
+        // Keep displaying the OS default gateway instead of dropping its IP.
+        if (sysGwIp && hosts.every(h => h.ip === '127.0.0.1')) {
+            return { ip: sysGwIp, reason: `Local OS Default Gateway (${sysGwIp})`, hostIndex: -1, isEstimated: false };
+        }
         const isLocalSubnetScan = topPrefix && sysGwIp && sysGwIp.startsWith(topPrefix + '.');
 
         if (isLocalSubnetScan) {
@@ -1148,13 +1157,15 @@
     </g>
   </svg>`,
 
-        // ── Gateway (cloud-like) ──────────────────────────────────────────────────
+        // ── Gateway / router ───────────────────────────────────────────────────────
         gateway: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 70" width="80" height="70">
     <g fill="none" stroke="#4a9fd4" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M14 44 Q10 44 10 38 Q10 30 18 30 Q18 22 26 20 Q34 14 44 20 Q52 18 56 26 Q64 26 64 36 Q64 44 56 44 Z" fill="#d6ecf8" stroke="#4a9fd4" stroke-width="2"/>
-      <!-- wifi-like lines -->
-      <path d="M28 56 Q32 50 40 50 Q48 50 52 56" stroke-width="2"/>
-      <path d="M32 62 Q36 58 40 58 Q44 58 48 62" stroke-width="2"/>
+      <ellipse cx="32" cy="18" rx="22" ry="7"/>
+      <line x1="10" y1="18" x2="10" y2="36"/><line x1="54" y1="18" x2="54" y2="36"/>
+      <ellipse cx="32" cy="36" rx="22" ry="7" fill="#d6ecf8" stroke-width="1.4"/>
+      <line x1="20" y1="18" x2="14" y2="4"/><line x1="44" y1="18" x2="50" y2="4"/>
+      <circle cx="14" cy="4" r="2" fill="#4a9fd4" stroke="none"/><circle cx="50" cy="4" r="2" fill="#4a9fd4" stroke="none"/>
+      <circle cx="24" cy="36" r="2" fill="#4a9fd4" stroke="none"/><circle cx="32" cy="36" r="2" fill="#4a9fd4" stroke="none"/><circle cx="40" cy="36" r="2" fill="#4a9fd4" stroke="none"/>
     </g>
   </svg>`
     };
@@ -1169,6 +1180,7 @@
     for (const [k, v] of Object.entries(CISCO_ICONS)) {
         ICON_URI[k] = svgToDataUri(v);
     }
+    const CORE_NETWORK_ICON = svgToDataUri(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 70" width="80" height="70"><g fill="none" stroke="#4a9fd4" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 44 Q10 44 10 38 Q10 30 18 30 Q18 22 26 20 Q34 14 44 20 Q52 18 56 26 Q64 26 64 36 Q64 44 56 44 Z" fill="#d6ecf8"/><path d="M28 56 Q32 50 40 50 Q48 50 52 56" stroke-width="2"/><path d="M32 62 Q36 58 40 58 Q44 58 48 62" stroke-width="2"/></g></svg>`);
 
     // Pick the right icon key per OS string
     function osIconKey(osStr) {
@@ -1221,6 +1233,8 @@
 
     // ── Build graph data ───────────────────────────────────────────────────────
     const nodesData = [], edgesData = [];
+    const subnetPrefix = Number(sessionStorage.getItem('scanSubnetPrefix') || 24);
+    document.getElementById('subnetPrefix').value = String(subnetPrefix);
 
     // Intelligent Gateway detection
     const gwInfo = detectGateway(SCAN_DATA, typeof SYSTEM_GATEWAY !== 'undefined' ? SYSTEM_GATEWAY : null);
@@ -1243,12 +1257,12 @@
     nodesData.push({
         id: 0,
         label: gwLabel,
-        image: ICON_URI['gateway'],
+        image: CORE_NETWORK_ICON,
         shape: 'image',
         size: 40,
-        font: { color: '#1a6db5', size: 12, face: 'monospace', bold: true, vadjust: 6, multi: 'html' },
+        font: { color: '#212529', size: 12, face: 'monospace', bold: true, vadjust: 6, multi: 'html' },
         title: gwTitle,
-        shadow: { enabled: true, color: 'rgba(31,111,235,0.3)', size: 14 },
+        shadow: { enabled: true, color: 'rgba(33,37,41,0.22)', size: 12 },
         fixed: true, x: 0, y: 0,
         _device: gwDevice,
         _portCnt: gwPortCnt,
@@ -1256,6 +1270,12 @@
         _gwIp: gwIp,
         _gwReason: gwInfo.reason
     });
+    // The cloud is the upstream/core network; each subnet gets its own router below.
+    nodesData[0].label = 'Internet';
+    nodesData[0].title = 'Internet / upstream network';
+    nodesData[0]._isGateway = false;
+    nodesData[0]._device = null;
+    nodesData[0].y = -330;
 
     const gwSubnetPrefix = (gwIp || '').split('.').slice(0, 3).join('.');
 
@@ -1289,7 +1309,7 @@
             shape: 'image',
             size: 34,
             font: {
-                color: isLoopback ? '#78909c' : '#1a3a5c',
+                color: isLoopback ? '#6c757d' : '#343a40',
                 size: 12,
                 face: 'monospace',
                 vadjust: 6,
@@ -1334,22 +1354,21 @@
         });
     });
 
-    // (legend colours set directly in HTML)
+    // Replace the legacy direct Gateway-to-host edges with grouped subnet links.
+    edgesData.length = 0;
+    const currentSubnets = SubnetTopology.apply(nodesData, edgesData, SCAN_DATA, subnetPrefix, {
+        gatewayIcon: ICON_URI['gateway'],
+        gatewayForGroup: (hosts) => detectGateway(hosts, typeof SYSTEM_GATEWAY !== 'undefined' ? SYSTEM_GATEWAY : null)
+    });
 
     const container = document.getElementById('network-canvas');
     const network = new vis.Network(
         container,
         { nodes: new vis.DataSet(nodesData), edges: new vis.DataSet(edgesData) },
-        {
-            physics: {
-                solver: 'forceAtlas2Based',
-                forceAtlas2Based: { gravitationalConstant: -130, springLength: 170, springConstant: 0.04, damping: 0.5 },
-                stabilization: { iterations: 200 }
-            },
-            interaction: { hover: true, zoomView: true, tooltipDelay: 300 },
-            layout: { improvedLayout: true }
-        }
+        SubnetTopology.visOptions(subnetPrefix)
     );
+    SubnetTopology.attachRegions(network, () => currentSubnets);
+    if (subnetPrefix) setTimeout(() => SubnetTopology.fit(network, false), 0);
 
     network.on('hoverNode', () => { container.style.cursor = 'pointer'; });
     network.on('blurNode', () => { container.style.cursor = 'default'; });
@@ -1367,8 +1386,13 @@
 
     function resetZoom() {
         if (typeof network !== 'undefined' && network) {
-            network.fit({ animation: { duration: 500, easingFunction: 'easeInOutQuad' } });
+            SubnetTopology.fit(network, true);
         }
+    }
+
+    function changeSubnetPrefix(value) {
+        sessionStorage.setItem('scanSubnetPrefix', String(parseInt(value, 10) || 0));
+        window.location.reload();
     }
 
     const popup = document.getElementById('node-popup');
@@ -1395,7 +1419,7 @@
         if (!node) { closePopup(); return; }
 
         const dev = node._device;
-        if (!dev && nodeId === 0) {
+        if (node._isGateway) {
             // Gateway node without direct scanned host record
             const header = document.getElementById('popup-header');
             header.style.background = '#1a6db5';
@@ -1425,12 +1449,17 @@
             </tr>`).join('');
 
             const portTbody = document.getElementById('port-tbody');
-            portTbody.innerHTML = '<tr><td colspan="4" style="padding:12px;text-align:center;color:#888;">No port scan directly performed on this gateway</td></tr>';
+            const gatewayPorts = (dev && dev.ports) ? [...dev.ports].sort((a, b) => a.port - b.port) : [];
+            portTbody.innerHTML = gatewayPorts.length ? gatewayPorts.map(p => {
+                const proto = (p.protocol || 'tcp').toLowerCase();
+                const ver = (p.version_info && p.version_info !== 'Unknown Version') ? p.version_info : '—';
+                return `<tr><td style="padding:6px 12px;font-family:monospace;font-weight:600;">${p.port}/${proto}</td><td style="padding:6px 8px;color:${p.state === 'open' ? '#198754' : '#6c757d'};font-weight:600;">${p.state || 'unknown'}</td><td style="padding:6px 8px;">${p.name || '?'}</td><td style="padding:6px 8px;color:#555;">${ver}</td></tr>`;
+            }).join('') : '<tr><td colspan="4" style="padding:12px;text-align:center;color:#888;">No open ports</td></tr>';
 
             const ddArea = document.getElementById('popup-drilldown-area');
             if (ddArea) ddArea.style.display = 'none';
 
-            switchTab('detail');
+            switchScanPopupTab('detail');
             const domPos = params.pointer.DOM;
             let left = domPos.x + 16;
             let top = domPos.y - 10;
@@ -1492,7 +1521,7 @@
                 const ver = (p.version_info && p.version_info !== 'Unknown Version') ? p.version_info : '—';
                 return `<tr style="border-bottom:1px solid #f0f0f0;">
                 <td style="padding:6px 12px;font-family:monospace;font-weight:600;">${p.port}/${proto}</td>
-                <td style="padding:6px 8px;"><span style="color:#198754;font-weight:600;">open</span></td>
+                <td style="padding:6px 8px;"><span style="color:${p.state === 'open' ? '#198754' : '#6c757d'};font-weight:600;">${p.state || 'unknown'}</span></td>
                 <td style="padding:6px 8px;">${p.name || '?'}</td>
                 <td style="padding:6px 8px;color:#555;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${ver}">${ver}</td>
             </tr>`;

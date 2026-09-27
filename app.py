@@ -380,6 +380,8 @@ def dashboard():
             if ip not in all_device_map:
                 all_device_map[ip] = set()
             for p in d.get('ports', []):
+                if str(p.get('state', '')).lower() != 'open':
+                    continue
                 label = f"{p.get('port')}/{p.get('name','?')}"
                 all_device_map[ip].add(label)
 
@@ -422,6 +424,8 @@ def dashboard():
             continue
         for d in job_data:
             for p in d.get('ports', []):
+                if str(p.get('state', '')).lower() != 'open':
+                    continue
                 port_label = str(p.get('port', ''))
                 if port_label:
                     all_ports_global.add(port_label)
@@ -501,6 +505,7 @@ def topology_page():
                 ports.append({
                     'port': p.get('port', ''),
                     'protocol': p.get('protocol', 'tcp'),
+                    'state': p.get('state', 'unknown'),
                     'name': p.get('name', ''),
                     'version_info': p.get('version_info', '')
                 })
@@ -1266,7 +1271,7 @@ def upload_xml():
         ports = []
         for port_el in host.findall('.//port'):
             state_el = port_el.find('state')
-            if state_el is None or state_el.get('state') != 'open':
+            if state_el is None:
                 continue
             service_el = port_el.find('service')
             name = service_el.get('name', '') if service_el is not None else ''
@@ -1277,7 +1282,7 @@ def upload_xml():
             ports.append({
                 'port': int(port_el.get('portid', 0)),
                 'protocol': port_el.get('protocol', 'tcp'),
-                'state': 'open',
+                'state': state_el.get('state', 'unknown'),
                 'name': name,
                 'version_info': full_version,
             })
@@ -1338,7 +1343,7 @@ def export_csv(scan_id):
                 if ver == 'Unknown Version': ver = ''
                 writer.writerow([ip, mac_display, os_info,
                                   port.get('port', ''), (port.get('protocol', 'tcp') or '').lower(),
-                                  'open', port.get('name', '') or '—', ver])
+                                  port.get('state', 'unknown') or 'unknown', port.get('name', '') or '—', ver])
         else:
             writer.writerow([ip, mac_display, os_info, '—', '—', '—', 'No ports', '—'])
 
@@ -1400,7 +1405,7 @@ def export_pdf(scan_id):
         else:
             for pi, p in enumerate(ports):
                 proto  = (p.get('protocol') or 'tcp').lower()
-                state  = 'open'
+                state  = p.get('state') or 'unknown'
                 svc    = p.get('name') or '—'
                 ver    = p.get('version_info') or ''
                 if ver == 'Unknown Version': ver = ''
@@ -1586,7 +1591,8 @@ def _build_app_context():
                             for p in h.get('ports', []):
                                 label = f"{p.get('port')}/{p.get('name','?')}"
                                 all_ips[ip].add(label)
-                                all_ports_global.add(str(p.get('port', '')))
+                                if str(p.get('state', '')).lower() == 'open':
+                                    all_ports_global.add(str(p.get('port', '')))
 
                         # CVE / Vuln
                         for p in h.get('ports', []):

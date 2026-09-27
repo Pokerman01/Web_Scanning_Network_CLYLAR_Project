@@ -3,6 +3,7 @@
 {% block content %}
 
 <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+<script src="{{ url_for('static', filename='js/subnet-topology.js') }}"></script>
 
 <style>
 /* ─── Page Layout ─── */
@@ -376,6 +377,7 @@
     <div class="topo-canvas-panel">
         <div class="topo-canvas-header">
             <h5>Network Diagram</h5>
+            <div class="d-none align-items-center gap-2 ms-auto me-3"><label for="subnetPrefix" class="mb-0" style="font-size:.74rem;white-space:nowrap;color:#fff;">แยกตาม Subnet</label><select id="subnetPrefix" class="form-select form-select-sm" style="width:auto;min-width:150px;font-size:.78rem;" onchange="changeSubnetPrefix(this.value)"><option value="0">ไม่แยก Subnet</option><option value="24" selected>แยกตาม Subnet/24</option></select></div>
             <div class="topo-legend">
                 <div class="legend-item">
                     <svg width="10" height="10"><circle cx="5" cy="5" r="5" fill="#2ecc71"/></svg>
@@ -465,6 +467,8 @@
 // ─── Raw scan data from Flask ───
 const ALL_SCANS = {{ scans_json | safe }};
 const SYSTEM_GATEWAY = {{ (system_gateway or {}) | tojson }};
+let subnetPrefix = 24;
+let currentSubnets = [];
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Intelligent Default Gateway Detection
@@ -515,8 +519,11 @@ function detectGateway(hosts, systemGw) {
     }
 
     // Priority 2: Verified Local System Gateway (if the scan covers the local subnet)
-    const sysGwIp = systemGw && systemGw.ip ? systemGw.ip.trim() : '';
-    const isLocalSubnetScan = topPrefix && sysGwIp && sysGwIp.startsWith(topPrefix + '.');
+        const sysGwIp = systemGw && systemGw.ip ? systemGw.ip.trim() : '';
+        if (sysGwIp && hosts.every(h => h.ip === '127.0.0.1')) {
+            return { ip: sysGwIp, reason: `Local OS Default Gateway (${sysGwIp})`, hostIndex: -1, isEstimated: false };
+        }
+        const isLocalSubnetScan = topPrefix && sysGwIp && sysGwIp.startsWith(topPrefix + '.');
 
     if (isLocalSubnetScan) {
         const sysMatchIdx = hosts.findIndex(h => h.ip === sysGwIp);
@@ -804,10 +811,13 @@ const CISCO_ICONS = {
     </g>
   </svg>`,
   gateway: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 70" width="80" height="70">
-    <g fill="none" stroke="#1a6db5" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M14 44 Q10 44 10 38 Q10 30 18 30 Q18 22 26 20 Q34 14 44 20 Q52 18 56 26 Q64 26 64 36 Q64 44 56 44 Z" fill="#d6ecf8" stroke="#1a6db5" stroke-width="2"/>
-      <path d="M28 56 Q32 50 40 50 Q48 50 52 56" stroke-width="2"/>
-      <path d="M32 62 Q36 58 40 58 Q44 58 48 62" stroke-width="2"/>
+    <g fill="none" stroke="#4a9fd4" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <ellipse cx="32" cy="18" rx="22" ry="7"/>
+      <line x1="10" y1="18" x2="10" y2="36"/><line x1="54" y1="18" x2="54" y2="36"/>
+      <ellipse cx="32" cy="36" rx="22" ry="7" fill="#d6ecf8" stroke-width="1.4"/>
+      <line x1="20" y1="18" x2="14" y2="4"/><line x1="44" y1="18" x2="50" y2="4"/>
+      <circle cx="14" cy="4" r="2" fill="#4a9fd4" stroke="none"/><circle cx="50" cy="4" r="2" fill="#4a9fd4" stroke="none"/>
+      <circle cx="24" cy="36" r="2" fill="#4a9fd4" stroke="none"/><circle cx="32" cy="36" r="2" fill="#4a9fd4" stroke="none"/><circle cx="40" cy="36" r="2" fill="#4a9fd4" stroke="none"/>
     </g>
   </svg>`
 };
@@ -816,6 +826,7 @@ const CISCO_ICONS = {
 const ICON_URI = {};
 function svgToDataUri(s) { return 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(s))); }
 for (const [k,v] of Object.entries(CISCO_ICONS)) { ICON_URI[k] = svgToDataUri(v); }
+const CORE_NETWORK_ICON = svgToDataUri(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 70" width="80" height="70"><g fill="none" stroke="#4a9fd4" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 44 Q10 44 10 38 Q10 30 18 30 Q18 22 26 20 Q34 14 44 20 Q52 18 56 26 Q64 26 64 36 Q64 44 56 44 Z" fill="#d6ecf8"/><path d="M28 56 Q32 50 40 50 Q48 50 52 56" stroke-width="2"/><path d="M32 62 Q36 58 40 58 Q44 58 48 62" stroke-width="2"/></g></svg>`);
 
 function osIconKey(osStr) {
     if (!osStr) return 'pc';
@@ -982,12 +993,12 @@ function buildAndDraw() {
     nodesData.push({
         id: 0,
         label: gwLabel,
-        image: ICON_URI['gateway'],
+        image: CORE_NETWORK_ICON,
         shape: 'image',
         size: 40,
-        font: { color:'#1a6db5', size:12, face:'monospace', bold:true, vadjust:6, multi:'html' },
+        font: { color:'#212529', size:12, face:'monospace', bold:true, vadjust:6, multi:'html' },
         title: gwTitle,
-        shadow: { enabled:true, color:'rgba(31,111,235,0.3)', size:14 },
+        shadow: { enabled:true, color:'rgba(33,37,41,0.22)', size:12 },
         fixed: true, x:0, y:0,
         _device: gwDevice,
         _portCnt: gwPortCnt,
@@ -995,6 +1006,12 @@ function buildAndDraw() {
         _gwIp: gwIp,
         _gwReason: gwInfo.reason
     });
+    // The cloud is the upstream/core network; each subnet gets its own router below.
+    nodesData[0].label = 'Internet';
+    nodesData[0].title = 'Internet / upstream network';
+    nodesData[0]._isGateway = false;
+    nodesData[0]._device = null;
+    nodesData[0].y = -330;
     nodesDataArr.push(gwDevice);
 
     const gwSubnetPrefix = (gwIp || '').split('.').slice(0, 3).join('.');
@@ -1022,7 +1039,7 @@ function buildAndDraw() {
             shape: 'image',
             size: 34,
             font: {
-                color: isLoopback ? '#78909c' : '#1a3a5c',
+                color: isLoopback ? '#6c757d' : '#343a40',
                 size: 12,
                 face: 'monospace',
                 vadjust: 6,
@@ -1062,6 +1079,11 @@ function buildAndDraw() {
         });
     });
 
+    edgesData.length = 0;
+    currentSubnets = SubnetTopology.apply(nodesData, edgesData, hosts, subnetPrefix, {
+        gatewayIcon: ICON_URI['gateway'],
+        gatewayForGroup: (subnetHosts) => detectGateway(subnetHosts, typeof SYSTEM_GATEWAY !== 'undefined' ? SYSTEM_GATEWAY : null)
+    });
     const container = document.getElementById('topoCanvas');
     if (visNetwork) { visNetwork.destroy(); visNetwork = null; }
 
@@ -1070,16 +1092,10 @@ function buildAndDraw() {
     visNetwork = new vis.Network(
         container,
         { nodes: new vis.DataSet(nodesData), edges: new vis.DataSet(edgesData) },
-        {
-            physics: {
-                solver: 'forceAtlas2Based',
-                forceAtlas2Based: { gravitationalConstant:-130, springLength:170, springConstant:0.04, damping:0.5 },
-                stabilization: { iterations:200 }
-            },
-            interaction: { hover:true, zoomView:true, tooltipDelay:300 },
-            layout: { improvedLayout:true }
-        }
+        SubnetTopology.visOptions(subnetPrefix)
     );
+    SubnetTopology.attachRegions(visNetwork, () => currentSubnets);
+    if (subnetPrefix) setTimeout(() => { if (visNetwork) SubnetTopology.fit(visNetwork, false); }, 0);
 
     visNetwork.on('hoverNode', () => { container.style.cursor = 'pointer'; });
     visNetwork.on('blurNode',  () => { container.style.cursor = 'default'; });
@@ -1103,7 +1119,7 @@ function buildAndDraw() {
         if (!node) { closePopup(); return; }
 
         const dev  = node._device;
-        if (!dev && nodeId === 0) {
+        if (node._isGateway) {
             const header = document.getElementById('popup-header');
             header.style.background = '#1a6db5';
             document.getElementById('popup-icon').textContent = '🌐';
@@ -1130,7 +1146,13 @@ function buildAndDraw() {
                 `<tr><td style="color:#6c757d;font-size:.78rem;padding:4px 8px 4px 0;white-space:nowrap;">${l}</td><td style="font-size:.82rem;font-weight:500;padding:4px 0;">${v}</td></tr>`
             ).join('');
 
-            document.getElementById('port-tbody').innerHTML = `<tr><td colspan="4" style="text-align:center;color:#adb5bd;padding:20px;">No port scan directly performed on this gateway</td></tr>`;
+            const gatewayPorts = (dev && dev.ports) ? [...dev.ports].sort((a, b) => a.port - b.port) : [];
+            document.getElementById('port-tbody').innerHTML = gatewayPorts.length
+                ? gatewayPorts.map(p => {
+                    const stateColor = p.state === 'open' ? '#198754' : '#6c757d';
+                    return `<tr><td><span class="badge bg-primary">${p.port}/${(p.protocol || 'tcp').toUpperCase()}</span></td><td style="color:${stateColor};font-weight:600;">${p.state || 'unknown'}</td><td>${p.name || '–'}</td><td style="color:#6c757d;font-size:.75rem;">${(p.version_info && p.version_info !== 'Unknown Version') ? p.version_info : '–'}</td></tr>`;
+                  }).join('')
+                : `<tr><td colspan="4" style="text-align:center;color:#adb5bd;padding:20px;">No open ports</td></tr>`;
             switchTopologyPopupTab('detail');
 
             const canvasRect = container.getBoundingClientRect();
@@ -1147,7 +1169,7 @@ function buildAndDraw() {
             return;
         }
 
-        if (!dev) return;
+        if (!dev) { closePopup(); return; }
 
         const osStr = dev.os || '';
         const hc    = nodeId === 0 ? { bg: '#1a6db5', fg: '#ffffff' } : osHeaderColor(osStr);
@@ -1186,7 +1208,7 @@ function buildAndDraw() {
                 const stateColor = p.state === 'open' ? '#198754' : '#6c757d';
                 return `<tr>
                     <td><span class="badge bg-primary">${p.port}/${(p.protocol||'tcp').toUpperCase()}</span></td>
-                    <td style="color:${stateColor};font-weight:600;">${p.state||'open'}</td>
+                    <td style="color:${stateColor};font-weight:600;">${p.state||'unknown'}</td>
                     <td>${p.name||'–'}</td>
                     <td style="color:#6c757d;font-size:.75rem;">${(p.version_info && p.version_info !== 'Unknown Version') ? p.version_info : '–'}</td>
                 </tr>`;
@@ -1233,8 +1255,13 @@ function formatDate(d) {
 
 function resetZoom() {
     if (visNetwork) {
-        visNetwork.fit({ animation: { duration: 500, easingFunction: 'easeInOutQuad' } });
+        SubnetTopology.fit(visNetwork, true);
     }
+}
+
+function changeSubnetPrefix(value) {
+    subnetPrefix = parseInt(value, 10) || 0;
+    buildAndDraw();
 }
 
 // ─── Go ───

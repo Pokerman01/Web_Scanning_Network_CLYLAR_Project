@@ -534,16 +534,14 @@ def run_vuln_scan(target_ip):
                 for proto in nm[host].all_protocols():
                     for port in nm[host][proto].keys():
                         port_data = nm[host][proto][port]
-                        if port_data.get('state') != 'open':
-                            continue
-
                         product = port_data.get('product', '')
                         version = port_data.get('version', '')
                         extrainfo = port_data.get('extrainfo', '')
                         full_version = f"{product} {version} {extrainfo}".strip() or "Unknown Version"
 
-                        # Query NVD API for CVEs
-                        cves = lookup_cves_nvd(product, version)
+                        # Only reachable services can be matched to CVEs. Keep
+                        # other Nmap states in the report without CVE lookups.
+                        cves = lookup_cves_nvd(product, version) if port_data.get('state') == 'open' else []
 
                         ports.append({
                             'port': port,
