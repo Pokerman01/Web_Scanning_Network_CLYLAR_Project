@@ -107,18 +107,17 @@
           </div>
         </div>
         <div class="stat-card-footer mt-2">
-          <span><strong style="color:#10b981;">{{ task_completed }}</strong> Done · <strong style="color:#ef4444;">{{ task_wait }}</strong> Wait · <strong style="color:#f59e0b;">{{ task_running }}</strong> Run</span>
+          <span><strong style="color:#10b981;">{{ task_completed }}</strong> Done · <strong style="color:#3b82f6;">{{ task_wait }}</strong> Wait · <strong style="color:#f59e0b;">{{ task_running }}</strong> Run</span>
         </div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- ===== CHARTS ROW ===== -->
+<!-- ===== DEVICE STATUS + TASK STATUS ===== -->
 {% if total_devices > 0 %}
 <div class="row g-3 mb-3">
 
-  <!-- Donut: Device Port Count -->
   <div class="col-md-6">
     <div class="card border-0 shadow-sm h-100">
       <div class="card-body d-flex flex-column">
@@ -160,29 +159,60 @@
     </div>
   </div>
 
-  <!-- Bar Chart: Task Status -->
+  <!-- Task Status: ring + table, compacted into a half-width card -->
   <div class="col-md-6">
-    <div class="card border-0 shadow-sm h-100">
-      <div class="card-body d-flex flex-column" id="task-chart-body">
-        <div id="task-chart-header">
-          <h6 class="fw-bold mb-1">Task Status</h6>
-          <p class="text-muted small mb-3">Total Task {{ total_tasks }}</p>
-        </div>
-        <!-- Chart view -->
-        <div class="flex-grow-1 d-flex align-items-center justify-content-center" id="task-chart-view">
-          <canvas id="taskStatusChart" style="max-height:220px;width:100%"></canvas>
-        </div>
-        <!-- Drill-down view (hidden initially) -->
-        <div id="task-drilldown-view" style="display:none;flex-direction:column;gap:0;">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-            <button id="task-back-btn" onclick="closeDrilldown()"
-              style="background:none;border:1px solid #dee2e6;border-radius:8px;padding:4px 12px;font-size:.8rem;cursor:pointer;color:#495057;display:flex;align-items:center;gap:4px;">
-              ← กลับ
-            </button>
-            <span id="task-drilldown-title" style="font-weight:600;font-size:.95rem;"></span>
+    <div class="card border-0 shadow-sm ts-scope h-100">
+      <div class="card-body">
+
+        <div class="ts-header">
+          <div>
+            <h1 id="ts-title">Task Status</h1>
+            <p id="ts-subtitle">{{ task_ring_total }} total tasks</p>
           </div>
-          <div id="task-drilldown-list" style="display:flex;flex-direction:column;gap:8px;"></div>
         </div>
+
+        <!-- Page 1: bar chart (default view) -->
+        <div id="task-chart-view">
+          <canvas id="taskStatusChart" style="max-height:220px;width:100%;cursor:pointer;"></canvas>
+        </div>
+
+        <!-- Page 2: ring + table detail (hidden until a bar is clicked) -->
+        <div id="task-detail-view" style="display:none;">
+          <button id="task-back-btn" class="ts-back-btn" onclick="closeTaskDetail()">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M10 3L5 8L10 13" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            กลับ
+          </button>
+
+          <div class="ts-stat-panel">
+            <svg width="92" height="92" viewBox="0 0 128 128" style="flex-shrink:0">
+              <circle cx="64" cy="64" r="54" fill="none" stroke="#E1E4E9" stroke-width="12"/>
+              <circle id="ts-ring-arc" cx="64" cy="64" r="54" fill="none" stroke-width="12"
+                      stroke-linecap="round" transform="rotate(-90 64 64)"/>
+              <text id="ts-ring-count" x="64" y="58" text-anchor="middle" class="ts-mono" font-size="30" font-weight="500" fill="#12161C"></text>
+              <text id="ts-ring-of" x="64" y="80" text-anchor="middle" font-size="12" fill="#4B5563"></text>
+            </svg>
+            <div class="ts-figures" id="ts-figures">
+              <!-- Populated by JS: one clickable figure per category -->
+            </div>
+          </div>
+
+          <div class="ts-section">
+            <div class="ts-section-title">
+              <h2 id="ts-section-heading"></h2>
+              <span id="ts-section-sub"></span>
+            </div>
+            <div style="overflow-x:auto;min-height:168px;">
+              <table>
+                <thead>
+                  <tr id="ts-thead-row"></tr>
+                </thead>
+                <tbody id="ts-tbody"></tbody>
+              </table>
+            </div>
+            <p class="ts-footnote" id="ts-footnote"></p>
+          </div>
+        </div>
+
       </div>
     </div>
   </div>
@@ -194,12 +224,12 @@
 <div class="row g-3 mb-4">
 
   <!-- Recent Scan Tasks -->
-  <div class="col-lg-7">
+  <div class="col-md-6">
     <div class="card border-0 shadow-sm h-100">
       <div class="card-body p-4">
         <div class="d-flex align-items-center justify-content-between mb-3">
           <h6 class="fw-bold mb-0">Recent Scan Tasks</h6>
-          <a href="{{ url_for('history_page') }}" style="font-size:.8rem;color:var(--nt-gold-dark,#b8860b);font-weight:600;text-decoration:none;">ดูทั้งหมด →</a>
+          <a href="{{ url_for('history_page') }}" style="font-size:.8rem;color:var(--nt-gold-dark);font-weight:600;text-decoration:none;">ดูทั้งหมด →</a>
         </div>
         {% if history %}
         <div class="table-responsive">
@@ -216,7 +246,7 @@
             <tbody>
               {% for job in history[:5] %}
               <tr style="border-top:1px solid #f1f3f5;cursor:pointer;" onclick="window.location='{{ url_for('scan_detail', scan_id=job.id) }}'">
-                <td class="ps-0 py-2 fw-semibold" style="color:#0f172a;">{{ job.scan_name or ('Job #' ~ job.id) }}</td>
+                <td class="ps-0 py-2 fw-semibold" style="color:#0f172a;">{{ job.scan_name or ('Job #' ~ owner_seq_map.get(job.id, job.id)) }}</td>
                 <td class="py-2 text-muted">{{ job.target }}</td>
                 <td class="py-2">
                   {% if job.status == 'Completed' %}
@@ -247,7 +277,7 @@
   </div>
 
   <!-- Top Open Ports -->
-  <div class="col-lg-5">
+  <div class="col-md-6">
     <div class="card border-0 shadow-sm h-100">
       <div class="card-body p-4">
         <div class="d-flex align-items-center justify-content-between mb-3">
@@ -298,34 +328,33 @@
   // We use a thin wrapper so we can use animate() + spring()
   // ========================================================
 
-  // ───── Device Port Donut Chart Data ─────
+  // ───── Device Status: bucketed by worst CVE severity, not raw port count ─────
   const devicePortData = {{ device_port_data | tojson }};
   const topPortsData = {{ top_ports | tojson }};
   const scanDataRaw = {{ scan_data | tojson }};
 
-  // Severity buckets for devices
-  const unknown = devicePortData.filter(d => d.count === 0).length;
-  const safeRaw = devicePortData.filter(d => d.count > 0 && d.count < 3).length;
-  const safe = safeRaw + unknown;
-  const warning = devicePortData.filter(d => d.count >= 3 && d.count <= 6).length;
-  const danger = devicePortData.filter(d => d.count > 6).length;
-  const totalDevices = safe + warning + danger;
+  // Single source of truth for the 4 tiers — reused by legend, donut, filter panel and modal.
+  // 'unscanned' is deliberately gray (outside the red/amber/green spectrum): it means
+  // "no vulnerability-scan data", not "assessed as safe".
+  const DEVICE_TIERS = [
+    { key: 'critical_high', label: 'Critical / High', thai: 'ความเสี่ยงสูง (พบ CVE ระดับ Critical/High)', color: '#dc3545' },
+    { key: 'medium_low',    label: 'Medium / Low',     thai: 'พบช่องโหว่ระดับ Medium/Low',                 color: '#ffc107' },
+    { key: 'clean',         label: 'No Known Vulns',   thai: 'ไม่พบช่องโหว่ (ผ่านการสแกน Vulnerability)',    color: '#198754' },
+    { key: 'unscanned',     label: 'Not Scanned',      thai: 'ยังไม่ได้สแกนหาช่องโหว่',                      color: '#6c757d' },
+  ];
 
-  // Store device lists per segment
-  const segmentDevices = {
-    0: devicePortData.filter(d => d.count < 3),      // safe (< 3 ports)
-    1: devicePortData.filter(d => d.count >= 3 && d.count <= 6), // warning
-    2: devicePortData.filter(d => d.count > 6),       // danger
-  };
-  const segmentLabels = ['< 3 Port', '3–6 Port', '> 6 Port'];
-  const segmentColors = ['#198754', '#ffc107', '#dc3545'];
+  const totalDevices = devicePortData.length;
+  const segmentDevices = {};
+  DEVICE_TIERS.forEach((tier, idx) => {
+    segmentDevices[idx] = devicePortData.filter(d => d.tier === tier.key);
+  });
+  const segmentLabels = DEVICE_TIERS.map(t => t.label);
+  const segmentColors = DEVICE_TIERS.map(t => t.color);
 
   // Build legend
-  const legendData = [
-    { label: '< 3 Port', count: safe, color: '#198754' },
-    { label: '3–6 Port', count: warning, color: '#ffc107' },
-    { label: '> 6 Port', count: danger, color: '#dc3545' },
-  ];
+  const legendData = DEVICE_TIERS.map((tier, idx) => ({
+    label: tier.label, count: segmentDevices[idx].length, color: tier.color,
+  }));
   // Center label inside donut
   const donutCenterCountEl = document.getElementById('donutCenterCount');
   if (donutCenterCountEl) donutCenterCountEl.textContent = totalDevices;
@@ -335,9 +364,10 @@
   const infoText = document.getElementById('donutInfoText');
   if (infoBanner && infoText && totalDevices > 0) {
     const buckets = [
-      { count: safe, msg: 'อุปกรณ์ส่วนใหญ่มีพอร์ตเปิดอยู่น้อยกว่า 3 พอร์ต' },
-      { count: warning, msg: 'อุปกรณ์ส่วนใหญ่มีพอร์ตเปิดอยู่ระหว่าง 3-6 พอร์ต' },
-      { count: danger, msg: 'อุปกรณ์ส่วนใหญ่มีพอร์ตเปิดอยู่มากกว่า 6 พอร์ต' },
+      { count: segmentDevices[0].length, msg: `พบอุปกรณ์ที่มีช่องโหว่ระดับ Critical/High จำนวน ${segmentDevices[0].length} เครื่อง ควรแก้ไขโดยเร็ว` },
+      { count: segmentDevices[1].length, msg: `พบช่องโหว่ระดับ Medium/Low ในอุปกรณ์ ${segmentDevices[1].length} เครื่อง` },
+      { count: segmentDevices[2].length, msg: 'อุปกรณ์ส่วนใหญ่ผ่านการสแกนหาช่องโหว่แล้วและไม่พบปัญหา' },
+      { count: segmentDevices[3].length, msg: 'อุปกรณ์ส่วนใหญ่ยังไม่ได้ทำการสแกนหาช่องโหว่ (Vulnerability Scan)' },
     ];
     const majority = buckets.reduce((a, b) => (b.count > a.count ? b : a));
     if (majority.count > 0) {
@@ -369,11 +399,11 @@
   const donutChart = new Chart(document.getElementById('deviceStatusChart'), {
     type: 'doughnut',
     data: {
-      labels: ['< 3 Port', '3–6 Port', '> 6 Port'],
+      labels: segmentLabels,
       datasets: [{
-        data: [safe, warning, danger],
-        backgroundColor: ['#198754', '#ffc107', '#dc3545'],
-        hoverBackgroundColor: ['#157347', '#e0a800', '#b02a37'],
+        data: DEVICE_TIERS.map((t, idx) => segmentDevices[idx].length),
+        backgroundColor: segmentColors,
+        hoverBackgroundColor: segmentColors,
         borderWidth: 3,
         borderColor: '#fff',
         hoverOffset: 14
@@ -418,6 +448,38 @@
     }
   });
 
+  function deviceReasonText(d) {
+    if (d.tier === 'critical_high' || d.tier === 'medium_low') {
+      const cvss = (d.cvss_score != null) ? ` (CVSS ${d.cvss_score})` : '';
+      return `Worst CVE: ${d.severity || 'UNKNOWN'}${cvss}`;
+    }
+    if (d.tier === 'clean') {
+      return `No CVEs found · ${d.count} port${d.count !== 1 ? 's' : ''}`;
+    }
+    return `${d.count} port${d.count !== 1 ? 's' : ''} · not vulnerability-scanned`;
+  }
+
+  // Shared clickable device row — used by both the donut filter panel and the stat-card modal.
+  // Links through to that device's most recent scan, where the full port/CVE detail lives.
+  function buildDeviceRow(d) {
+    const href = d.last_scan_id ? `/scan/${d.last_scan_id}` : null;
+    return `
+    <div class="device-row"${href ? ` onclick="window.location.href='${href}'"` : ''} style="
+      display:flex;align-items:center;gap:10px;
+      background:#f8f9fa;border-radius:8px;padding:9px 12px;
+      border-left:3px solid ${d.color};
+      cursor:${href ? 'pointer' : 'default'};
+      font-size:.83rem;
+    ">
+      <span style="font-weight:600;color:#333;font-family:monospace;">${d.ip}</span>
+      <span style="color:#aaa;">|</span>
+      <span style="color:${d.color};font-weight:500;flex:1;">${deviceReasonText(d)}</span>
+      ${href ? `<svg width="14" height="14" viewBox="0 0 16 16" fill="none" class="device-row-chevron" style="flex-shrink:0;">
+        <path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>` : ''}
+    </div>`;
+  }
+
   function handleDonutSegmentClick(segIdx) {
     if (activeSegment === segIdx) {
       clearDonutFilter();
@@ -436,7 +498,7 @@
     const titleEl = document.getElementById('donut-filter-title');
     const listEl = document.getElementById('donut-device-list');
 
-    titleEl.textContent = `อุปกรณ์ที่มี ${segmentLabels[segIdx]} (${segmentDevices[segIdx].length} เครื่อง)`;
+    titleEl.textContent = `${segmentLabels[segIdx]} (${segmentDevices[segIdx].length} เครื่อง)`;
     titleEl.style.color = segmentColors[segIdx];
     listEl.innerHTML = '';
 
@@ -446,29 +508,8 @@
     } else {
       devices.forEach((d, i) => {
         const chip = document.createElement('div');
-        chip.style.cssText = `
-        display:flex;align-items:center;gap:10px;
-        background:#f8f9fa;border-radius:8px;padding:7px 12px;
-        border-left:3px solid ${segmentColors[segIdx]};
-        opacity:0;transform:translateY(10px);
-        font-size:.83rem;
-      `;
-        let portsHtml = '';
-        if (d.ports && d.ports.length > 0) {
-          portsHtml = '<div style="margin-top: 6px; display: flex; flex-wrap: wrap; gap: 4px;">' +
-            d.ports.map(p => `<span style="background: #fff; color: #495057; font-size: .7rem; padding: 2px 6px; border-radius: 4px; border: 1px solid #dee2e6;">${p}</span>`).join('') +
-            '</div>';
-        }
-        chip.innerHTML = `
-        <div style="display:flex; flex-direction:column; width: 100%;">
-          <div style="display:flex; align-items:center; gap:10px;">
-            <span style="font-weight:600;color:#333;font-family:monospace">${d.ip}</span>
-            <span style="color:#aaa">|</span>
-            <span style="color:${segmentColors[segIdx]};font-weight:500">${d.count} port${d.count !== 1 ? 's' : ''}</span>
-          </div>
-          ${portsHtml}
-        </div>
-      `;
+        chip.style.cssText = 'opacity:0;transform:translateY(10px);';
+        chip.innerHTML = buildDeviceRow(d);
         listEl.appendChild(chip);
       });
     }
@@ -485,9 +526,9 @@
       panel.style.transform = 'translateY(0)';
     });
 
-    // Stagger device chips
-    const chips = listEl.querySelectorAll('div');
-    chips.forEach((chip, i) => {
+    // Stagger device chips (direct children only — buildDeviceRow() nests its own <div>)
+    const chips = listEl.children;
+    Array.from(chips).forEach((chip, i) => {
       setTimeout(() => {
         chip.style.transition = 'opacity 0.22s ease, transform 0.22s ease';
         chip.style.opacity = '1';
@@ -499,7 +540,7 @@
   function clearDonutFilter() {
     activeSegment = null;
     donutChart.data.datasets[0].backgroundColor = segmentColors;
-    donutChart.data.datasets[0].hoverBackgroundColor = ['#157347', '#e0a800', '#b02a37'];
+    donutChart.data.datasets[0].hoverBackgroundColor = segmentColors;
     donutChart.update();
 
     const panel = document.getElementById('donut-filter-panel');
@@ -516,25 +557,125 @@
     return `rgba(${r},${g},${b},${alpha})`;
   }
 
-  // ───── Task Status Bar Chart ─────
-  const taskCompleted = {{ task_completed }};
-  const taskWait = {{ task_wait }};
-  const taskRunning = {{ task_running }};
-  const taskData = [taskCompleted, taskWait, taskRunning];
-  const taskTotal = taskData.reduce((a, b) => a + b, 0);
-  const taskCategoryLabels = ['Complete', 'Wait Schedule', 'Running'];
-  const taskCategoryColors = ['#4caf82', '#e05c5c', '#ffc107'];
-  const taskCategoryThai = ['สแกนเสร็จสิ้น', 'รอตามกำหนด', 'กำลังทำงาน'];
+  // ───── Task Status (ring + table) ─────
+  const TASK_CATEGORIES = {{ task_categories | tojson }};
+  const TASK_RING_TOTAL = {{ task_ring_total }};
+  const TS_RING_CIRC = 2 * Math.PI * 54;
+
+  function tsEsc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  const TS_REPEAT_BADGE = {
+    daily:  ['bg-info', 'text-dark', 'Daily'],
+    weekly: ['bg-warning', 'text-dark', 'Weekly'],
+  };
+
+  let tsActiveKey = 'complete';
+
+  function renderTaskFigures() {
+    const el = document.getElementById('ts-figures');
+    el.innerHTML = '';
+    TASK_CATEGORIES.forEach((cat) => {
+      const fig = document.createElement('div');
+      fig.className = 'ts-figure' + (cat.key === tsActiveKey ? ' active' : '');
+      fig.style.setProperty('--ts-cat-color', cat.color);
+      fig.innerHTML = `<span class="n">${cat.count}</span><span class="l">${tsEsc(cat.label)}</span>`;
+      fig.addEventListener('click', () => selectTaskCategory(cat.key));
+      el.appendChild(fig);
+    });
+  }
+
+  function renderTaskRing(cat) {
+    const arc = document.getElementById('ts-ring-arc');
+    const frac = TASK_RING_TOTAL > 0 ? cat.count / TASK_RING_TOTAL : 0;
+    const dash = TS_RING_CIRC * frac;
+    arc.setAttribute('stroke', cat.color);
+    arc.setAttribute('stroke-dasharray', `${dash.toFixed(1)} ${TS_RING_CIRC.toFixed(1)}`);
+    const countEl = document.getElementById('ts-ring-count');
+    countEl.textContent = cat.count;
+    countEl.setAttribute('fill', cat.color);
+    document.getElementById('ts-ring-of').textContent = `of ${TASK_RING_TOTAL}`;
+  }
+
+  function renderTaskTable(cat) {
+    const theadRow = document.getElementById('ts-thead-row');
+    const tbody = document.getElementById('ts-tbody');
+    const footnote = document.getElementById('ts-footnote');
+    const isSchedule = cat.kind === 'schedule';
+
+    theadRow.innerHTML = `
+      <th style="width:110px">Job</th>
+      <th>${isSchedule ? 'Repeat' : 'Type'}</th>
+      <th>Target</th>
+      <th style="text-align:right">${tsEsc(cat.timestamp_label)}</th>
+    `;
+
+    tbody.innerHTML = '';
+    const shown = cat.rows.slice(0, 4);
+    if (shown.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="4" style="padding:14px 0;color:#6B7280;">ไม่มีงานในหมวดนี้</td></tr>`;
+    } else {
+      shown.forEach((r) => {
+        const tr = document.createElement('tr');
+        tr.style.cursor = 'pointer';
+        let typeCell;
+        if (isSchedule) {
+          const [badgeBg, badgeText, badgeLabel] = TS_REPEAT_BADGE[r.repeat] || ['bg-primary', 'text-white', 'Monthly'];
+          typeCell = `<span class="badge ${badgeBg} ${badgeText}" style="font-size:.7rem;">${badgeLabel}</span>`;
+        } else {
+          typeCell = `<span class="type-cell"><span class="dot" style="background:${cat.color};"></span>${tsEsc(r.type_label)}</span>`;
+        }
+        tr.innerHTML = `
+          <td class="mono">#${tsEsc(r.seq)}</td>
+          <td>${typeCell}</td>
+          <td class="mono dim">${tsEsc(r.target)}</td>
+          <td class="mono dim" style="text-align:right">${tsEsc(isSchedule ? r.next_run : r.timestamp)}</td>
+        `;
+        tr.addEventListener('click', () => {
+          window.location.href = isSchedule ? '/tasks' : `/scan/${r.id}`;
+        });
+        tbody.appendChild(tr);
+      });
+    }
+
+    const remaining = cat.rows.length - shown.length;
+    footnote.innerHTML = remaining > 0
+      ? `<a href="${cat.view_all_url}">+${remaining} ${tsEsc(cat.view_all_label)} →</a>`
+      : '';
+  }
+
+  function selectTaskCategory(key) {
+    tsActiveKey = key;
+    const cat = TASK_CATEGORIES.find(c => c.key === key) || TASK_CATEGORIES[0];
+    renderTaskFigures();
+    renderTaskRing(cat);
+    const headingEl = document.getElementById('ts-section-heading');
+    headingEl.textContent = cat.label;
+    headingEl.style.color = cat.color;
+    document.getElementById('ts-section-sub').textContent = `${cat.thai} · ${cat.count} งาน`;
+    renderTaskTable(cat);
+  }
+
+  if (TASK_CATEGORIES.length) {
+    selectTaskCategory('complete');
+  }
+
+  // ───── Task Status: page 1, the bar chart ─────
+  const taskChartData = TASK_CATEGORIES.map(c => c.count);
+  const taskChartColors = TASK_CATEGORIES.map(c => c.color);
+  const taskChartTotal = taskChartData.reduce((a, b) => a + b, 0);
 
   const taskBarLabelPlugin = {
     id: 'taskBarLabel',
     afterDatasetsDraw(chart) {
-      const { ctx, data } = chart;
+      const { ctx } = chart;
       ctx.save();
-      data.datasets[0].data.forEach((value, i) => {
+      taskChartData.forEach((value, i) => {
         const meta = chart.getDatasetMeta(0);
         const bar = meta.data[i];
-        const pct = taskTotal > 0 ? Math.round(value / taskTotal * 100) : 0;
+        const pct = taskChartTotal > 0 ? Math.round(value / taskChartTotal * 100) : 0;
         ctx.fillStyle = '#333';
         ctx.font = 'bold 13px sans-serif';
         ctx.textAlign = 'center';
@@ -551,11 +692,11 @@
   const taskChart = new Chart(document.getElementById('taskStatusChart'), {
     type: 'bar',
     data: {
-      labels: taskCategoryLabels,
+      labels: TASK_CATEGORIES.map(c => c.label),
       datasets: [{
-        data: taskData,
-        backgroundColor: taskCategoryColors,
-        hoverBackgroundColor: ['#3d9a6a', '#c94e4e', '#e0a800'],
+        data: taskChartData,
+        backgroundColor: taskChartColors,
+        hoverBackgroundColor: taskChartColors,
         borderRadius: 8,
         borderSkipped: false,
         barPercentage: 0.55,
@@ -571,98 +712,58 @@
       scales: {
         x: {
           grid: { display: false },
-          ticks: { font: { size: 12 } }
+          ticks: { font: { size: 11 } }
         },
         y: {
           beginAtZero: true,
           grid: { color: '#f0f0f0' },
-          ticks: { stepSize: 1, precision: 0, font: { size: 11 } }
+          ticks: { stepSize: 1, precision: 0, font: { size: 10 } }
         }
       },
       onClick: function (evt, elements) {
         if (elements && elements.length > 0) {
           const idx = elements[0].index;
-          openTaskDrilldown(idx);
+          openTaskDetail(TASK_CATEGORIES[idx].key);
         }
       }
     },
     plugins: [taskBarLabelPlugin]
   });
 
-  function openTaskDrilldown(categoryIdx) {
+  // ───── Task Status: page 1 ↔ page 2 transition ─────
+  function openTaskDetail(key) {
     const chartView = document.getElementById('task-chart-view');
-    const drillView = document.getElementById('task-drilldown-view');
-    const titleEl = document.getElementById('task-drilldown-title');
-    const listEl = document.getElementById('task-drilldown-list');
-    const count = taskData[categoryIdx];
-    const color = taskCategoryColors[categoryIdx];
+    const detailView = document.getElementById('task-detail-view');
+    selectTaskCategory(key);
 
-    titleEl.textContent = `${taskCategoryLabels[categoryIdx]} — ${taskCategoryThai[categoryIdx]} (${count} งาน)`;
-    titleEl.style.color = color;
-    listEl.innerHTML = '';
-
-    if (count === 0) {
-      listEl.innerHTML = '<span style="color:#aaa;font-size:.85rem">ไม่มีงานในหมวดนี้</span>';
-    } else {
-      for (let i = 0; i < count; i++) {
-        const row = document.createElement('div');
-        row.style.cssText = `
-        display:flex;align-items:center;gap:10px;
-        padding:9px 14px;border-radius:8px;
-        background:#f8f9fa;border-left:3px solid ${color};
-        opacity:0;transform:translateX(-12px);
-        font-size:.83rem;
-      `;
-        const icons = { 0: '✅', 1: '⏳', 2: '🔄' };
-        row.innerHTML = `
-        <span>${icons[categoryIdx] || '📋'}</span>
-        <span style="font-weight:600;color:#333">Job #${i + 1}</span>
-        <span style="color:#aaa">|</span>
-        <span style="color:${color};font-weight:500">${taskCategoryLabels[categoryIdx]}</span>
-      `;
-        listEl.appendChild(row);
-      }
-    }
-
-    // Animate chart out → drilldown in
     chartView.style.transition = 'opacity 0.18s ease, transform 0.18s ease';
     chartView.style.opacity = '0';
     chartView.style.transform = 'translateX(-20px)';
 
     setTimeout(() => {
       chartView.style.display = 'none';
-      drillView.style.display = 'flex';
-      drillView.style.opacity = '0';
-      drillView.style.transform = 'translateX(20px)';
+      detailView.style.display = 'block';
+      detailView.style.opacity = '0';
+      detailView.style.transform = 'translateX(20px)';
       requestAnimationFrame(() => {
-        drillView.style.transition = 'opacity 0.22s ease, transform 0.22s ease';
-        drillView.style.opacity = '1';
-        drillView.style.transform = 'translateX(0)';
+        detailView.style.transition = 'opacity 0.22s ease, transform 0.22s ease';
+        detailView.style.opacity = '1';
+        detailView.style.transform = 'translateX(0)';
       });
-
-      // Stagger rows
-      const rows = listEl.querySelectorAll('div');
-      rows.forEach((row, i) => {
-        setTimeout(() => {
-          row.style.transition = 'opacity 0.22s ease, transform 0.22s ease';
-          row.style.opacity = '1';
-          row.style.transform = 'translateX(0)';
-        }, 30 + i * 55);
-      });
-    }, 200);
+    }, 180);
   }
 
-  function closeDrilldown() {
+  function closeTaskDetail() {
     const chartView = document.getElementById('task-chart-view');
-    const drillView = document.getElementById('task-drilldown-view');
+    const detailView = document.getElementById('task-detail-view');
 
-    drillView.style.transition = 'opacity 0.18s ease, transform 0.18s ease';
-    drillView.style.opacity = '0';
-    drillView.style.transform = 'translateX(20px)';
+    detailView.style.transition = 'opacity 0.18s ease, transform 0.18s ease';
+    detailView.style.opacity = '0';
+    detailView.style.transform = 'translateX(20px)';
 
     setTimeout(() => {
-      drillView.style.display = 'none';
-      chartView.style.display = 'flex';
+      detailView.style.display = 'none';
+      chartView.style.display = 'block';
       chartView.style.opacity = '0';
       chartView.style.transform = 'translateX(-20px)';
       requestAnimationFrame(() => {
@@ -670,7 +771,7 @@
         chartView.style.opacity = '1';
         chartView.style.transform = 'translateX(0)';
       });
-    }, 200);
+    }, 180);
   }
 
 </script>
@@ -698,7 +799,7 @@
        overflow:hidden;
        will-change:transform,opacity;
      ">
-  <div id="stat-modal-inner" style="padding:28px 32px;min-width:320px;max-width:560px;max-height:80vh;overflow-y:auto;">
+  <div id="stat-modal-inner" style="padding:28px 32px;min-width:320px;max-width:560px;max-height:80vh;overflow-y:auto;overflow-x:hidden;">
     <!-- Header -->
     <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;">
       <div>
@@ -799,6 +900,21 @@
     background: #f0f4ff !important;
   }
 
+  /* Clickable device rows in the donut filter panel / stat-card modal */
+  .device-row {
+    transition: background 0.15s ease;
+  }
+  .device-row:hover {
+    background: #f0f4ff !important;
+  }
+  .device-row-chevron {
+    color: #b8c0cc;
+    transition: color 0.15s ease;
+  }
+  .device-row:hover .device-row-chevron {
+    color: #0d6efd;
+  }
+
   .scan-row-toggle-icon {
     display: inline-block;
     transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
@@ -841,25 +957,73 @@
     color: #fff;
   }
 
-  /* Task drilldown scroll */
-  #task-drilldown-list {
-    max-height: 200px;
-    overflow-y: auto;
+  /* ===== Task Status (ring + table) — compacted to fit a half-width card ===== */
+  .ts-scope {
+    font-family: 'IBM Plex Sans', sans-serif;
+    color: #12161C;
   }
+  .ts-scope .ts-header {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    margin-bottom: 12px;
+  }
+  .ts-scope #ts-title {
+    margin: 0; font-family: 'Space Grotesk', sans-serif; font-weight: 700;
+    font-size: 18px; letter-spacing: -0.01em; color: #12161C;
+  }
+  .ts-scope #ts-subtitle { margin: 2px 0 0; font-size: 12px; color: #4B5563; }
+  .ts-scope .ts-back-btn {
+    display: flex; align-items: center; gap: 6px;
+    background: #fff; border: 1px solid #D8DBE0; color: #374151;
+    font: 500 12px 'IBM Plex Sans', sans-serif; padding: 5px 10px; border-radius: 8px;
+    cursor: pointer; margin-bottom: 12px;
+  }
+  .ts-scope .ts-back-btn:hover { background: #F7F8FA; }
 
-  #task-drilldown-list::-webkit-scrollbar {
-    width: 4px;
+  .ts-scope .ts-stat-panel {
+    display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+    padding: 14px 16px; background: #F7F8FA; border: 1px solid #E4E7EC;
+    border-radius: 12px; margin-bottom: 14px;
   }
+  #ts-ring-count { font-family: 'IBM Plex Mono', monospace; }
+  .ts-scope .ts-figures { display: flex; gap: 16px; flex-wrap: wrap; }
+  .ts-scope .ts-figure {
+    display: flex; flex-direction: column; gap: 2px; cursor: pointer;
+    padding: 3px 5px; margin: -3px -5px; border-radius: 6px;
+    border-bottom: 2px solid transparent; transition: border-color .15s, background .15s;
+  }
+  .ts-scope .ts-figure:hover { background: rgba(0,0,0,0.03); }
+  .ts-scope .ts-figure.active { border-bottom-color: var(--ts-cat-color, #178A52); }
+  .ts-scope .ts-figure .n { font-family: 'IBM Plex Mono', monospace; font-size: 19px; color: #12161C; }
+  .ts-scope .ts-figure.active .n { color: var(--ts-cat-color, #178A52); }
+  .ts-scope .ts-figure .l { font-size: 11px; color: #4B5563; }
 
-  #task-drilldown-list::-webkit-scrollbar-thumb {
-    background: #dee2e6;
-    border-radius: 4px;
+  .ts-scope .ts-section { display: flex; flex-direction: column; gap: 8px; }
+  .ts-scope .ts-section-title { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+  .ts-scope .ts-section-title h2 {
+    margin: 0; font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 14px;
   }
+  .ts-scope .ts-section-title span { font-size: 11.5px; color: #4B5563; }
+
+  .ts-scope table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .ts-scope thead tr { border-bottom: 1px solid #E4E7EC; }
+  .ts-scope th { text-align: left; font-weight: 500; color: #6B7280; font-size: 10px; padding: 0 0 6px; white-space: nowrap; }
+  .ts-scope th:last-child { text-align: right; }
+  .ts-scope tbody tr { border-bottom: 1px solid #EEF0F2; transition: background .12s; }
+  .ts-scope tbody tr:hover { background: #F7F8FA; }
+  .ts-scope td { padding: 8px 0; white-space: nowrap; }
+  .ts-scope .mono { font-family: 'IBM Plex Mono', monospace; }
+  .ts-scope .dim { color: #6B7280; }
+  .ts-scope .type-cell { display: inline-flex; align-items: center; gap: 6px; }
+  .ts-scope .dot { width: 5px; height: 5px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+  .ts-scope .ts-footnote { margin: 2px 0 0; font-size: 11.5px; min-height: 17px; }
+  .ts-scope .ts-footnote a { color: #6B7280; text-decoration: none; }
+  .ts-scope .ts-footnote a:hover { color: #12161C; text-decoration: underline; }
 
   /* Donut filter device list scroll */
   #donut-device-list {
     max-height: 160px;
     overflow-y: auto;
+    overflow-x: hidden;
   }
 
   #donut-device-list::-webkit-scrollbar {
@@ -1148,19 +1312,11 @@
     const d = DASH_DATA;
 
     if (type === 'devices') {
-      const safe = d.device_port_data.filter(x => x.count < 3);
-      const warning = d.device_port_data.filter(x => x.count >= 3 && x.count <= 6);
-      const danger = d.device_port_data.filter(x => x.count > 6);
+      const groups = DEVICE_TIERS.map(tier => d.device_port_data.filter(x => x.tier === tier.key));
 
       const makeGroup = (label, color, items) => {
         if (items.length === 0) return '';
-        const rows = items.map(d =>
-          `<div class="modal-item" style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#f8f9fb;border-radius:8px;border-left:3px solid ${color};font-size:.83rem;">
-          <span style="font-weight:600;font-family:monospace;color:#333">${d.ip}</span>
-          <span style="color:#aaa">|</span>
-          <span style="color:${color};font-weight:500">${d.count} port${d.count !== 1 ? 's' : ''}</span>
-        </div>`
-        ).join('');
+        const rows = items.map(dev => buildDeviceRow(dev)).join('');
         return `
         <div class="modal-item" style="margin-bottom:8px;margin-top:14px;">
           <div style="font-weight:600;font-size:.82rem;color:${color};margin-bottom:6px;display:flex;align-items:center;gap:6px;">
@@ -1178,16 +1334,12 @@
             <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
           </svg>`,
         title: `อุปกรณ์ทั้งหมด — ${d.total_devices} เครื่อง`,
-        subtitle: 'แบ่งตามจำนวน Open Ports',
+        subtitle: 'แบ่งตามระดับความเสี่ยง (CVE Severity)',
         html: `
-        <div style="display:flex;gap:12px;margin-bottom:4px;">
-          ${makePill('#198754', '< 3 Port', safe.length)}
-          ${makePill('#ffc107', '3–6 Port', warning.length, '#212529')}
-          ${makePill('#dc3545', '> 6 Port', danger.length)}
+        <div style="display:flex;gap:12px;margin-bottom:4px;flex-wrap:wrap;">
+          ${DEVICE_TIERS.map((tier, i) => makePill(tier.color, tier.label, groups[i].length, tier.key === 'medium_low' ? '#212529' : '#fff')).join('')}
         </div>
-        ${makeGroup('ความปลอดภัยสูง (< 3 Port)', '#198754', safe)}
-        ${makeGroup('ระมัดระวัง (3–6 Port)', '#ffc107', warning)}
-        ${makeGroup('ความเสี่ยงสูง (> 6 Port)', '#dc3545', danger)}
+        ${DEVICE_TIERS.map((tier, i) => makeGroup(tier.thai, tier.color, groups[i])).join('')}
       `
       };
     }
@@ -1275,7 +1427,7 @@
     if (type === 'tasks') {
       const statusGroups = [
         { label: 'Complete', labelTh: 'เสร็จสิ้น', count: d.task_completed, color: '#16a34a' },
-        { label: 'Wait Schedule', labelTh: 'รอตามกำหนด', count: d.task_wait, color: '#dc2626' },
+        { label: 'Wait Schedule', labelTh: 'รอตามกำหนด', count: d.task_wait, color: '#3b82f6' },
         { label: 'Running', labelTh: 'กำลังทำงาน', count: d.task_running, color: '#ca8a04' },
       ];
 
@@ -1310,7 +1462,7 @@
         html: `
           <div style="display:flex;gap:12px;margin-bottom:16px;" class="modal-item">
             ${makePill('#16a34a', 'Complete', d.task_completed)}
-            ${makePill('#dc3545', 'Wait', d.task_wait)}
+            ${makePill('#3b82f6', 'Wait', d.task_wait)}
             ${makePill('#ca8a04', 'Running', d.task_running, '#fff')}
           </div>
           ${bars}

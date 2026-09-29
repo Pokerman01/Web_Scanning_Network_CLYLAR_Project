@@ -86,7 +86,13 @@ const ALL_SCANS = [
 </div>
 
 <!-- History Table -->
+<style>
+#historyTable { table-layout: fixed; }
+#historyTable th { white-space: nowrap; }
+#historyTable td { vertical-align: middle; }
+</style>
 <div class="card p-0 shadow-sm border-0">
+    <div class="table-responsive">
     <table class="table table-hover mb-0" id="historyTable">
         <thead class="table-dark">
             <tr>
@@ -95,20 +101,20 @@ const ALL_SCANS = [
                     <input type="checkbox" class="form-check-input" id="selectAllCheckbox" title="เลือกทั้งหมด" style="cursor: pointer;">
                 </th>
                 {% endif %}
-                <th>Job ID</th>
-                <th>Name</th>
-                <th>Target</th>
-                <th>Type</th>
-                <th>Triggered By</th>
-                <th>Status</th>
-                <th>Date & Time</th>
-                <th>Action</th>
+                <th style="width: 70px;">Job ID</th>
+                <th style="width: 170px;">Name</th>
+                <th style="width: 230px;">Target</th>
+                <th style="width: 150px;">Type</th>
+                <th style="width: 130px;">Triggered By</th>
+                <th style="width: 110px;">Status</th>
+                <th style="width: 150px;">Date &amp; Time</th>
+                <th style="width: 130px;">Action</th>
             </tr>
         </thead>
         <tbody id="historyBody">
             {% for job in history %}
             {% set job_data = job.result_data | from_json if job.result_data else [] %}
-            <tr data-target="{{ job.target }}" data-type="{{ job.scan_type }}" data-status="{{ job.status }}" id="scan-row-{{ job.id }}" class="history-row">
+            <tr data-target="{{ job.target }}" data-type="{{ job.scan_type }}" data-status="{{ job.status }}" id="scan-row-{{ job.id }}" class="history-row align-middle">
                 {% if current_user.is_any_admin %}
                 <td class="text-center cb-cell" style="user-select: none; cursor: pointer;">
                     <input type="checkbox" class="form-check-input scan-row-cb"
@@ -120,14 +126,14 @@ const ALL_SCANS = [
                 </td>
                 {% endif %}
                 <td><span class="text-muted">#{{ owner_seq_map.get(job.id, job.id) }}</span></td>
-                <td>
+                <td class="text-truncate" style="max-width: 170px;" title="{{ job.scan_name or '' }}">
                     {% if job.scan_name %}
                         <span class="fw-semibold">{{ job.scan_name }}</span>
                     {% else %}
                         <span class="text-muted">—</span>
                     {% endif %}
                 </td>
-                <td>
+                <td class="text-truncate" style="max-width: 230px;">
                     <code>{{ job.target }}</code>
                     {% set seq_info = scan_seq_map.get(job.id) %}
                     {% if seq_info and seq_info[1] > 1 %}
@@ -151,13 +157,14 @@ const ALL_SCANS = [
                         {{ job.status }}
                     </span>
                 </td>
-                <td>{{ job.timestamp.strftime('%Y-%m-%d %H:%M') }}</td>
-                <td>
+                <td class="text-nowrap">{{ job.timestamp.strftime('%Y-%m-%d %H:%M') }}</td>
+                <td class="text-nowrap">
+                    <div class="d-flex align-items-center gap-1 flex-nowrap">
                     {% if job.status == 'Completed' %}
                         <a href="{{ url_for('scan_detail', scan_id=job.id) }}"
                            class="btn btn-sm btn-outline-primary">View</a>
                         {% if current_user.is_any_admin %}
-                        <button class="btn btn-sm btn-outline-danger ms-1" title="Delete scan record"
+                        <button class="btn btn-sm btn-outline-danger" title="Delete scan record"
                                 data-scan-id="{{ job.id }}" data-target="{{ job.target }}" data-total="{{ scan_seq_map.get(job.id, (1,1))[1] }}"
                                 onclick="confirmDelete(+this.dataset.scanId, this.dataset.target, +this.dataset.total)">
                             <i class="ti ti-trash"></i>
@@ -182,6 +189,7 @@ const ALL_SCANS = [
                     {% else %}
                         <button class="btn btn-sm btn-secondary" disabled>Running...</button>
                     {% endif %}
+                    </div>
                 </td>
             </tr>
 
@@ -192,6 +200,7 @@ const ALL_SCANS = [
             {% endfor %}
         </tbody>
     </table>
+    </div>
 </div>
 
 </div><!-- /tab-history -->

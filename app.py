@@ -365,7 +365,14 @@ def dashboard():
     scan_data = json.loads(latest_scan.result_data) if latest_scan and latest_scan.result_data else []
 
     from collections import Counter
+    # ระดับความรุนแรงของ CVE เรียงจากน้อยไปมาก ใช้หา "worst severity" ต่ออุปกรณ์
+    SEVERITY_RANK = {'LOW': 1, 'UNKNOWN': 1, 'MEDIUM': 2, 'HIGH': 3, 'CRITICAL': 4}
+
     all_device_map = {}
+    device_vuln_scanned_ips = set()   # IP ที่เคยผ่าน vuln_scan อย่างน้อย 1 ครั้ง
+    device_worst_severity = {}        # ip -> severity (CRITICAL/HIGH/MEDIUM/LOW/UNKNOWN) ที่รุนแรงที่สุดที่เคยพบ
+    device_worst_cvss = {}            # ip -> cvss_score ของ CVE ที่รุนแรงที่สุด (ถ้ามี)
+    device_last_scan_id = {}          # ip -> job.id ของ scan ล่าสุดที่พบอุปกรณ์นี้ (history เรียง desc แล้ว)
     for job in history:
         if not job.result_data:
             continue
@@ -379,11 +386,21 @@ def dashboard():
                 continue
             if ip not in all_device_map:
                 all_device_map[ip] = set()
+            if ip not in device_last_scan_id:
+                device_last_scan_id[ip] = job.id
+            if job.scan_type == 'vuln_scan':
+                device_vuln_scanned_ips.add(ip)
             for p in d.get('ports', []):
                 if str(p.get('state', '')).lower() != 'open':
                     continue
                 label = f"{p.get('port')}/{p.get('name','?')}"
                 all_device_map[ip].add(label)
+                for cve in p.get('cves', []):
+                    sev = (cve.get('severity') or '').upper() if isinstance(cve, dict) else ''
+                    if sev in SEVERITY_RANK:
+                        if ip not in device_worst_severity or SEVERITY_RANK[sev] > SEVERITY_RANK[device_worst_severity[ip]]:
+                            device_worst_severity[ip] = sev
+                            device_worst_cvss[ip] = cve.get('cvss_score')
 
     total_devices = len(all_device_map)
     online_devices = sum(1 for d in scan_data if d.get('status', '').lower() in ('up', 'online', 'open') or d.get('ports'))
@@ -395,11 +412,33 @@ def dashboard():
             port_device_counter[p] += 1
     top_ports = port_device_counter.most_common(6)
 
+    # จัดกลุ่มอุปกรณ์ตาม "ความเสี่ยงจริง" (worst CVE severity) แทนจำนวน port ที่เปิด
+    # ป้องกันการเข้าใจผิดว่า port เยอะ = เสี่ยงเยอะ — อุปกรณ์ที่ยังไม่เคยสแกนหาช่องโหว่
+    # จะถูกจัดเป็น "unscanned" (เป็นกลาง ไม่ตัดสินว่าเสี่ยงหรือปลอดภัย) แทนที่จะเดาจาก port count
+    DEVICE_TIER_COLOR = {
+        'critical_high': '#dc3545',
+        'medium_low': '#ffc107',
+        'clean': '#198754',
+        'unscanned': '#6c757d',
+    }
     device_port_data = []
     for ip, ports in sorted(all_device_map.items()):
         count = len(ports)
-        color = '#198754' if count < 3 else ('#ffc107' if count <= 6 else '#dc3545')
-        device_port_data.append({'ip': ip, 'count': count, 'color': color})
+        severity = device_worst_severity.get(ip)
+        vuln_scanned = ip in device_vuln_scanned_ips
+        if severity in ('CRITICAL', 'HIGH'):
+            tier = 'critical_high'
+        elif severity in ('MEDIUM', 'LOW', 'UNKNOWN'):
+            tier = 'medium_low'
+        elif vuln_scanned:
+            tier = 'clean'
+        else:
+            tier = 'unscanned'
+        device_port_data.append({
+            'ip': ip, 'count': count, 'color': DEVICE_TIER_COLOR[tier],
+            'tier': tier, 'severity': severity, 'vuln_scanned': vuln_scanned,
+            'cvss_score': device_worst_cvss.get(ip), 'last_scan_id': device_last_scan_id.get(ip),
+        })
 
     from collections import Counter as _Counter
     target_scan_counts = _Counter(j.target for j in history if j.status == 'Completed')
@@ -450,6 +489,56 @@ def dashboard():
         owner_jobs_sorted = ScanJob.query.filter_by(owner_id=latest_scan.owner_id).order_by(ScanJob.timestamp).all()
         latest_owner_seq = next((i+1 for i, j in enumerate(owner_jobs_sorted) if j.id == latest_scan.id), latest_scan.id)
 
+    # เหมือนกับ history_page/api_jobs: ให้ "Job #N" ตรงกับ owner_seq (ไม่ใช่ global id)
+    owner_seq_map = {}
+    unique_owner_ids = {j.owner_id for j in history if j.owner_id is not None}
+    for oid in unique_owner_ids:
+        owner_all = ScanJob.query.filter_by(owner_id=oid).order_by(ScanJob.timestamp).all()
+        for idx, tj in enumerate(owner_all, 1):
+            owner_seq_map[tj.id] = idx
+
+    # ข้อมูลจริงสำหรับ Task Status (แทนที่ placeholder "Job #1, #2, ...")
+    def _job_row(j):
+        return {
+            'id': j.id,
+            'seq': owner_seq_map.get(j.id, j.id),
+            'target': j.target,
+            'type_label': SCAN_TYPE_LABELS.get(j.scan_type, j.scan_type or ''),
+            'timestamp': j.timestamp.strftime('%Y-%m-%d %H:%M') if j.timestamp else '—',
+        }
+    task_complete_jobs = [_job_row(j) for j in history if j.status == 'Completed']
+    task_running_jobs = [_job_row(j) for j in history if j.status == 'Running']
+    task_wait_schedules = [{
+        'id': s.id,
+        'seq': idx,
+        'name': s.name,
+        'target': s.target,
+        'repeat': s.repeat,
+        'next_run': s.next_run.strftime('%Y-%m-%d %H:%M') if s.next_run else '—',
+    } for idx, s in enumerate((s for s in schedules_all if s.is_active), 1)]
+
+    task_ring_total = task_completed + task_wait + task_running
+    task_categories = [
+        {
+            'key': 'complete', 'label': 'Complete', 'thai': 'สแกนเสร็จสิ้น',
+            'count': task_completed, 'color': '#178A52', 'kind': 'job',
+            'timestamp_label': 'Completed', 'rows': task_complete_jobs,
+            'view_all_url': url_for('history_page'), 'view_all_label': 'more completed scans',
+        },
+        {
+            'key': 'wait', 'label': 'Wait Schedule', 'thai': 'รอตามกำหนด',
+            'count': task_wait, 'color': '#3b82f6', 'kind': 'schedule',
+            'timestamp_label': 'Next Run', 'rows': task_wait_schedules,
+            'view_all_url': url_for('tasks_page'), 'view_all_label': 'more scheduled scans',
+        },
+        {
+            'key': 'running', 'label': 'Running', 'thai': 'กำลังทำงาน',
+            'count': task_running, 'color': '#ffc107', 'kind': 'job',
+            'timestamp_label': 'Started', 'rows': task_running_jobs,
+            'view_all_url': url_for('history_page'), 'view_all_label': 'more running scans',
+        },
+    ]
+
     return render_template(
         'dashboard.html',
         history=history,
@@ -464,8 +553,11 @@ def dashboard():
         total_tasks=total_tasks,
         task_completed=task_completed,
         task_running=task_running,
+        task_categories=task_categories,
+        task_ring_total=task_ring_total,
         task_wait=task_wait,
         latest_owner_seq=latest_owner_seq,
+        owner_seq_map=owner_seq_map,
         total_cves_found=total_cves_found,
         all_cves_json=json.dumps(all_cves_list),
     )

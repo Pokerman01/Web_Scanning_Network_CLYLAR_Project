@@ -7,6 +7,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         // Prevent layout shift/flash before render
@@ -24,7 +25,7 @@
             --sidebar-collapsed-width: 72px;
             --sidebar-transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1), margin-left 0.25s cubic-bezier(0.4, 0, 0.2, 1);
             --nt-gold: #f5c518;
-            --nt-gold-dark: #b8860b;
+            --nt-gold-dark: #ffc531;
             --nt-gold-bg: #fff8e1;
             --nt-text: #363a42;
             --nt-text-muted: #6b7280;
@@ -52,6 +53,7 @@
             overflow-y: auto;
             transition: var(--sidebar-transition);
             white-space: nowrap;
+            box-shadow: 0 16px 28px rgba(0, 0, 0, 0.11);
         }
         /* Custom scrollbar for sidebar */
         .sidebar::-webkit-scrollbar { width: 4px; }
@@ -421,7 +423,7 @@
 <div class="d-flex">
 
     {% if current_user.is_authenticated %}
-    <nav class="sidebar shadow-lg" id="mainSidebar">
+    <nav class="sidebar" id="mainSidebar">
 
         <!-- Sidebar Header (NT Branding) -->
         <div class="sidebar-header">
