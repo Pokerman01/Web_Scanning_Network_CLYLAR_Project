@@ -107,7 +107,7 @@
           </div>
         </div>
         <div class="stat-card-footer mt-2">
-          <span><strong style="color:#10b981;">{{ task_completed }}</strong> Done · <strong style="color:#3b82f6;">{{ task_wait }}</strong> Wait · <strong style="color:#f59e0b;">{{ task_running }}</strong> Run</span>
+          <span><strong style="color:#10b981;">{{ task_completed }}</strong> Done · <strong style="color:#3b82f6;">{{ task_wait }}</strong> Wait · <strong style="color:#dc2626;">{{ task_failed }}</strong> Fail</span>
         </div>
       </div>
     </div>
@@ -127,9 +127,9 @@
         </div>
         <div class="d-flex align-items-center flex-grow-1 gap-4">
           <!-- Donut chart with center label -->
-          <div style="position:relative;flex-shrink:0;width:200px;height:200px;">
-            <canvas id="deviceStatusChart" style="max-height:200px;max-width:200px;"></canvas>
-            <div id="donutCenterLabel" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;">
+          <div style="position:relative;flex-shrink:0;width:200px;height:200px;isolation:isolate;">
+            <canvas id="deviceStatusChart" style="max-height:200px;max-width:200px;position:relative;z-index:1;"></canvas>
+            <div id="donutCenterLabel" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;z-index:0;">
               <span id="donutCenterCount" style="font-size:1.7rem;font-weight:700;color:#0f172a;line-height:1;"></span>
               <span style="font-size:.72rem;color:#94a3b8;margin-top:2px;">Devices</span>
             </div>
@@ -1163,7 +1163,7 @@
     total_tasks: {{ total_tasks }},
     task_completed: {{ task_completed }},
     task_wait: {{ task_wait }},
-    task_running: {{ task_running }},
+    task_failed: {{ task_failed }},
     device_port_data: {{ device_port_data | tojson }},
     top_ports: {{ top_ports | tojson }},
   };
@@ -1428,7 +1428,7 @@
       const statusGroups = [
         { label: 'Complete', labelTh: 'เสร็จสิ้น', count: d.task_completed, color: '#16a34a' },
         { label: 'Wait Schedule', labelTh: 'รอตามกำหนด', count: d.task_wait, color: '#3b82f6' },
-        { label: 'Running', labelTh: 'กำลังทำงาน', count: d.task_running, color: '#ca8a04' },
+        { label: 'Failed', labelTh: 'ล้มเหลว', count: d.task_failed, color: '#dc2626' },
       ];
 
       const bars = statusGroups.map(g => {
@@ -1463,7 +1463,7 @@
           <div style="display:flex;gap:12px;margin-bottom:16px;" class="modal-item">
             ${makePill('#16a34a', 'Complete', d.task_completed)}
             ${makePill('#3b82f6', 'Wait', d.task_wait)}
-            ${makePill('#ca8a04', 'Running', d.task_running, '#fff')}
+            ${makePill('#dc2626', 'Failed', d.task_failed, '#fff')}
           </div>
           ${bars}
         `

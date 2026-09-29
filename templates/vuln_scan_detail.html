@@ -783,7 +783,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     </td>
                     <td>
                         <span class="sev-badge" style="background:{{ sev_bg }};color:{{ sev_color }};">
-                            {% if sev == 'CRITICAL' %}🔴{% elif sev == 'HIGH' %}🟠{% elif sev == 'MEDIUM' %}🟡{% else %}🟢{% endif %}
                             {{ sev }}
                         </span>
                     </td>

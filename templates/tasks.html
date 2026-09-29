@@ -211,7 +211,20 @@
 <!-- ===== TAB: SCAN MANAGEMENT ===== -->
 <div id="paneScanMgmt">
 
-    <!-- ===== TASK LIST ===== -->
+    <style>
+#jobsTable { table-layout: fixed; }
+#jobsTable td, #jobsTable th { vertical-align: middle; }
+#jobsTable td { padding-top: 0.6rem; padding-bottom: 0.6rem; }
+#jobsTable td:first-child, #jobsTable th:first-child { padding-left: 1.25rem; }
+#jobsTable td:last-child, #jobsTable th:last-child { padding-right: 1.25rem; }
+#jobsTable td:first-child { font-variant-numeric: tabular-nums; }
+#jobsTable tbody tr { border-bottom: 1px solid #eef0f2; }
+#jobsTable tbody tr:hover { background-color: rgba(0, 0, 0, 0.02); }
+#jobsTable .job-name-cell { line-height: 1.3; }
+#jobsTable .job-name-title { margin-bottom: 2px; }
+</style>
+
+<!-- ===== TASK LIST ===== -->
     <div class="card border-0 shadow-sm mt-3">
         <div class="card-header bg-transparent d-flex align-items-center justify-content-between py-3">
             <div class="d-flex align-items-center gap-2">
@@ -231,16 +244,16 @@
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
+                <table class="table table-hover align-middle mb-0" id="jobsTable">
                     <thead class="table-dark">
                         <tr>
-                            <th style="width:48px">#</th>
-                            <th>Name / Target</th>
-                            <th>Type</th>
-                            <th>Triggered By</th>
-                            <th>Date & Time</th>
-                            <th>Status</th>
-                            <th style="width:130px">Actions</th>
+                            <th style="width:60px">#</th>
+                            <th style="width:30%">Name / Target</th>
+                            <th style="width:15%">Type</th>
+                            <th style="width:13%">Triggered By</th>
+                            <th style="width:15%">Date &amp; Time</th>
+                            <th style="width:10%">Status</th>
+                            <th style="width:110px">Actions</th>
                         </tr>
                     </thead>
                     <tbody id="jobsBody">
@@ -831,8 +844,8 @@
             return `
         <tr>
             <td class="text-muted small">#${j.owner_seq}</td>
-            <td>
-                <div class="fw-semibold">${j.scan_name ? esc(j.scan_name) : '<span class="text-muted fst-italic">—</span>'}</div>
+            <td class="job-name-cell">
+                <div class="fw-semibold job-name-title">${j.scan_name ? esc(j.scan_name) : '<span class="text-muted fst-italic">—</span>'}</div>
                 <code class="small text-muted">${esc(j.target)}</code>${seqBadge}
             </td>
             <td>${typeBadge(j.scan_type)}</td>
@@ -842,7 +855,7 @@
             <td>${j.status === 'Completed'
                     ? `<div class="d-flex gap-1">
                      <a href="/scan/${j.id}" class="btn btn-sm btn-outline-primary">View</a>
-                     ${j.scan_type !== 'xml_upload' ? `<button class="btn btn-sm btn-outline-secondary rescan-btn" title="Rescan target"
+                     ${j.scan_type !== 'xml_upload' ? `<button class="btn btn-sm btn-outline-secondary rescan-btn" title="Rescan"
                              data-id="${j.id}" data-target="${esc(j.target)}" data-type="${esc(j.scan_type)}"><i class="ti ti-refresh"></i></button>` : ''}
                    </div>`
                     : j.status === 'Running'

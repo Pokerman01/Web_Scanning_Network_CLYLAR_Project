@@ -447,6 +447,7 @@ def dashboard():
     schedules_all = visible_schedules_query().all()
     task_completed = sum(1 for j in all_jobs if j.status == 'Completed')
     task_running   = sum(1 for j in all_jobs if j.status == 'Running')
+    task_failed    = sum(1 for j in all_jobs if j.status == 'Failed')
     task_wait      = sum(1 for s in schedules_all if s.is_active)
     total_tasks    = len(all_jobs) + task_wait
 
@@ -508,6 +509,7 @@ def dashboard():
         }
     task_complete_jobs = [_job_row(j) for j in history if j.status == 'Completed']
     task_running_jobs = [_job_row(j) for j in history if j.status == 'Running']
+    task_failed_jobs = [_job_row(j) for j in history if j.status == 'Failed']
     task_wait_schedules = [{
         'id': s.id,
         'seq': idx,
@@ -517,7 +519,7 @@ def dashboard():
         'next_run': s.next_run.strftime('%Y-%m-%d %H:%M') if s.next_run else '—',
     } for idx, s in enumerate((s for s in schedules_all if s.is_active), 1)]
 
-    task_ring_total = task_completed + task_wait + task_running
+    task_ring_total = task_completed + task_wait + task_running + task_failed
     task_categories = [
         {
             'key': 'complete', 'label': 'Complete', 'thai': 'สแกนเสร็จสิ้น',
@@ -537,6 +539,12 @@ def dashboard():
             'timestamp_label': 'Started', 'rows': task_running_jobs,
             'view_all_url': url_for('history_page'), 'view_all_label': 'more running scans',
         },
+        {
+            'key': 'failed', 'label': 'Failed', 'thai': 'ล้มเหลว',
+            'count': task_failed, 'color': '#dc2626', 'kind': 'job',
+            'timestamp_label': 'Failed At', 'rows': task_failed_jobs,
+            'view_all_url': url_for('history_page'), 'view_all_label': 'more failed scans',
+        },
     ]
 
     return render_template(
@@ -552,7 +560,7 @@ def dashboard():
         target_scan_counts=target_scan_counts,
         total_tasks=total_tasks,
         task_completed=task_completed,
-        task_running=task_running,
+        task_failed=task_failed,
         task_categories=task_categories,
         task_ring_total=task_ring_total,
         task_wait=task_wait,
